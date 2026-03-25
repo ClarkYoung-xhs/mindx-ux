@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import OnboardingWizard from '../components/OnboardingWizard';
 import { 
   Copy, 
@@ -22,7 +22,14 @@ import {
   ArrowLeft,
   MessageCircle,
   Clock,
-  Activity as ActivityIcon
+  Activity as ActivityIcon,
+  ArrowUpDown,
+  X,
+  Download,
+  Trash2,
+  Tag,
+  Shield,
+  StopCircle
 } from 'lucide-react';
 
 const initialWorkspaces = [
@@ -61,17 +68,34 @@ interface WorkspaceDoc {
   name: string;
   type: string;
   date: string;
+  lastModified: string;
+  lastViewed: string;
+  labels: string[];
   creatorName: string;
   creatorType: 'human' | 'agent';
 }
 
 const initialDocuments: WorkspaceDoc[] = [
-  { id: 'd1', workspaceId: 'w1', name: 'Project Alpha Architecture', type: 'Markdown', date: '2 hours ago', creatorName: 'Claude Assistant', creatorType: 'agent' },
-  { id: 'd2', workspaceId: 'w1', name: 'Q3 Financial Projections', type: 'Table', date: 'Yesterday', creatorName: 'Data Analyzer', creatorType: 'agent' },
-  { id: 'd3', workspaceId: 'w1', name: 'User Flow Diagram', type: 'Whiteboard', date: 'Last week', creatorName: 'Human', creatorType: 'human' },
-  { id: 'd6', workspaceId: 'w1', name: 'Claude & Human: Feature Discussion', type: 'Chat Log', date: '3 hours ago', creatorName: 'Claude Assistant', creatorType: 'agent' },
-  { id: 'd4', workspaceId: 'w2', name: 'Competitor Analysis', type: 'Markdown', date: '1 hour ago', creatorName: 'Research Bot', creatorType: 'agent' },
-  { id: 'd5', workspaceId: 'w2', name: 'Marketing Strategy', type: 'Markdown', date: '2 days ago', creatorName: 'Human', creatorType: 'human' }
+  { id: 'd1', workspaceId: 'w1', name: 'Project Alpha Architecture', type: 'Markdown', date: '2 hours ago', lastModified: '2026-03-24T12:00:00Z', lastViewed: '2026-03-24T13:30:00Z', labels: ['Project Alpha', 'PRD'], creatorName: 'Claude Assistant', creatorType: 'agent' },
+  { id: 'd2', workspaceId: 'w1', name: 'Q3 Financial Projections', type: 'Table', date: 'Yesterday', lastModified: '2026-03-23T10:00:00Z', lastViewed: '2026-03-24T09:00:00Z', labels: ['Data', 'Finance'], creatorName: 'Data Analyzer', creatorType: 'agent' },
+  { id: 'd3', workspaceId: 'w1', name: 'User Flow Diagram', type: 'Whiteboard', date: 'Last week', lastModified: '2026-03-17T15:00:00Z', lastViewed: '2026-03-22T11:00:00Z', labels: ['Design', 'Project Alpha'], creatorName: 'Human', creatorType: 'human' },
+  { id: 'd6', workspaceId: 'w1', name: 'Claude & Human: Feature Discussion', type: 'Chat Log', date: '3 hours ago', lastModified: '2026-03-24T11:00:00Z', lastViewed: '2026-03-24T11:30:00Z', labels: ['Meeting Notes'], creatorName: 'Claude Assistant', creatorType: 'agent' },
+  { id: 'd4', workspaceId: 'w2', name: 'Competitor Analysis', type: 'Markdown', date: '1 hour ago', lastModified: '2026-03-24T13:00:00Z', lastViewed: '2026-03-24T13:45:00Z', labels: ['Research', 'Data'], creatorName: 'Research Bot', creatorType: 'agent' },
+  { id: 'd5', workspaceId: 'w2', name: 'Marketing Strategy', type: 'Markdown', date: '2 days ago', lastModified: '2026-03-22T14:00:00Z', lastViewed: '2026-03-23T16:00:00Z', labels: ['PRD', 'Marketing'], creatorName: 'Human', creatorType: 'human' },
+  // Agent scheduled task outputs — Daily Industry Digest
+  { id: 'd7', workspaceId: 'w1', name: 'Industry Digest — Mar 24', type: 'Markdown', date: 'Today', lastModified: '2026-03-24T08:00:00Z', lastViewed: '2026-03-24T10:00:00Z', labels: ['Daily Industry Digest'], creatorName: 'Research Bot', creatorType: 'agent' },
+  { id: 'd8', workspaceId: 'w1', name: 'Industry Digest — Mar 23', type: 'Markdown', date: 'Yesterday', lastModified: '2026-03-23T08:00:00Z', lastViewed: '2026-03-23T12:00:00Z', labels: ['Daily Industry Digest'], creatorName: 'Research Bot', creatorType: 'agent' },
+  { id: 'd9', workspaceId: 'w1', name: 'Industry Digest — Mar 22', type: 'Markdown', date: '2 days ago', lastModified: '2026-03-22T08:00:00Z', lastViewed: '2026-03-22T09:30:00Z', labels: ['Daily Industry Digest'], creatorName: 'Research Bot', creatorType: 'agent' },
+  { id: 'd10', workspaceId: 'w1', name: 'Industry Digest — Mar 21', type: 'Markdown', date: '3 days ago', lastModified: '2026-03-21T08:00:00Z', lastViewed: '2026-03-21T11:00:00Z', labels: ['Daily Industry Digest'], creatorName: 'Research Bot', creatorType: 'agent' },
+  { id: 'd11', workspaceId: 'w2', name: 'Industry Digest — Mar 20', type: 'Markdown', date: '4 days ago', lastModified: '2026-03-20T08:00:00Z', lastViewed: '2026-03-20T14:00:00Z', labels: ['Daily Industry Digest'], creatorName: 'Research Bot', creatorType: 'agent' },
+  { id: 'd12', workspaceId: 'w2', name: 'Industry Digest — Mar 19', type: 'Markdown', date: '5 days ago', lastModified: '2026-03-19T08:00:00Z', lastViewed: '2026-03-19T10:00:00Z', labels: ['Daily Industry Digest'], creatorName: 'Research Bot', creatorType: 'agent' },
+  // Agent scheduled task outputs — Daily Report
+  { id: 'd13', workspaceId: 'w1', name: 'Daily Report — Mar 24', type: 'Markdown', date: 'Today', lastModified: '2026-03-24T18:00:00Z', lastViewed: '2026-03-24T18:30:00Z', labels: ['Daily Report'], creatorName: 'Claude Assistant', creatorType: 'agent' },
+  { id: 'd14', workspaceId: 'w1', name: 'Daily Report — Mar 23', type: 'Markdown', date: 'Yesterday', lastModified: '2026-03-23T18:00:00Z', lastViewed: '2026-03-23T20:00:00Z', labels: ['Daily Report'], creatorName: 'Claude Assistant', creatorType: 'agent' },
+  { id: 'd15', workspaceId: 'w1', name: 'Daily Report — Mar 22', type: 'Markdown', date: '2 days ago', lastModified: '2026-03-22T18:00:00Z', lastViewed: '2026-03-22T19:00:00Z', labels: ['Daily Report'], creatorName: 'Claude Assistant', creatorType: 'agent' },
+  { id: 'd16', workspaceId: 'w1', name: 'Daily Report — Mar 21', type: 'Markdown', date: '3 days ago', lastModified: '2026-03-21T18:00:00Z', lastViewed: '2026-03-21T21:00:00Z', labels: ['Daily Report'], creatorName: 'Claude Assistant', creatorType: 'agent' },
+  { id: 'd17', workspaceId: 'w2', name: 'Daily Report — Mar 20', type: 'Markdown', date: '4 days ago', lastModified: '2026-03-20T18:00:00Z', lastViewed: '2026-03-20T19:30:00Z', labels: ['Daily Report'], creatorName: 'Claude Assistant', creatorType: 'agent' },
+  { id: 'd18', workspaceId: 'w2', name: 'Daily Report — Mar 19', type: 'Markdown', date: '5 days ago', lastModified: '2026-03-19T18:00:00Z', lastViewed: '2026-03-19T20:00:00Z', labels: ['Daily Report', 'Project Alpha'], creatorName: 'Claude Assistant', creatorType: 'agent' }
 ];
 
 interface Activity {
@@ -97,7 +121,7 @@ const initialActivities: Activity[] = [
     action: 'modified',
     targetName: 'Project Alpha Architecture',
     targetType: 'Markdown',
-    details: 'Added "Database Schema" section',
+    details: 'Added "Database Schema" section with ER diagram and index strategy',
     timestamp: '2026-03-19T08:30:00Z'
   },
   {
@@ -109,6 +133,7 @@ const initialActivities: Activity[] = [
     action: 'created',
     targetName: 'User Flow Diagram',
     targetType: 'Whiteboard',
+    details: 'Initial onboarding and checkout flow wireframes',
     timestamp: '2026-03-18T14:20:00Z'
   },
   {
@@ -120,7 +145,7 @@ const initialActivities: Activity[] = [
     action: 'updated',
     targetName: 'Q3 Financial Projections',
     targetType: 'Table',
-    details: 'Updated revenue forecasts for August',
+    details: 'Revised August revenue forecast (+8.3%) based on new pipeline data',
     timestamp: '2026-03-17T10:15:00Z'
   },
   {
@@ -132,7 +157,7 @@ const initialActivities: Activity[] = [
     action: 'commented on',
     targetName: 'Project Alpha Architecture',
     targetType: 'Markdown',
-    details: 'Suggested using Redis for caching',
+    details: 'Suggested Redis caching layer for session management',
     timestamp: '2026-03-12T16:45:00Z'
   },
   {
@@ -144,6 +169,7 @@ const initialActivities: Activity[] = [
     action: 'created',
     targetName: 'Competitor Analysis',
     targetType: 'Markdown',
+    details: 'Initial draft covering 5 competitors with feature matrix',
     timestamp: '2026-03-19T07:00:00Z'
   },
   {
@@ -155,7 +181,7 @@ const initialActivities: Activity[] = [
     action: 'created',
     targetName: 'API Integration Guide',
     targetType: 'Markdown',
-    details: 'Initial draft with REST endpoints',
+    details: 'Documented 14 REST endpoints with auth flow examples',
     timestamp: '2026-03-20T10:00:00Z'
   },
   {
@@ -167,7 +193,7 @@ const initialActivities: Activity[] = [
     action: 'created',
     targetName: 'Revenue Dashboard',
     targetType: 'Table',
-    details: 'Built automated monthly revenue tracker',
+    details: 'Built automated monthly revenue tracker with YoY comparison',
     timestamp: '2026-03-20T14:30:00Z'
   },
   {
@@ -179,7 +205,7 @@ const initialActivities: Activity[] = [
     action: 'commented on',
     targetName: 'Q3 Financial Projections',
     targetType: 'Table',
-    details: 'Flagged discrepancy in Q2 actuals',
+    details: 'Flagged $42k discrepancy in Q2 actuals vs. reported figures',
     timestamp: '2026-03-15T09:20:00Z'
   },
   {
@@ -191,7 +217,7 @@ const initialActivities: Activity[] = [
     action: 'updated',
     targetName: 'Competitor Analysis',
     targetType: 'Markdown',
-    details: 'Added competitor pricing comparison table',
+    details: 'Added pricing comparison table across all tiers',
     timestamp: '2026-03-21T08:15:00Z'
   },
   {
@@ -203,7 +229,7 @@ const initialActivities: Activity[] = [
     action: 'created',
     targetName: 'Market Trends Report',
     targetType: 'Markdown',
-    details: 'Q1 2026 market analysis complete',
+    details: 'Q1 2026 analysis: AI tooling market grew 34% QoQ',
     timestamp: '2026-03-18T11:00:00Z'
   },
   {
@@ -215,7 +241,7 @@ const initialActivities: Activity[] = [
     action: 'updated',
     targetName: 'Project Alpha Architecture',
     targetType: 'Markdown',
-    details: 'Refactored microservice diagram',
+    details: 'Refactored microservice diagram — split auth into standalone service',
     timestamp: '2026-03-21T16:00:00Z'
   },
   {
@@ -313,6 +339,80 @@ const initialActivities: Activity[] = [
     targetType: 'Markdown',
     details: 'Finalized budget allocations',
     timestamp: '2026-03-20T16:00:00Z'
+  },
+  // Agent scheduled task — Daily Industry Digest
+  {
+    id: 'act20',
+    workspaceId: 'w1',
+    userId: 'a3',
+    userName: 'Research Bot',
+    userType: 'agent',
+    action: 'created',
+    targetName: 'Industry Digest — Mar 24',
+    targetType: 'Markdown',
+    details: 'Scheduled task: compiled 12 industry news items from 8 sources',
+    timestamp: '2026-03-24T08:00:00Z'
+  },
+  {
+    id: 'act21',
+    workspaceId: 'w1',
+    userId: 'a3',
+    userName: 'Research Bot',
+    userType: 'agent',
+    action: 'created',
+    targetName: 'Industry Digest — Mar 23',
+    targetType: 'Markdown',
+    details: 'Scheduled task: compiled 9 industry news items from 7 sources',
+    timestamp: '2026-03-23T08:00:00Z'
+  },
+  {
+    id: 'act22',
+    workspaceId: 'w1',
+    userId: 'a3',
+    userName: 'Research Bot',
+    userType: 'agent',
+    action: 'created',
+    targetName: 'Industry Digest — Mar 22',
+    targetType: 'Markdown',
+    details: 'Scheduled task: compiled 15 industry news items from 10 sources',
+    timestamp: '2026-03-22T08:00:00Z'
+  },
+  // Agent scheduled task — Daily Report
+  {
+    id: 'act23',
+    workspaceId: 'w1',
+    userId: 'a1',
+    userName: 'Claude Assistant',
+    userType: 'agent',
+    action: 'created',
+    targetName: 'Daily Report — Mar 24',
+    targetType: 'Markdown',
+    details: 'Scheduled task: summarized 6 document changes, 3 new comments, 2 tasks completed',
+    timestamp: '2026-03-24T18:00:00Z'
+  },
+  {
+    id: 'act24',
+    workspaceId: 'w1',
+    userId: 'a1',
+    userName: 'Claude Assistant',
+    userType: 'agent',
+    action: 'created',
+    targetName: 'Daily Report — Mar 23',
+    targetType: 'Markdown',
+    details: 'Scheduled task: summarized 4 document changes, 5 new comments, 1 task completed',
+    timestamp: '2026-03-23T18:00:00Z'
+  },
+  {
+    id: 'act25',
+    workspaceId: 'w1',
+    userId: 'a1',
+    userName: 'Claude Assistant',
+    userType: 'agent',
+    action: 'created',
+    targetName: 'Daily Report — Mar 22',
+    targetType: 'Markdown',
+    details: 'Scheduled task: summarized 8 document changes, 2 new comments, 4 tasks completed',
+    timestamp: '2026-03-22T18:00:00Z'
   }
 ];
 
@@ -324,7 +424,14 @@ export default function Dashboard() {
   const [permissions, setPermissions] = useState(initialPermissions);
   const [documents, setDocuments] = useState(initialDocuments);
   const [activities, setActivities] = useState(initialActivities);
-  const [activeTab, setActiveTab] = useState<'documents' | 'activity' | 'agents' | 'users' | 'members' | 'settings'>('documents');
+  const [activeTab, setActiveTabState] = useState<'documents' | 'activity' | 'agents' | 'users' | 'members' | 'settings' | 'labels'>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get('tab');
+    if (tab && ['documents', 'activity', 'agents', 'users', 'members', 'settings', 'labels'].includes(tab)) {
+      return tab as 'documents' | 'activity' | 'agents' | 'users' | 'members' | 'settings' | 'labels';
+    }
+    return 'documents';
+  });
   const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
   const [copiedStates, setCopiedStates] = useState<Record<string, boolean>>({});
   const [isCreatingAgent, setIsCreatingAgent] = useState(false);
@@ -333,8 +440,34 @@ export default function Dashboard() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [docSortBy, setDocSortBy] = useState<'lastModified' | 'lastViewed'>('lastModified');
+  const [docFilterType, setDocFilterType] = useState<string>('all');
+  const [docFilterOwner, setDocFilterOwner] = useState<string>('all');
+  const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
+  const [docFilterLabel, setDocFilterLabel] = useState<string>('all');
+  const [isLabelFilterOpen, setIsLabelFilterOpen] = useState(false);
+  const [isTypeFilterOpen, setIsTypeFilterOpen] = useState(false);
+  const [isAgentMenuOpen, setIsAgentMenuOpen] = useState(false);
+  const [agentListMenuOpen, setAgentListMenuOpen] = useState<string | null>(null);
+  const [selectedGlobalLabel, setSelectedGlobalLabel] = useState<string | null>(null);
+  const [labelFilterOwner, setLabelFilterOwner] = useState<string>('all');
+  const [labelFilterType, setLabelFilterType] = useState<string>('all');
+  const [labelSortBy, setLabelSortBy] = useState<'lastModified' | 'lastViewed'>('lastModified');
+  const [isLabelTypFilterOpen, setIsLabelTypFilterOpen] = useState(false);
+  const [isLabelSortMenuOpen, setIsLabelSortMenuOpen] = useState(false);
+  const [isLabelOwnerFilterOpen, setIsLabelOwnerFilterOpen] = useState(false);
+  const [labelFilterWorkspace, setLabelFilterWorkspace] = useState<string>('all');
+  const [isLabelWorkspaceFilterOpen, setIsLabelWorkspaceFilterOpen] = useState(false);
 
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const setActiveTab = (tab: 'documents' | 'activity' | 'agents' | 'users' | 'members' | 'settings' | 'labels') => {
+    setActiveTabState(tab);
+    const params = new URLSearchParams(window.location.search);
+    params.set('tab', tab);
+    navigate(`/dashboard?${params.toString()}`, { replace: true });
+  };
 
   useEffect(() => {
     // Show onboarding if coming from landing page with "onboarding" flag or if it's first time
@@ -368,6 +501,50 @@ export default function Dashboard() {
 
   const activeWorkspace = workspaces.find(w => w.id === activeWorkspaceId);
   const workspaceDocs = documents.filter(d => d.workspaceId === activeWorkspaceId);
+  
+  // 排序 + 筛选逻辑
+  const filteredAndSortedDocs = React.useMemo(() => {
+    let docs = [...workspaceDocs];
+    
+    // 按类型筛选
+    if (docFilterType !== 'all') {
+      docs = docs.filter(d => d.type === docFilterType);
+    }
+    
+    // 按 owner 筛选
+    if (docFilterOwner !== 'all') {
+      docs = docs.filter(d => d.creatorName === docFilterOwner);
+    }
+
+    // 按 label 筛选
+    if (docFilterLabel !== 'all') {
+      docs = docs.filter(d => d.labels.includes(docFilterLabel));
+    }
+    
+    // 排序
+    docs.sort((a, b) => {
+      const dateA = new Date(a[docSortBy]).getTime();
+      const dateB = new Date(b[docSortBy]).getTime();
+      return dateB - dateA; // 降序（最新在前）
+    });
+    
+    return docs;
+  }, [workspaceDocs, docSortBy, docFilterType, docFilterOwner, docFilterLabel]);
+
+  // 获取当前 workspace 的文档类型列表和 owner 列表（用于筛选选项）
+  const docTypes = React.useMemo(() => {
+    return Array.from(new Set(workspaceDocs.map(d => d.type)));
+  }, [workspaceDocs]);
+  
+  const docOwners = React.useMemo(() => {
+    return Array.from(new Set(workspaceDocs.map(d => d.creatorName)));
+  }, [workspaceDocs]);
+
+  const docLabels = React.useMemo(() => {
+    return Array.from(new Set(workspaceDocs.flatMap(d => d.labels))).sort();
+  }, [workspaceDocs]);
+
+  const activeFilterCount = (docFilterType !== 'all' ? 1 : 0) + (docFilterOwner !== 'all' ? 1 : 0) + (docFilterLabel !== 'all' ? 1 : 0);
   const workspaceActivities = activities.filter(a => a.workspaceId === activeWorkspaceId);
   
   const workspacePermissions = permissions.filter(p => p.workspaceId === activeWorkspaceId).map(p => {
@@ -418,13 +595,16 @@ export default function Dashboard() {
       name: type === 'Chat Log' ? 'New Chat Log' : 'Untitled',
       type: type,
       date: 'Just now',
+      lastModified: new Date().toISOString(),
+      lastViewed: new Date().toISOString(),
+      labels: [],
       creatorName: 'Human',
       creatorType: 'human'
     };
 
     setDocuments([newDoc, ...documents]);
     setIsNewDocMenuOpen(false);
-    window.location.href = `/document?type=${type.toLowerCase().replace(' ', '')}`;
+    navigate(`/document?type=${type.toLowerCase().replace(' ', '')}`);
   };
 
   const generatePrompt = (token: string) => `1. Copy the installation command to Lobster
@@ -528,6 +708,12 @@ Command: Download the zip package from https://cdn.mindx.com/static/mindx-docs.z
               active={activeTab === 'users'} 
               onClick={() => { setActiveTab('users'); setIsCreatingAgent(false); setSelectedUserId(null); }}
             />
+            <NavItem 
+              icon={<Tag className="w-4 h-4" />} 
+              label="Labels" 
+              active={activeTab === 'labels'} 
+              onClick={() => { setActiveTab('labels'); setIsCreatingAgent(false); }}
+            />
           </div>
         </div>
 
@@ -555,6 +741,7 @@ Command: Download the zip package from https://cdn.mindx.com/static/mindx-docs.z
             {activeTab === 'users' && 'Human Accounts'}
             {activeTab === 'members' && 'Access Control'}
             {activeTab === 'settings' && 'Settings'}
+            {activeTab === 'labels' && 'Labels'}
           </h1>
           <div className="flex items-center gap-4">
             <div className="relative">
@@ -565,6 +752,7 @@ Command: Download the zip package from https://cdn.mindx.com/static/mindx-docs.z
                 className="pl-9 pr-4 py-1.5 bg-stone-50 border border-stone-200 rounded-md text-sm focus:outline-none focus:border-stone-300 focus:bg-white transition-colors w-64"
               />
             </div>
+            {['documents', 'agents', 'members', 'users'].includes(activeTab) && (
             <div className="relative">
               <button 
                 onClick={() => {
@@ -633,45 +821,243 @@ Command: Download the zip package from https://cdn.mindx.com/static/mindx-docs.z
                 </>
               )}
             </div>
+            )}
           </div>
         </header>
 
         {/* Content Area */}
         <div className="flex-1 overflow-y-auto p-8">
-          <div className="max-w-5xl mx-auto space-y-8">
+          <div className={`mx-auto space-y-8 ${activeTab === 'labels' ? 'max-w-7xl' : 'max-w-5xl'}`}>
             
             {activeTab === 'documents' && (
               <motion.div 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
               >
-                <div className="border border-stone-200/80 rounded-xl overflow-hidden bg-white shadow-[0_2px_12px_rgba(0,0,0,0.02)]">
+                {/* Owner filter tabs + active filter chips */}
+                <div className="flex items-center gap-1 mb-4 flex-wrap">
+                  <button
+                    onClick={() => setDocFilterOwner('all')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                      docFilterOwner === 'all' 
+                        ? 'bg-stone-200 text-stone-700' 
+                        : 'text-stone-500 hover:bg-stone-100 hover:text-stone-700'
+                    }`}
+                  >
+                    All
+                  </button>
+                  {docOwners.map(owner => {
+                    const ownerDoc = workspaceDocs.find(d => d.creatorName === owner);
+                    return (
+                      <button
+                        key={owner}
+                        onClick={() => setDocFilterOwner(docFilterOwner === owner ? 'all' : owner)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                          docFilterOwner === owner 
+                            ? 'bg-stone-200 text-stone-700' 
+                            : 'text-stone-500 hover:bg-stone-100 hover:text-stone-700'
+                        }`}
+                      >
+                        {ownerDoc?.creatorType === 'agent' 
+                          ? <Bot className="w-3.5 h-3.5" /> 
+                          : <User className="w-3.5 h-3.5" />}
+                        {owner}
+                      </button>
+                    );
+                  })}
+
+                  {/* Active type/label filter chips */}
+                  {(docFilterType !== 'all' || docFilterLabel !== 'all') && (
+                    <>
+                      <div className="w-px h-5 bg-stone-200 mx-1.5" />
+                      {docFilterType !== 'all' && (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-sm font-medium bg-stone-100 text-stone-700">
+                          {docFilterType === 'Markdown' && <FileText className="w-3.5 h-3.5 text-stone-400" />}
+                          {docFilterType === 'Table' && <Table className="w-3.5 h-3.5 text-stone-400" />}
+                          {docFilterType === 'Whiteboard' && <Layout className="w-3.5 h-3.5 text-stone-400" />}
+                          {docFilterType === 'Chat Log' && <MessageCircle className="w-3.5 h-3.5 text-stone-400" />}
+                          {docFilterType}
+                          <button
+                            onClick={() => setDocFilterType('all')}
+                            className="ml-0.5 p-0.5 rounded-full hover:bg-stone-200 text-stone-400 hover:text-stone-600 transition-colors"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </span>
+                      )}
+                      {docFilterLabel !== 'all' && (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-sm font-medium bg-stone-100 text-stone-700">
+                          <Tag className="w-3.5 h-3.5 text-stone-400" />
+                          {docFilterLabel}
+                          <button
+                            onClick={() => setDocFilterLabel('all')}
+                            className="ml-0.5 p-0.5 rounded-full hover:bg-stone-200 text-stone-400 hover:text-stone-600 transition-colors"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </span>
+                      )}
+                    </>
+                  )}
+                </div>
+
+                <div className="border border-stone-200/80 rounded-xl bg-white shadow-[0_2px_12px_rgba(0,0,0,0.02)]" style={{ overflow: 'visible' }}>
                   <table className="w-full text-left text-sm">
-                    <thead className="bg-stone-50/50 text-stone-500 border-b border-stone-200/80">
+                    <thead className="bg-stone-50/50 text-stone-500 border-b border-stone-200/80 rounded-t-xl [&>tr>th:first-child]:rounded-tl-xl [&>tr>th:last-child]:rounded-tr-xl">
                       <tr>
-                        <th className="px-6 py-3 font-medium">Name</th>
+                        {/* Name column with Type filter */}
+                        <th className="px-6 py-3 font-medium bg-stone-50/50">
+                          <div className="relative inline-flex items-center">
+                            <button
+                              onClick={() => { setIsTypeFilterOpen(!isTypeFilterOpen); setIsSortMenuOpen(false); setIsLabelFilterOpen(false); }}
+                              className={`flex items-center gap-1.5 hover:text-stone-800 transition-colors ${docFilterType !== 'all' ? 'text-stone-900' : ''}`}
+                            >
+                              Name
+                              <ChevronDown className={`w-3 h-3 transition-transform ${isTypeFilterOpen ? 'rotate-180' : ''}`} />
+                            </button>
+                            {isTypeFilterOpen && (
+                              <>
+                                <div className="fixed inset-0 z-10" onClick={() => setIsTypeFilterOpen(false)} />
+                                <div className="absolute left-0 top-full mt-1 w-48 bg-white border border-stone-200 rounded-lg shadow-xl z-20 overflow-hidden py-1">
+                                  <div className="px-3 py-1.5 text-[10px] font-bold text-stone-400 uppercase tracking-wider">Filter by type</div>
+                                  <button
+                                    onClick={() => { setDocFilterType('all'); setIsTypeFilterOpen(false); }}
+                                    className={`w-full text-left px-3 py-1.5 text-sm transition-colors flex items-center gap-2 ${docFilterType === 'all' ? 'bg-stone-50 text-stone-900 font-medium' : 'text-stone-600 hover:bg-stone-50'}`}
+                                  >
+                                    All Types
+                                  </button>
+                                  {docTypes.map(type => (
+                                    <button
+                                      key={type}
+                                      onClick={() => { setDocFilterType(type); setIsTypeFilterOpen(false); }}
+                                      className={`w-full text-left px-3 py-1.5 text-sm transition-colors flex items-center gap-2 ${docFilterType === type ? 'bg-stone-50 text-stone-900 font-medium' : 'text-stone-600 hover:bg-stone-50'}`}
+                                    >
+                                      {type === 'Markdown' && <FileText className="w-3.5 h-3.5 text-stone-400" />}
+                                      {type === 'Table' && <Table className="w-3.5 h-3.5 text-stone-400" />}
+                                      {type === 'Whiteboard' && <Layout className="w-3.5 h-3.5 text-stone-400" />}
+                                      {type === 'Chat Log' && <MessageCircle className="w-3.5 h-3.5 text-stone-400" />}
+                                      {type}
+                                    </button>
+                                  ))}
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        </th>
+
+                        {/* Owner column (plain label) */}
                         <th className="px-6 py-3 font-medium">Owner</th>
-                        <th className="px-6 py-3 font-medium">Last Modified</th>
+
+                        {/* Labels column with Label filter */}
+                        <th className="px-6 py-3 font-medium">
+                          <div className="relative inline-flex items-center">
+                            <button
+                              onClick={() => { setIsLabelFilterOpen(!isLabelFilterOpen); setIsTypeFilterOpen(false); setIsSortMenuOpen(false); }}
+                              className={`flex items-center gap-1.5 hover:text-stone-800 transition-colors ${docFilterLabel !== 'all' ? 'text-stone-900' : ''}`}
+                            >
+                              Labels
+                              <ChevronDown className={`w-3 h-3 transition-transform ${isLabelFilterOpen ? 'rotate-180' : ''}`} />
+                            </button>
+                            {isLabelFilterOpen && (
+                              <>
+                                <div className="fixed inset-0 z-10" onClick={() => setIsLabelFilterOpen(false)} />
+                                <div className="absolute left-0 top-full mt-1 w-48 bg-white border border-stone-200 rounded-lg shadow-xl z-20 overflow-hidden py-1 max-h-64 overflow-y-auto">
+                                  <div className="px-3 py-1.5 text-[10px] font-bold text-stone-400 uppercase tracking-wider">Filter by label</div>
+                                  <button
+                                    onClick={() => { setDocFilterLabel('all'); setIsLabelFilterOpen(false); }}
+                                    className={`w-full text-left px-3 py-1.5 text-sm transition-colors flex items-center gap-2 ${docFilterLabel === 'all' ? 'bg-stone-50 text-stone-900 font-medium' : 'text-stone-600 hover:bg-stone-50'}`}
+                                  >
+                                    All Labels
+                                  </button>
+                                  {docLabels.map(label => (
+                                    <button
+                                      key={label}
+                                      onClick={() => { setDocFilterLabel(label); setIsLabelFilterOpen(false); }}
+                                      className={`w-full text-left px-3 py-1.5 text-sm transition-colors flex items-center gap-2 ${docFilterLabel === label ? 'bg-stone-50 text-stone-900 font-medium' : 'text-stone-600 hover:bg-stone-50'}`}
+                                    >
+                                      <Tag className="w-3.5 h-3.5 text-stone-400" />
+                                      {label}
+                                    </button>
+                                  ))}
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        </th>
+
+                        {/* Date column with Sort toggle */}
+                        <th className="px-6 py-3 font-medium whitespace-nowrap">
+                          <div className="relative inline-flex items-center">
+                            <button
+                              onClick={() => { setIsSortMenuOpen(!isSortMenuOpen); setIsTypeFilterOpen(false); setIsLabelFilterOpen(false); }}
+                              className="flex items-center gap-1.5 hover:text-stone-800 transition-colors whitespace-nowrap"
+                            >
+                              {docSortBy === 'lastModified' ? 'Last Modified' : 'Last Viewed'}
+                              <ArrowUpDown className="w-3 h-3" />
+                            </button>
+                            {isSortMenuOpen && (
+                              <>
+                                <div className="fixed inset-0 z-10" onClick={() => setIsSortMenuOpen(false)} />
+                                <div className="absolute left-0 top-full mt-1 w-44 bg-white border border-stone-200 rounded-lg shadow-xl z-20 overflow-hidden py-1">
+                                  <div className="px-3 py-1.5 text-[10px] font-bold text-stone-400 uppercase tracking-wider">Sort by</div>
+                                  <button
+                                    onClick={() => { setDocSortBy('lastModified'); setIsSortMenuOpen(false); }}
+                                    className={`w-full text-left px-3 py-1.5 text-sm transition-colors flex items-center gap-2 ${docSortBy === 'lastModified' ? 'bg-stone-50 text-stone-900 font-medium' : 'text-stone-600 hover:bg-stone-50'}`}
+                                  >
+                                    <Clock className="w-3.5 h-3.5 text-stone-400" />
+                                    Last Modified
+                                    {docSortBy === 'lastModified' && <Check className="w-3.5 h-3.5 text-stone-900 ml-auto" />}
+                                  </button>
+                                  <button
+                                    onClick={() => { setDocSortBy('lastViewed'); setIsSortMenuOpen(false); }}
+                                    className={`w-full text-left px-3 py-1.5 text-sm transition-colors flex items-center gap-2 ${docSortBy === 'lastViewed' ? 'bg-stone-50 text-stone-900 font-medium' : 'text-stone-600 hover:bg-stone-50'}`}
+                                  >
+                                    <Clock className="w-3.5 h-3.5 text-stone-400" />
+                                    Last Viewed
+                                    {docSortBy === 'lastViewed' && <Check className="w-3.5 h-3.5 text-stone-900 ml-auto" />}
+                                  </button>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        </th>
+
                         <th className="px-6 py-3 font-medium text-right"></th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-stone-100">
-                      {workspaceDocs.length === 0 ? (
+                      {filteredAndSortedDocs.length === 0 ? (
                         <tr>
-                          <td colSpan={4} className="px-6 py-12 text-center text-stone-500">
+                          <td colSpan={6} className="px-6 py-12 text-center text-stone-500">
                             <FileText className="w-8 h-8 mx-auto mb-3 text-stone-300" />
-                            <p>No documents in this workspace</p>
+                            {activeFilterCount > 0 ? (
+                              <div>
+                                <p>No documents match the current filters</p>
+                                <button
+                                  onClick={() => { setDocFilterType('all'); setDocFilterOwner('all'); setDocFilterLabel('all'); }}
+                                  className="mt-2 text-sm text-stone-600 underline hover:text-stone-900 transition-colors"
+                                >
+                                  Clear filters
+                                </button>
+                              </div>
+                            ) : (
+                              <p>No documents in this workspace</p>
+                            )}
                           </td>
                         </tr>
                       ) : (
-                        workspaceDocs.map(doc => (
+                        filteredAndSortedDocs.map(doc => (
                           <DocRow 
                             key={doc.id}
+                            docId={doc.id}
                             name={doc.name} 
                             type={doc.type} 
-                            date={doc.date} 
+                            date={docSortBy === 'lastModified' ? doc.lastModified : doc.lastViewed}
+                            labels={doc.labels}
                             creatorName={doc.creatorName}
                             creatorType={doc.creatorType}
+                            onDelete={(id) => setDocuments(prev => prev.filter(d => d.id !== id))}
+                            onLabelClick={(label) => { setSelectedGlobalLabel(label); setActiveTab('labels'); }}
                           />
                         ))
                       )}
@@ -768,9 +1154,47 @@ Command: Download the zip package from https://cdn.mindx.com/static/mindx-docs.z
                               <p className="text-xs text-stone-500 font-medium">Global Agent Account</p>
                             </div>
                           </div>
-                          <button className="p-1.5 rounded-md hover:bg-stone-100 text-stone-400 transition-colors">
-                            <MoreVertical className="w-4 h-4" />
-                          </button>
+                          <div className="relative">
+                            <button 
+                              onClick={() => setIsAgentMenuOpen(!isAgentMenuOpen)}
+                              className="p-1.5 rounded-md hover:bg-stone-100 text-stone-400 transition-colors"
+                            >
+                              <MoreVertical className="w-4 h-4" />
+                            </button>
+                            {isAgentMenuOpen && (
+                              <>
+                                <div className="fixed inset-0 z-10" onClick={() => setIsAgentMenuOpen(false)} />
+                                <div className="absolute right-0 top-full mt-1 w-52 bg-white border border-stone-200 rounded-lg shadow-xl z-20 overflow-hidden py-1">
+                                  <button
+                                    onClick={() => setIsAgentMenuOpen(false)}
+                                    className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
+                                  >
+                                    <Shield className="w-4 h-4 text-stone-400" />
+                                    Manage Permissions
+                                  </button>
+                                  <button
+                                    onClick={() => setIsAgentMenuOpen(false)}
+                                    className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
+                                  >
+                                    <StopCircle className="w-4 h-4 text-stone-400" />
+                                    Stop Sync
+                                  </button>
+                                  <div className="border-t border-stone-100 my-0.5" />
+                                  <button
+                                    onClick={() => {
+                                      setIsAgentMenuOpen(false);
+                                      setAgents(prev => prev.filter(a => a.id !== selectedAgentId));
+                                      setSelectedAgentId(null);
+                                    }}
+                                    className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                                  >
+                                    <Trash2 className="w-4 h-4 text-red-400" />
+                                    Delete
+                                  </button>
+                                </div>
+                              </>
+                            )}
+                          </div>
                         </div>
                         
                         <div className="grid md:grid-cols-2 gap-6">
@@ -826,7 +1250,12 @@ Command: Download the zip package from https://cdn.mindx.com/static/mindx-docs.z
                                   <p className="text-sm text-stone-600 leading-relaxed">
                                     <span className="font-bold text-stone-900">{activity.userName}</span>
                                     {' '}{activity.action}{' '}
-                                    <span className="font-medium text-stone-900">{activity.targetName}</span>
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); navigate(`/document?type=${activity.targetType.toLowerCase().replace(' ', '')}`); }}
+                                      className="font-medium text-stone-900 hover:underline"
+                                    >
+                                      {activity.targetName}
+                                    </button>
                                     {activity.details && (
                                       <span className="text-stone-400 italic"> — {activity.details}</span>
                                     )}
@@ -869,35 +1298,111 @@ Command: Download the zip package from https://cdn.mindx.com/static/mindx-docs.z
                 ) : (
                   agents.map(agent => {
                     const agentActivityCount = activities.filter(a => a.userId === agent.id).length;
+                    const recentActivities = activities
+                      .filter(a => a.userId === agent.id)
+                      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+                      .slice(0, 3);
+
                     return (
                       <div 
                         key={agent.id} 
                         onClick={() => setSelectedAgentId(agent.id)}
-                        className="p-5 rounded-xl border border-stone-200/80 bg-white shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_20px_rgba(0,0,0,0.06)] transition-all duration-300 cursor-pointer group"
+                        className="rounded-xl bg-white border border-stone-200/80 shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_20px_rgba(0,0,0,0.06)] transition-all duration-300 cursor-pointer group"
                       >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-stone-50 border border-stone-200/60 flex items-center justify-center text-stone-700 shadow-sm">
-                              <Bot className="w-5 h-5" />
+                        {/* Header */}
+                        <div className="p-5 pb-0">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full bg-stone-50 border border-stone-200/60 flex items-center justify-center text-stone-700 shadow-sm">
+                                <Bot className="w-5 h-5" />
+                              </div>
+                              <div>
+                                <h2 className="text-base font-semibold text-stone-900 tracking-tight group-hover:text-stone-700 transition-colors">{agent.name}</h2>
+                                <p className="text-xs text-stone-400 font-medium mt-0.5">Global Agent Account</p>
+                              </div>
                             </div>
-                            <div>
-                              <h2 className="text-base font-semibold text-stone-900 tracking-tight group-hover:text-stone-700 transition-colors">{agent.name}</h2>
-                              <p className="text-xs text-stone-500 font-medium">Global Agent Account</p>
+                            <div className="flex items-center gap-3">
+                              <span className="text-xs text-stone-400 font-medium flex items-center gap-1">
+                                <ActivityIcon className="w-3.5 h-3.5" />
+                                {agentActivityCount} activities
+                              </span>
+                              <div className="relative">
+                              <button 
+                                className="p-1.5 rounded-md hover:bg-stone-100 text-stone-400 transition-colors opacity-0 group-hover:opacity-100"
+                                onClick={(e) => { e.stopPropagation(); setAgentListMenuOpen(agentListMenuOpen === agent.id ? null : agent.id); }}
+                              >
+                                <MoreVertical className="w-4 h-4" />
+                              </button>
+                              {agentListMenuOpen === agent.id && (
+                                <>
+                                  <div className="fixed inset-0 z-10" onClick={(e) => { e.stopPropagation(); setAgentListMenuOpen(null); }} />
+                                  <div className="absolute right-0 top-full mt-1 w-52 bg-white border border-stone-200 rounded-lg shadow-xl z-20 overflow-hidden py-1">
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); setAgentListMenuOpen(null); }}
+                                      className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
+                                    >
+                                      <Shield className="w-4 h-4 text-stone-400" />
+                                      Manage Permissions
+                                    </button>
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); setAgentListMenuOpen(null); }}
+                                      className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
+                                    >
+                                      <StopCircle className="w-4 h-4 text-stone-400" />
+                                      Stop Sync
+                                    </button>
+                                    <div className="border-t border-stone-100 my-0.5" />
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setAgentListMenuOpen(null);
+                                        setAgents(prev => prev.filter(a => a.id !== agent.id));
+                                      }}
+                                      className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                                    >
+                                      <Trash2 className="w-4 h-4 text-red-400" />
+                                      Delete
+                                    </button>
+                                  </div>
+                                </>
+                              )}
                             </div>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <span className="text-xs text-stone-400 font-medium flex items-center gap-1">
-                              <ActivityIcon className="w-3.5 h-3.5" />
-                              {agentActivityCount} activities
-                            </span>
-                            <button 
-                              className="p-1.5 rounded-md hover:bg-stone-100 text-stone-400 transition-colors opacity-0 group-hover:opacity-100"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <MoreVertical className="w-4 h-4" />
-                            </button>
+                            </div>
                           </div>
                         </div>
+
+                        {/* Recent 3 activities */}
+                        {recentActivities.length > 0 && (
+                          <div className="mt-3.5 mx-5 mb-5 pt-3.5 border-t border-stone-100 space-y-1.5">
+                            {recentActivities.map(activity => (
+                              <div key={activity.id} className="flex items-start gap-2 text-xs leading-relaxed">
+                                <span className="text-stone-300 shrink-0 w-12 text-right font-medium pt-px">
+                                  {(() => {
+                                    const date = new Date(activity.timestamp);
+                                    const now = new Date();
+                                    const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+                                    if (diffDays === 0) return 'Today';
+                                    if (diffDays === 1) return '1d ago';
+                                    if (diffDays < 7) return `${diffDays}d ago`;
+                                    return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+                                  })()}
+                                </span>
+                                <span className="text-stone-500 min-w-0">
+                                  <span className="text-stone-400">{activity.action} </span>
+                                  <span className="font-semibold text-stone-800">{activity.targetName}</span>
+                                  {activity.details && (
+                                    <span className="text-stone-400"> — {activity.details}</span>
+                                  )}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {recentActivities.length === 0 && (
+                          <div className="mt-3.5 mx-5 mb-5 pt-3.5 border-t border-stone-100">
+                            <p className="text-xs text-stone-300 italic">No recent activity</p>
+                          </div>
+                        )}
                       </div>
                     );
                   })
@@ -963,7 +1468,12 @@ Command: Download the zip package from https://cdn.mindx.com/static/mindx-docs.z
                                   <p className="text-sm text-stone-600 leading-relaxed">
                                     <span className="font-bold text-stone-900">{activity.userName}</span>
                                     {' '}{activity.action}{' '}
-                                    <span className="font-medium text-stone-900">{activity.targetName}</span>
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); navigate(`/document?type=${activity.targetType.toLowerCase().replace(' ', '')}`); }}
+                                      className="font-medium text-stone-900 hover:underline"
+                                    >
+                                      {activity.targetName}
+                                    </button>
                                     {activity.details && (
                                       <span className="text-stone-400 italic"> — {activity.details}</span>
                                     )}
@@ -1123,6 +1633,401 @@ Command: Download the zip package from https://cdn.mindx.com/static/mindx-docs.z
               </motion.div>
             )}
 
+            {activeTab === 'labels' && (
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                {(() => {
+                  // 收集所有文档的全局 labels（跨 workspace）
+                  const allLabels = Array.from(new Set(documents.flatMap(d => d.labels))).sort();
+                  const activeLabel = selectedGlobalLabel || (allLabels.length > 0 ? allLabels[0] : null);
+                  const labelDocs = activeLabel 
+                    ? documents.filter(d => d.labels.includes(activeLabel))
+                    : [];
+
+                  return allLabels.length === 0 ? (
+                    <div className="py-20 text-center">
+                      <Tag className="w-12 h-12 text-stone-200 mx-auto mb-4" />
+                      <h3 className="text-sm font-medium text-stone-900 mb-1">No Labels Yet</h3>
+                      <p className="text-stone-400 text-sm">Labels will appear here once documents are tagged.</p>
+                    </div>
+                  ) : (
+                    <div className="flex gap-8">
+                      {/* Label list sidebar */}
+                      <div className="w-52 shrink-0 space-y-1">
+                        <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider px-2 mb-3">All Labels</p>
+                        {allLabels.map(label => {
+                          const count = documents.filter(d => d.labels.includes(label)).length;
+                          return (
+                            <button
+                              key={label}
+                              onClick={() => { setSelectedGlobalLabel(label); setLabelFilterOwner('all'); setLabelFilterType('all'); setLabelFilterWorkspace('all'); }}
+                              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                                activeLabel === label 
+                                  ? 'bg-white text-stone-900 shadow-[0_1px_3px_rgba(0,0,0,0.05)] border border-stone-200/50' 
+                                  : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900 border border-transparent'
+                              }`}
+                            >
+                              <span className="flex items-center gap-2 min-w-0">
+                                <Tag className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+                                <span className="truncate">{label}</span>
+                              </span>
+                              <span className={`text-xs tabular-nums ml-2 shrink-0 ${
+                                activeLabel === label ? 'text-stone-500' : 'text-stone-400'
+                              }`}>{count}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Documents for selected label */}
+                      <div className="flex-1 min-w-0">
+                        {activeLabel && (
+                          <>
+                            {(() => {
+                              // 筛选 + 排序逻辑
+                              const labelOwners = Array.from(new Set(labelDocs.map(d => d.creatorName)));
+                              const labelTypes = Array.from(new Set(labelDocs.map(d => d.type)));
+                              const labelWorkspaces = Array.from(new Set(labelDocs.map(d => d.workspaceId))).map(wsId => {
+                                const ws = workspaces.find(w => w.id === wsId);
+                                return { id: wsId, name: ws?.name || 'Unknown' };
+                              });
+                              let filteredLabelDocs = [...labelDocs];
+                              if (labelFilterOwner !== 'all') {
+                                filteredLabelDocs = filteredLabelDocs.filter(d => d.creatorName === labelFilterOwner);
+                              }
+                              if (labelFilterType !== 'all') {
+                                filteredLabelDocs = filteredLabelDocs.filter(d => d.type === labelFilterType);
+                              }
+                              if (labelFilterWorkspace !== 'all') {
+                                filteredLabelDocs = filteredLabelDocs.filter(d => d.workspaceId === labelFilterWorkspace);
+                              }
+                              filteredLabelDocs.sort((a, b) => {
+                                const dateA = new Date(a[labelSortBy]).getTime();
+                                const dateB = new Date(b[labelSortBy]).getTime();
+                                return dateB - dateA;
+                              });
+
+                              const formatDate = (dateStr: string) => {
+                                const dateObj = new Date(dateStr);
+                                if (isNaN(dateObj.getTime())) return dateStr;
+                                const now = new Date();
+                                const diffMs = now.getTime() - dateObj.getTime();
+                                const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+                                const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                                if (diffHours < 1) return 'Just now';
+                                if (diffHours < 24) return `${diffHours}h ago`;
+                                if (diffDays === 1) return 'Yesterday';
+                                if (diffDays < 7) return `${diffDays}d ago`;
+                                return dateObj.toLocaleDateString([], { month: 'short', day: 'numeric' });
+                              };
+
+                              return (
+                                <>
+                                  {/* Header: label badge + doc count */}
+                                  <div className="flex items-center gap-3 mb-4">
+                                    <div className="flex items-center gap-2 bg-stone-100 px-3 py-1.5 rounded-lg">
+                                      <Tag className="w-4 h-4 text-stone-500" />
+                                      <span className="text-sm font-semibold text-stone-900">{activeLabel}</span>
+                                    </div>
+                                    <span className="text-xs text-stone-400 font-medium">{labelDocs.length} document{labelDocs.length !== 1 ? 's' : ''} across workspaces</span>
+                                  </div>
+
+                                  {/* Active filter chips */}
+                                  {(labelFilterType !== 'all' || labelFilterOwner !== 'all' || labelFilterWorkspace !== 'all') && (
+                                    <div className="flex items-center gap-1.5 mb-4 flex-wrap">
+                                      {labelFilterType !== 'all' && (
+                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-sm font-medium bg-stone-100 text-stone-700">
+                                          {labelFilterType === 'Markdown' && <FileText className="w-3.5 h-3.5 text-stone-400" />}
+                                          {labelFilterType === 'Table' && <Table className="w-3.5 h-3.5 text-stone-400" />}
+                                          {labelFilterType === 'Whiteboard' && <Layout className="w-3.5 h-3.5 text-stone-400" />}
+                                          {labelFilterType === 'Chat Log' && <MessageCircle className="w-3.5 h-3.5 text-stone-400" />}
+                                          {labelFilterType}
+                                          <button
+                                            onClick={() => setLabelFilterType('all')}
+                                            className="ml-0.5 p-0.5 rounded-full hover:bg-stone-200 text-stone-400 hover:text-stone-600 transition-colors"
+                                          >
+                                            <X className="w-3 h-3" />
+                                          </button>
+                                        </span>
+                                      )}
+                                      {labelFilterOwner !== 'all' && (
+                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-sm font-medium bg-stone-100 text-stone-700">
+                                          {labelDocs.find(d => d.creatorName === labelFilterOwner)?.creatorType === 'agent'
+                                            ? <Bot className="w-3.5 h-3.5 text-stone-400" />
+                                            : <User className="w-3.5 h-3.5 text-stone-400" />}
+                                          {labelFilterOwner}
+                                          <button
+                                            onClick={() => setLabelFilterOwner('all')}
+                                            className="ml-0.5 p-0.5 rounded-full hover:bg-stone-200 text-stone-400 hover:text-stone-600 transition-colors"
+                                          >
+                                            <X className="w-3 h-3" />
+                                          </button>
+                                        </span>
+                                      )}
+                                      {labelFilterWorkspace !== 'all' && (
+                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-sm font-medium bg-stone-100 text-stone-700">
+                                          {labelWorkspaces.find(ws => ws.id === labelFilterWorkspace)?.name || 'Unknown'}
+                                          <button
+                                            onClick={() => setLabelFilterWorkspace('all')}
+                                            className="ml-0.5 p-0.5 rounded-full hover:bg-stone-200 text-stone-400 hover:text-stone-600 transition-colors"
+                                          >
+                                            <X className="w-3 h-3" />
+                                          </button>
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
+
+                                  {/* Table */}
+                                  <div className="border border-stone-200/80 rounded-xl bg-white shadow-[0_2px_12px_rgba(0,0,0,0.02)] overflow-hidden" style={{ overflow: 'visible' }}>
+                                    <table className="w-full text-left text-sm">
+                                      <thead className="bg-stone-50/50 text-stone-500 border-b border-stone-200/80 [&>tr>th:first-child]:rounded-tl-xl [&>tr>th:last-child]:rounded-tr-xl">
+                                        <tr>
+                                          {/* Name column with Type filter */}
+                                          <th className="px-6 py-3 font-medium whitespace-nowrap bg-stone-50/50">
+                                            <div className="relative inline-flex items-center">
+                                              <button
+                                                onClick={() => { setIsLabelTypFilterOpen(!isLabelTypFilterOpen); setIsLabelSortMenuOpen(false); setIsLabelOwnerFilterOpen(false); setIsLabelWorkspaceFilterOpen(false); }}
+                                                className={`flex items-center gap-1.5 hover:text-stone-800 transition-colors ${labelFilterType !== 'all' ? 'text-stone-900' : ''}`}
+                                              >
+                                                Name
+                                                <ChevronDown className={`w-3 h-3 transition-transform ${isLabelTypFilterOpen ? 'rotate-180' : ''}`} />
+                                              </button>
+                                              {isLabelTypFilterOpen && (
+                                                <>
+                                                  <div className="fixed inset-0 z-10" onClick={() => setIsLabelTypFilterOpen(false)} />
+                                                  <div className="absolute left-0 top-full mt-1 w-48 bg-white border border-stone-200 rounded-lg shadow-xl z-20 overflow-hidden py-1">
+                                                    <div className="px-3 py-1.5 text-[10px] font-bold text-stone-400 uppercase tracking-wider">Filter by type</div>
+                                                    <button
+                                                      onClick={() => { setLabelFilterType('all'); setIsLabelTypFilterOpen(false); }}
+                                                      className={`w-full text-left px-3 py-1.5 text-sm transition-colors flex items-center gap-2 ${labelFilterType === 'all' ? 'bg-stone-50 text-stone-900 font-medium' : 'text-stone-600 hover:bg-stone-50'}`}
+                                                    >
+                                                      All Types
+                                                    </button>
+                                                    {labelTypes.map(type => (
+                                                      <button
+                                                        key={type}
+                                                        onClick={() => { setLabelFilterType(type); setIsLabelTypFilterOpen(false); }}
+                                                        className={`w-full text-left px-3 py-1.5 text-sm transition-colors flex items-center gap-2 ${labelFilterType === type ? 'bg-stone-50 text-stone-900 font-medium' : 'text-stone-600 hover:bg-stone-50'}`}
+                                                      >
+                                                        {type === 'Markdown' && <FileText className="w-3.5 h-3.5 text-stone-400" />}
+                                                        {type === 'Table' && <Table className="w-3.5 h-3.5 text-stone-400" />}
+                                                        {type === 'Whiteboard' && <Layout className="w-3.5 h-3.5 text-stone-400" />}
+                                                        {type === 'Chat Log' && <MessageCircle className="w-3.5 h-3.5 text-stone-400" />}
+                                                        {type}
+                                                      </button>
+                                                    ))}
+                                                  </div>
+                                                </>
+                                              )}
+                                            </div>
+                                          </th>
+                                          {/* Workspace column with filter */}
+                                          <th className="px-6 py-3 font-medium whitespace-nowrap">
+                                            <div className="relative inline-flex items-center">
+                                              <button
+                                                onClick={() => { setIsLabelWorkspaceFilterOpen(!isLabelWorkspaceFilterOpen); setIsLabelTypFilterOpen(false); setIsLabelSortMenuOpen(false); setIsLabelOwnerFilterOpen(false); }}
+                                                className={`flex items-center gap-1.5 hover:text-stone-800 transition-colors ${labelFilterWorkspace !== 'all' ? 'text-stone-900' : ''}`}
+                                              >
+                                                Workspace
+                                                <ChevronDown className={`w-3 h-3 transition-transform ${isLabelWorkspaceFilterOpen ? 'rotate-180' : ''}`} />
+                                              </button>
+                                              {isLabelWorkspaceFilterOpen && (
+                                                <>
+                                                  <div className="fixed inset-0 z-10" onClick={() => setIsLabelWorkspaceFilterOpen(false)} />
+                                                  <div className="absolute left-0 top-full mt-1 w-48 bg-white border border-stone-200 rounded-lg shadow-xl z-20 overflow-hidden py-1">
+                                                    <div className="px-3 py-1.5 text-[10px] font-bold text-stone-400 uppercase tracking-wider">Filter by workspace</div>
+                                                    <button
+                                                      onClick={() => { setLabelFilterWorkspace('all'); setIsLabelWorkspaceFilterOpen(false); }}
+                                                      className={`w-full text-left px-3 py-1.5 text-sm transition-colors flex items-center gap-2 ${labelFilterWorkspace === 'all' ? 'bg-stone-50 text-stone-900 font-medium' : 'text-stone-600 hover:bg-stone-50'}`}
+                                                    >
+                                                      All Workspaces
+                                                    </button>
+                                                    {labelWorkspaces.map(ws => (
+                                                      <button
+                                                        key={ws.id}
+                                                        onClick={() => { setLabelFilterWorkspace(ws.id); setIsLabelWorkspaceFilterOpen(false); }}
+                                                        className={`w-full text-left px-3 py-1.5 text-sm transition-colors flex items-center gap-2 ${labelFilterWorkspace === ws.id ? 'bg-stone-50 text-stone-900 font-medium' : 'text-stone-600 hover:bg-stone-50'}`}
+                                                      >
+                                                        {ws.name}
+                                                        {labelFilterWorkspace === ws.id && <Check className="w-3.5 h-3.5 text-stone-900 ml-auto" />}
+                                                      </button>
+                                                    ))}
+                                                  </div>
+                                                </>
+                                              )}
+                                            </div>
+                                          </th>
+                                          {/* Owner column with filter */}
+                                          <th className="px-6 py-3 font-medium whitespace-nowrap">
+                                            <div className="relative inline-flex items-center">
+                                              <button
+                                                onClick={() => { setIsLabelOwnerFilterOpen(!isLabelOwnerFilterOpen); setIsLabelTypFilterOpen(false); setIsLabelSortMenuOpen(false); setIsLabelWorkspaceFilterOpen(false); }}
+                                                className={`flex items-center gap-1.5 hover:text-stone-800 transition-colors ${labelFilterOwner !== 'all' ? 'text-stone-900' : ''}`}
+                                              >
+                                                Owner
+                                                <ChevronDown className={`w-3 h-3 transition-transform ${isLabelOwnerFilterOpen ? 'rotate-180' : ''}`} />
+                                              </button>
+                                              {isLabelOwnerFilterOpen && (
+                                                <>
+                                                  <div className="fixed inset-0 z-10" onClick={() => setIsLabelOwnerFilterOpen(false)} />
+                                                  <div className="absolute left-0 top-full mt-1 w-48 bg-white border border-stone-200 rounded-lg shadow-xl z-20 overflow-hidden py-1">
+                                                    <div className="px-3 py-1.5 text-[10px] font-bold text-stone-400 uppercase tracking-wider">Filter by owner</div>
+                                                    <button
+                                                      onClick={() => { setLabelFilterOwner('all'); setIsLabelOwnerFilterOpen(false); }}
+                                                      className={`w-full text-left px-3 py-1.5 text-sm transition-colors flex items-center gap-2 ${labelFilterOwner === 'all' ? 'bg-stone-50 text-stone-900 font-medium' : 'text-stone-600 hover:bg-stone-50'}`}
+                                                    >
+                                                      All Owners
+                                                    </button>
+                                                    {labelOwners.map(owner => {
+                                                      const ownerDoc = labelDocs.find(d => d.creatorName === owner);
+                                                      return (
+                                                        <button
+                                                          key={owner}
+                                                          onClick={() => { setLabelFilterOwner(owner); setIsLabelOwnerFilterOpen(false); }}
+                                                          className={`w-full text-left px-3 py-1.5 text-sm transition-colors flex items-center gap-2 ${labelFilterOwner === owner ? 'bg-stone-50 text-stone-900 font-medium' : 'text-stone-600 hover:bg-stone-50'}`}
+                                                        >
+                                                          {ownerDoc?.creatorType === 'agent'
+                                                            ? <Bot className="w-3.5 h-3.5 text-stone-400" />
+                                                            : <User className="w-3.5 h-3.5 text-stone-400" />}
+                                                          {owner}
+                                                          {labelFilterOwner === owner && <Check className="w-3.5 h-3.5 text-stone-900 ml-auto" />}
+                                                        </button>
+                                                      );
+                                                    })}
+                                                  </div>
+                                                </>
+                                              )}
+                                            </div>
+                                          </th>
+                                          <th className="px-6 py-3 font-medium whitespace-nowrap">Labels</th>
+                                          {/* Date column with Sort toggle */}
+                                          <th className="px-6 py-3 font-medium whitespace-nowrap">
+                                            <div className="relative inline-flex items-center">
+                                              <button
+                                                onClick={() => { setIsLabelSortMenuOpen(!isLabelSortMenuOpen); setIsLabelTypFilterOpen(false); setIsLabelOwnerFilterOpen(false); setIsLabelWorkspaceFilterOpen(false); }}
+                                                className="flex items-center gap-1.5 hover:text-stone-800 transition-colors whitespace-nowrap"
+                                              >
+                                                {labelSortBy === 'lastModified' ? 'Last Modified' : 'Last Viewed'}
+                                                <ArrowUpDown className="w-3 h-3" />
+                                              </button>
+                                              {isLabelSortMenuOpen && (
+                                                <>
+                                                  <div className="fixed inset-0 z-10" onClick={() => setIsLabelSortMenuOpen(false)} />
+                                                  <div className="absolute left-0 top-full mt-1 w-44 bg-white border border-stone-200 rounded-lg shadow-xl z-20 overflow-hidden py-1">
+                                                    <div className="px-3 py-1.5 text-[10px] font-bold text-stone-400 uppercase tracking-wider">Sort by</div>
+                                                    <button
+                                                      onClick={() => { setLabelSortBy('lastModified'); setIsLabelSortMenuOpen(false); }}
+                                                      className={`w-full text-left px-3 py-1.5 text-sm transition-colors flex items-center gap-2 ${labelSortBy === 'lastModified' ? 'bg-stone-50 text-stone-900 font-medium' : 'text-stone-600 hover:bg-stone-50'}`}
+                                                    >
+                                                      <Clock className="w-3.5 h-3.5 text-stone-400" />
+                                                      Last Modified
+                                                      {labelSortBy === 'lastModified' && <Check className="w-3.5 h-3.5 text-stone-900 ml-auto" />}
+                                                    </button>
+                                                    <button
+                                                      onClick={() => { setLabelSortBy('lastViewed'); setIsLabelSortMenuOpen(false); }}
+                                                      className={`w-full text-left px-3 py-1.5 text-sm transition-colors flex items-center gap-2 ${labelSortBy === 'lastViewed' ? 'bg-stone-50 text-stone-900 font-medium' : 'text-stone-600 hover:bg-stone-50'}`}
+                                                    >
+                                                      <Clock className="w-3.5 h-3.5 text-stone-400" />
+                                                      Last Viewed
+                                                      {labelSortBy === 'lastViewed' && <Check className="w-3.5 h-3.5 text-stone-900 ml-auto" />}
+                                                    </button>
+                                                  </div>
+                                                </>
+                                              )}
+                                            </div>
+                                          </th>
+                                        </tr>
+                                      </thead>
+                                      <tbody className="divide-y divide-stone-100">
+                                        {filteredLabelDocs.length === 0 ? (
+                                          <tr>
+                                            <td colSpan={5} className="px-6 py-12 text-center text-stone-500">
+                                              <FileText className="w-8 h-8 mx-auto mb-3 text-stone-300" />
+                                              <p>No documents match the current filters</p>
+                                              <button
+                                                onClick={() => { setLabelFilterOwner('all'); setLabelFilterType('all'); setLabelFilterWorkspace('all'); }}
+                                                className="mt-2 text-sm text-stone-900 font-medium hover:underline"
+                                              >
+                                                Clear all filters
+                                              </button>
+                                            </td>
+                                          </tr>
+                                        ) : (
+                                          filteredLabelDocs.map(doc => {
+                                            const ws = workspaces.find(w => w.id === doc.workspaceId);
+                                            return (
+                                              <tr 
+                                                key={doc.id} 
+                                                className="hover:bg-stone-50 transition-colors cursor-pointer group"
+                                                onClick={() => navigate(`/document?type=${doc.type.toLowerCase().replace(' ', '')}`)}
+                                              >
+                                                <td className="px-6 py-3 whitespace-nowrap">
+                                                  <div className="flex items-center gap-3">
+                                                    {doc.type === 'Table' && <Table className="w-4 h-4 text-stone-400 shrink-0" />}
+                                                    {doc.type === 'Whiteboard' && <Layout className="w-4 h-4 text-stone-400 shrink-0" />}
+                                                    {doc.type === 'Chat Log' && <MessageCircle className="w-4 h-4 text-stone-400 shrink-0" />}
+                                                    {(doc.type === 'Markdown' || !['Table', 'Whiteboard', 'Chat Log'].includes(doc.type)) && <FileText className="w-4 h-4 text-stone-400 shrink-0" />}
+                                                    <span className="font-medium text-stone-800">{doc.name}</span>
+                                                  </div>
+                                                </td>
+                                                <td className="px-6 py-3 whitespace-nowrap">
+                                                  <span className="inline-flex items-center gap-1.5 text-xs font-medium text-stone-500 bg-stone-50 px-2 py-0.5 rounded-md border border-stone-200/50">
+                                                    {ws?.name || 'Unknown'}
+                                                  </span>
+                                                </td>
+                                                <td className="px-6 py-3 whitespace-nowrap">
+                                                  <div className="flex items-center gap-2 text-stone-500">
+                                                    {doc.creatorType === 'agent' ? (
+                                                      <div className="w-5 h-5 rounded bg-stone-100 flex items-center justify-center text-stone-500 shrink-0">
+                                                        <Bot className="w-3 h-3" />
+                                                      </div>
+                                                    ) : (
+                                                      <div className="w-5 h-5 rounded bg-stone-100 flex items-center justify-center text-stone-500 shrink-0">
+                                                        <User className="w-3 h-3" />
+                                                      </div>
+                                                    )}
+                                                    <span className="text-sm">{doc.creatorName}</span>
+                                                  </div>
+                                                </td>
+                                                <td className="px-6 py-3 whitespace-nowrap">
+                                                  <div className="flex items-center gap-1.5">
+                                                    {doc.labels.map(l => (
+                                                      <span
+                                                        key={l}
+                                                        className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${
+                                                          l === activeLabel
+                                                            ? 'bg-stone-200 text-stone-700'
+                                                            : 'bg-stone-100 text-stone-600'
+                                                        }`}
+                                                      >
+                                                        {l}
+                                                      </span>
+                                                    ))}
+                                                  </div>
+                                                </td>
+                                                <td className="px-6 py-3 text-stone-500 text-sm whitespace-nowrap">{formatDate(labelSortBy === 'lastModified' ? doc.lastModified : doc.lastViewed)}</td>
+                                              </tr>
+                                            );
+                                          })
+                                        )}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                </>
+                              );
+                            })()}
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </motion.div>
+            )}
+
           </div>
         </div>
       </main>
@@ -1148,30 +2053,78 @@ function NavItem({ icon, label, active = false, onClick }: { icon: React.ReactNo
 
 interface DocRowProps {
   key?: string | number;
+  docId: string;
   name: string;
   type: string;
   date: string;
+  labels: string[];
   creatorName: string;
   creatorType: 'human' | 'agent';
+  onDelete: (id: string) => void;
+  onLabelClick?: (label: string) => void;
 }
 
-function DocRow({ name, type, date, creatorName, creatorType }: DocRowProps) {
+function DocRow({ docId, name, type, date, labels, creatorName, creatorType, onDelete, onLabelClick }: DocRowProps) {
+  const navigate = useNavigate();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
   const getDocIcon = () => {
     switch (type.toLowerCase()) {
       case 'table':
-        return <Table className="w-4 h-4 text-stone-400" />;
+        return <Table className="w-4 h-4 text-stone-400 shrink-0" />;
       case 'whiteboard':
-        return <Layout className="w-4 h-4 text-stone-400" />;
+        return <Layout className="w-4 h-4 text-stone-400 shrink-0" />;
       case 'chat log':
-        return <MessageCircle className="w-4 h-4 text-stone-400" />;
+        return <MessageCircle className="w-4 h-4 text-stone-400 shrink-0" />;
       case 'markdown':
       default:
-        return <FileText className="w-4 h-4 text-stone-400" />;
+        return <FileText className="w-4 h-4 text-stone-400 shrink-0" />;
     }
   };
 
+  const formatDate = (dateStr: string) => {
+    const dateObj = new Date(dateStr);
+    if (isNaN(dateObj.getTime())) return dateStr;
+    
+    const now = new Date();
+    const diffMs = now.getTime() - dateObj.getTime();
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    if (diffMinutes < 1) return 'Just now';
+    if (diffMinutes < 60) return `${diffMinutes} min ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays < 14) return 'Last week';
+    return dateObj.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  const handleDownload = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsMenuOpen(false);
+    // 模拟下载：生成一个文本文件并触发下载
+    const content = `# ${name}\n\nType: ${type}\nCreated by: ${creatorName}\nDate: ${date}\n`;
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${name.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '-')}.md`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsMenuOpen(false);
+    onDelete(docId);
+  };
+
   return (
-    <tr className="hover:bg-stone-50 transition-colors group cursor-pointer" onClick={() => window.location.href = `/document?type=${type.toLowerCase().replace(' ', '')}`}>
+    <tr className="hover:bg-stone-50 transition-colors group cursor-pointer" onClick={() => navigate(`/document?type=${type.toLowerCase().replace(' ', '')}`)}>
       <td className="px-6 py-3">
         <div className="flex items-center gap-3">
           {getDocIcon()}
@@ -1181,22 +2134,66 @@ function DocRow({ name, type, date, creatorName, creatorType }: DocRowProps) {
       <td className="px-6 py-3">
         <div className="flex items-center gap-2 text-stone-500">
           {creatorType === 'agent' ? (
-            <div className="w-5 h-5 rounded bg-stone-100 flex items-center justify-center text-stone-500" title="Agent">
+            <div className="w-5 h-5 rounded bg-stone-100 flex items-center justify-center text-stone-500 shrink-0" title="Agent">
               <Bot className="w-3 h-3" />
             </div>
           ) : (
-            <div className="w-5 h-5 rounded bg-stone-100 flex items-center justify-center text-stone-500" title="Human">
+            <div className="w-5 h-5 rounded bg-stone-100 flex items-center justify-center text-stone-500 shrink-0" title="Human">
               <User className="w-3 h-3" />
             </div>
           )}
           <span className="text-sm">{creatorName}</span>
         </div>
       </td>
-      <td className="px-6 py-3 text-stone-500 text-sm">{date}</td>
+      <td className="px-6 py-3">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {labels.map(label => (
+            <button
+              key={label}
+              onClick={(e) => { e.stopPropagation(); onLabelClick?.(label); }}
+              className="inline-flex items-center gap-1 bg-stone-100 text-stone-600 text-xs font-medium px-2 py-0.5 rounded-full hover:bg-stone-200 hover:text-stone-800 transition-colors cursor-pointer"
+            >
+              <Tag className="w-3 h-3 text-stone-400 shrink-0" />
+              {label}
+            </button>
+          ))}
+          {labels.length === 0 && (
+            <span className="text-stone-300 text-xs">—</span>
+          )}
+        </div>
+      </td>
+      <td className="px-6 py-3 text-stone-500 text-sm whitespace-nowrap">{formatDate(date)}</td>
       <td className="px-6 py-3 text-right">
-        <button className="p-1 rounded hover:bg-stone-200 text-stone-400 opacity-0 group-hover:opacity-100 transition-all" onClick={(e) => e.stopPropagation()}>
-          <MoreVertical className="w-4 h-4" />
-        </button>
+        <div className="relative inline-block">
+          <button 
+            className="p-1 rounded hover:bg-stone-200 text-stone-400 opacity-0 group-hover:opacity-100 transition-all" 
+            onClick={(e) => { e.stopPropagation(); setIsMenuOpen(!isMenuOpen); }}
+          >
+            <MoreVertical className="w-4 h-4" />
+          </button>
+          {isMenuOpen && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={(e) => { e.stopPropagation(); setIsMenuOpen(false); }} />
+              <div className="absolute right-0 top-full mt-1 w-40 bg-white border border-stone-200 rounded-lg shadow-xl z-20 overflow-hidden py-1">
+                <button
+                  onClick={handleDownload}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
+                >
+                  <Download className="w-4 h-4 text-stone-400" />
+                  Download
+                </button>
+                <div className="border-t border-stone-100 my-0.5" />
+                <button
+                  onClick={handleDelete}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                >
+                  <Trash2 className="w-4 h-4 text-red-400" />
+                  Delete
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </td>
     </tr>
   );
@@ -1207,6 +2204,7 @@ interface ActivityFeedProps {
 }
 
 function ActivityFeed({ activities }: ActivityFeedProps) {
+  const navigate = useNavigate();
   const groupActivitiesByWeek = (activities: Activity[]) => {
     const groups: Record<string, Activity[]> = {};
     const sorted = [...activities].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
@@ -1257,7 +2255,12 @@ function ActivityFeed({ activities }: ActivityFeedProps) {
                   <p className="text-sm text-stone-600 leading-relaxed">
                     <span className="font-bold text-stone-900">{activity.userName}</span>
                     {' '}{activity.action}{' '}
-                    <span className="font-medium text-stone-900">{activity.targetName}</span>
+                    <button
+                      onClick={() => navigate(`/document?type=${activity.targetType.toLowerCase().replace(' ', '')}`)}
+                      className="font-medium text-stone-900 hover:underline"
+                    >
+                      {activity.targetName}
+                    </button>
                     {activity.details && (
                       <span className="text-stone-400 italic"> — {activity.details}</span>
                     )}

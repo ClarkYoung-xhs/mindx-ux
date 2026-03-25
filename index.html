@@ -9,6 +9,18 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // Move any IDE/Vite error overlay buttons to the bottom-right corner
+      new MutationObserver(() => {
+        document.querySelectorAll('body > div[style*="position: fixed"]').forEach(el => {
+          if (el.id === 'root') return;
+          el.style.top = 'auto';
+          el.style.left = 'auto';
+          el.style.bottom = '16px';
+          el.style.right = '16px';
+        });
+      }).observe(document.body, { childList: true, subtree: false });
+    </script>
   </body>
 </html>
 

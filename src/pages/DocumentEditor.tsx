@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, 
   MessageSquare, 
@@ -36,6 +36,7 @@ interface ChatMessage {
 }
 
 export default function DocumentEditor() {
+  const navigate = useNavigate();
   const [isChatLog, setIsChatLog] = useState(false);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
     { id: 'm1', sender: 'Human', senderType: 'human', text: 'Hey Claude, can you help me draft the architecture for Project Alpha?', time: '10:00 AM' },
@@ -239,9 +240,9 @@ export default function DocumentEditor() {
       {/* Header */}
       <header className="h-14 flex items-center justify-between px-4 border-b border-stone-200 bg-white/80 backdrop-blur-md sticky top-0 z-10">
         <div className="flex items-center gap-4">
-          <Link to="/dashboard" className="p-2 rounded-md hover:bg-stone-100 text-stone-500 transition-colors">
+          <button onClick={() => navigate(-1)} className="p-2 rounded-md hover:bg-stone-100 text-stone-500 transition-colors">
             <ArrowLeft className="w-4 h-4" />
-          </Link>
+          </button>
           <div className="flex items-center gap-2">
             <span className="px-2 py-1 rounded bg-stone-100 text-stone-600 text-xs font-medium border border-stone-200">
               {isChatLog ? 'Chat Log' : 'Markdown'}
