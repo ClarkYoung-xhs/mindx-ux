@@ -101,7 +101,7 @@ export default function OnboardingWizard({ onComplete, onClose }: OnboardingWiza
                   </div>
                   <h2 className="text-2xl font-bold text-stone-900 tracking-tight">Welcome to MindX</h2>
                   <p className="text-stone-500 leading-relaxed">
-                    MindX is a collaborative workspace designed for both humans and AI agents. 
+                    MindX is a collaborative space designed for both humans and AI agents. 
                     Let's set up your first agent so you can start building together.
                   </p>
                 </motion.div>
@@ -175,7 +175,7 @@ export default function OnboardingWizard({ onComplete, onClose }: OnboardingWiza
                   </div>
                   <h2 className="text-2xl font-bold text-stone-900 tracking-tight">Start Collaborating</h2>
                   <p className="text-stone-500 leading-relaxed">
-                    You're all set! Your agent {agentName ? `"${agentName}"` : ''} is now part of your workspace. 
+                    You're all set! Your agent {agentName ? `"${agentName}"` : ''} is now part of your space. 
                     You can now create documents and see your agent's contributions in real-time.
                   </p>
                 </motion.div>
@@ -189,7 +189,7 @@ export default function OnboardingWizard({ onComplete, onClose }: OnboardingWiza
               disabled={step === 2 && !agentName.trim()}
               className="flex items-center gap-2 bg-stone-900 text-white px-8 py-3 rounded-xl font-medium hover:bg-stone-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-stone-900/10"
             >
-              {step === totalSteps ? 'Go to Workspace' : 'Continue'} 
+              {step === totalSteps ? 'Go to Space' : 'Continue'} 
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>

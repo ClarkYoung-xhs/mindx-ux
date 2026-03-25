@@ -25,32 +25,32 @@ const translations: Record<Language, Record<string, string>> = {
 
     // Landing Page - Hero
     'landing.integrations': 'Integrations',
-    'landing.heroTitle1': 'The Workspace for',
+    'landing.heroTitle1': 'One Space for',
     'landing.heroTitle2': 'Humans and AI Agents',
-    'landing.heroDesc': 'Give your AI agents the power to create, read, edit, and collaborate on documents. A unified workspace for Markdown, Office, Tables, and Whiteboards.',
+    'landing.heroDesc': 'Give your AI agents the power to create, read, edit, and collaborate on documents. A shared home for Markdown, Office, Tables, and Whiteboards.',
     'landing.seeHow': 'See How It Works',
 
     // Landing Page - Workflow
     'landing.workflowTitle': 'How MindX Works',
     'landing.workflowDesc': 'Four simple steps to give your agents superpowers.',
     'landing.step1Title': '1. Register',
-    'landing.step1Desc': 'Create your MindX account and access your default workspace.',
+    'landing.step1Desc': 'Create your MindX account and access your shared space.',
     'landing.step2Title': '2. Create Agent',
-    'landing.step2Desc': 'Add an agent account to your workspace to generate a unique token.',
+    'landing.step2Desc': 'Add an agent account to your space to generate a unique token.',
     'landing.step3Title': '3. Prompt Agent',
     'landing.step3Desc': 'Send the generated Skill + Token prompt to your AI.',
     'landing.step4Title': '4. Superpowers',
-    'landing.step4Desc': 'Your agent can now read, write, and manage documents in the workspace.',
+    'landing.step4Desc': 'Your agent can now read, write, and manage documents in your space.',
 
     // Landing Page - Features
     'landing.featuresTitle': 'Core Capabilities',
     'landing.featuresDesc': 'MindX provides the infrastructure your agents need to interact with the real world of documents and data.',
     'landing.feat1Title': 'Create, Read, Edit',
     'landing.feat1Desc': 'Full support for Markdown, Office documents, multi-dimensional tables, and whiteboard drawings.',
-    'landing.feat2Title': 'Isolated Workspaces',
-    'landing.feat2Desc': 'Create multiple workspaces to keep different projects and agents completely isolated from one another.',
+    'landing.feat2Title': 'One Shared Space',
+    'landing.feat2Desc': 'Start with one shared space so people and agents work in the same context from day one.',
     'landing.feat3Title': 'Agent Accounts',
-    'landing.feat3Desc': 'Provision dedicated accounts and tokens for each of your agents to securely access specific workspaces.',
+    'landing.feat3Desc': 'Provision dedicated accounts and tokens for each of your agents to securely access your space.',
     'landing.feat4Title': 'Human-Agent Collaboration',
     'landing.feat4Desc': 'A collaborative UI where humans and agents can work together, including text selection and commenting.',
     'landing.feat5Title': 'Format Conversion',
@@ -88,7 +88,7 @@ const translations: Record<Language, Record<string, string>> = {
     'sidebar.global': 'Global',
     'sidebar.agentAccounts': 'Agent Accounts',
     'sidebar.humanAccounts': 'Human Accounts',
-    'sidebar.humanAccount': 'Human Account',
+    'sidebar.humanAccount': 'My Account',
 
     // Dashboard - Documents
     'docs.title': 'Documents',
@@ -131,10 +131,10 @@ const translations: Record<Language, Record<string, string>> = {
 
     // Dashboard - Settings
     'settings.title': 'Settings',
-    'settings.workspaceName': 'Workspace Name',
+    'settings.workspaceName': 'Space Name',
     'settings.dangerZone': 'Danger Zone',
-    'settings.deleteWorkspace': 'Delete Workspace',
-    'settings.deleteDesc': 'Once you delete a workspace, there is no going back. Please be certain.',
+    'settings.deleteWorkspace': 'Delete Space',
+    'settings.deleteDesc': 'Once you delete this space, there is no going back. Please be certain.',
 
     // Dashboard - Activity Feed
     'activity.title': 'Activity Feed',
@@ -159,30 +159,30 @@ const translations: Record<Language, Record<string, string>> = {
     'landing.integrations': '集成平台',
     'landing.heroTitle1': '专为',
     'landing.heroTitle2': '人类与 AI Agent 打造的工作空间',
-    'landing.heroDesc': '赋予你的 AI Agent 创建、阅读、编辑和协作文档的能力。支持 Markdown、Office、表格和白板的统一工作空间。',
+    'landing.heroDesc': '赋予你的 AI Agent 创建、阅读、编辑和协作文档的能力。一个共享空间里完成 Markdown、Office、表格和白板协作。',
     'landing.seeHow': '了解工作原理',
 
     // Landing Page - Workflow
     'landing.workflowTitle': 'MindX 如何运作',
     'landing.workflowDesc': '四个简单步骤，让你的 Agent 拥有超能力。',
     'landing.step1Title': '1. 注册账号',
-    'landing.step1Desc': '创建 MindX 账号，访问默认工作空间。',
+    'landing.step1Desc': '创建 MindX 账号，进入你的共享空间。',
     'landing.step2Title': '2. 创建 Agent',
-    'landing.step2Desc': '在工作空间中添加 Agent 账号并生成专属 Token。',
+    'landing.step2Desc': '在空间中添加 Agent 账号并生成专属 Token。',
     'landing.step3Title': '3. 配置 Agent',
     'landing.step3Desc': '将生成的 Skill + Token 提示词发送给你的 AI。',
     'landing.step4Title': '4. 开始工作',
-    'landing.step4Desc': '你的 Agent 现在可以在工作空间中读写和管理文档了。',
+    'landing.step4Desc': '你的 Agent 现在可以在空间中读写和管理文档了。',
 
     // Landing Page - Features
     'landing.featuresTitle': '核心能力',
     'landing.featuresDesc': 'MindX 为你的 Agent 提供与真实文档和数据交互所需的基础设施。',
     'landing.feat1Title': '创建、阅读、编辑',
     'landing.feat1Desc': '全面支持 Markdown、Office 文档、多维表格和白板绘图。',
-    'landing.feat2Title': '隔离工作空间',
-    'landing.feat2Desc': '创建多个工作空间，让不同项目和 Agent 完全隔离。',
+    'landing.feat2Title': '一个共享空间',
+    'landing.feat2Desc': '第一版先聚焦一个共享空间，让人和 Agent 从第一天就在同一上下文里协作。',
     'landing.feat3Title': 'Agent 账号',
-    'landing.feat3Desc': '为每个 Agent 配置专属账号和 Token，安全访问指定工作空间。',
+    'landing.feat3Desc': '为每个 Agent 配置专属账号和 Token，安全访问你的空间。',
     'landing.feat4Title': '人机协作',
     'landing.feat4Desc': '人类与 Agent 可以在协作界面中共同工作，支持文本选择和评论。',
     'landing.feat5Title': '格式转换',
@@ -220,7 +220,7 @@ const translations: Record<Language, Record<string, string>> = {
     'sidebar.global': '全局',
     'sidebar.agentAccounts': 'Agent 账号',
     'sidebar.humanAccounts': '人类账号',
-    'sidebar.humanAccount': '人类账号',
+    'sidebar.humanAccount': '我的账号',
 
     // Dashboard - Documents
     'docs.title': '文档',
@@ -263,10 +263,10 @@ const translations: Record<Language, Record<string, string>> = {
 
     // Dashboard - Settings
     'settings.title': '设置',
-    'settings.workspaceName': '工作空间名称',
+    'settings.workspaceName': '空间名称',
     'settings.dangerZone': '危险操作',
-    'settings.deleteWorkspace': '删除工作空间',
-    'settings.deleteDesc': '删除工作空间后无法恢复，请谨慎操作。',
+    'settings.deleteWorkspace': '删除空间',
+    'settings.deleteDesc': '删除空间后无法恢复，请谨慎操作。',
 
     // Dashboard - Activity Feed
     'activity.title': '动态',

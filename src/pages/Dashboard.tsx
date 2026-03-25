@@ -34,8 +34,7 @@ import {
 } from 'lucide-react';
 
 const initialWorkspaces = [
-  { id: 'w1', name: 'Default' },
-  { id: 'w2', name: 'Project Alpha' }
+  { id: 'w1', name: 'Main Space' }
 ];
 
 const initialAgents = [
@@ -44,23 +43,17 @@ const initialAgents = [
   { id: 'a3', name: 'Research Bot', token: 'mx_agt_8x7y6z5w4v3u2' }
 ];
 
-const initialUsers = [
-  { id: 'u1', name: 'Human', email: 'human@example.com' },
-  { id: 'u2', name: 'Alice Chen', email: 'alice@example.com' },
-  { id: 'u3', name: 'Bob Smith', email: 'bob@example.com' },
-  { id: 'u4', name: 'Eve Davis', email: 'eve@example.com' }
-];
+const currentUser = {
+  id: 'u1',
+  name: 'You',
+  email: 'you@example.com',
+};
 
 const initialPermissions = [
-  // Workspace 1 (Default)
-  { id: 'p1', workspaceId: 'w1', memberId: 'u1', memberType: 'Human', role: 'Owner' },
-  { id: 'p2', workspaceId: 'w1', memberId: 'u2', memberType: 'Human', role: 'Editor' },
+  { id: 'p1', workspaceId: 'w1', memberId: currentUser.id, memberType: 'Human', role: 'Owner' },
   { id: 'p3', workspaceId: 'w1', memberId: 'a1', memberType: 'Agent', role: 'Editor' },
   { id: 'p4', workspaceId: 'w1', memberId: 'a2', memberType: 'Agent', role: 'Viewer' },
-  // Workspace 2 (Project Alpha)
-  { id: 'p5', workspaceId: 'w2', memberId: 'u1', memberType: 'Human', role: 'Owner' },
-  { id: 'p6', workspaceId: 'w2', memberId: 'u4', memberType: 'Human', role: 'Editor' },
-  { id: 'p7', workspaceId: 'w2', memberId: 'a3', memberType: 'Agent', role: 'Admin' }
+  { id: 'p7', workspaceId: 'w1', memberId: 'a3', memberType: 'Agent', role: 'Admin' }
 ];
 
 interface WorkspaceDoc {
@@ -79,24 +72,24 @@ interface WorkspaceDoc {
 const initialDocuments: WorkspaceDoc[] = [
   { id: 'd1', workspaceId: 'w1', name: 'Project Alpha Architecture', type: 'Markdown', date: '2 hours ago', lastModified: '2026-03-24T12:00:00Z', lastViewed: '2026-03-24T13:30:00Z', labels: ['Project Alpha', 'PRD'], creatorName: 'Claude Assistant', creatorType: 'agent' },
   { id: 'd2', workspaceId: 'w1', name: 'Q3 Financial Projections', type: 'Table', date: 'Yesterday', lastModified: '2026-03-23T10:00:00Z', lastViewed: '2026-03-24T09:00:00Z', labels: ['Data', 'Finance'], creatorName: 'Data Analyzer', creatorType: 'agent' },
-  { id: 'd3', workspaceId: 'w1', name: 'User Flow Diagram', type: 'Whiteboard', date: 'Last week', lastModified: '2026-03-17T15:00:00Z', lastViewed: '2026-03-22T11:00:00Z', labels: ['Design', 'Project Alpha'], creatorName: 'Human', creatorType: 'human' },
-  { id: 'd6', workspaceId: 'w1', name: 'Claude & Human: Feature Discussion', type: 'Chat Log', date: '3 hours ago', lastModified: '2026-03-24T11:00:00Z', lastViewed: '2026-03-24T11:30:00Z', labels: ['Meeting Notes'], creatorName: 'Claude Assistant', creatorType: 'agent' },
-  { id: 'd4', workspaceId: 'w2', name: 'Competitor Analysis', type: 'Markdown', date: '1 hour ago', lastModified: '2026-03-24T13:00:00Z', lastViewed: '2026-03-24T13:45:00Z', labels: ['Research', 'Data'], creatorName: 'Research Bot', creatorType: 'agent' },
-  { id: 'd5', workspaceId: 'w2', name: 'Marketing Strategy', type: 'Markdown', date: '2 days ago', lastModified: '2026-03-22T14:00:00Z', lastViewed: '2026-03-23T16:00:00Z', labels: ['PRD', 'Marketing'], creatorName: 'Human', creatorType: 'human' },
+  { id: 'd3', workspaceId: 'w1', name: 'User Flow Diagram', type: 'Whiteboard', date: 'Last week', lastModified: '2026-03-17T15:00:00Z', lastViewed: '2026-03-22T11:00:00Z', labels: ['Design', 'Project Alpha'], creatorName: currentUser.name, creatorType: 'human' },
+  { id: 'd6', workspaceId: 'w1', name: 'Claude & Maya: Feature Discussion', type: 'Chat Log', date: '3 hours ago', lastModified: '2026-03-24T11:00:00Z', lastViewed: '2026-03-24T11:30:00Z', labels: ['Meeting Notes'], creatorName: 'Claude Assistant', creatorType: 'agent' },
+  { id: 'd4', workspaceId: 'w1', name: 'Competitor Analysis', type: 'Markdown', date: '1 hour ago', lastModified: '2026-03-24T13:00:00Z', lastViewed: '2026-03-24T13:45:00Z', labels: ['Research', 'Data'], creatorName: 'Research Bot', creatorType: 'agent' },
+  { id: 'd5', workspaceId: 'w1', name: 'Marketing Strategy', type: 'Markdown', date: '2 days ago', lastModified: '2026-03-22T14:00:00Z', lastViewed: '2026-03-23T16:00:00Z', labels: ['PRD', 'Marketing'], creatorName: currentUser.name, creatorType: 'human' },
   // Agent scheduled task outputs — Daily Industry Digest
   { id: 'd7', workspaceId: 'w1', name: 'Industry Digest — Mar 24', type: 'Markdown', date: 'Today', lastModified: '2026-03-24T08:00:00Z', lastViewed: '2026-03-24T10:00:00Z', labels: ['Daily Industry Digest'], creatorName: 'Research Bot', creatorType: 'agent' },
   { id: 'd8', workspaceId: 'w1', name: 'Industry Digest — Mar 23', type: 'Markdown', date: 'Yesterday', lastModified: '2026-03-23T08:00:00Z', lastViewed: '2026-03-23T12:00:00Z', labels: ['Daily Industry Digest'], creatorName: 'Research Bot', creatorType: 'agent' },
   { id: 'd9', workspaceId: 'w1', name: 'Industry Digest — Mar 22', type: 'Markdown', date: '2 days ago', lastModified: '2026-03-22T08:00:00Z', lastViewed: '2026-03-22T09:30:00Z', labels: ['Daily Industry Digest'], creatorName: 'Research Bot', creatorType: 'agent' },
   { id: 'd10', workspaceId: 'w1', name: 'Industry Digest — Mar 21', type: 'Markdown', date: '3 days ago', lastModified: '2026-03-21T08:00:00Z', lastViewed: '2026-03-21T11:00:00Z', labels: ['Daily Industry Digest'], creatorName: 'Research Bot', creatorType: 'agent' },
-  { id: 'd11', workspaceId: 'w2', name: 'Industry Digest — Mar 20', type: 'Markdown', date: '4 days ago', lastModified: '2026-03-20T08:00:00Z', lastViewed: '2026-03-20T14:00:00Z', labels: ['Daily Industry Digest'], creatorName: 'Research Bot', creatorType: 'agent' },
-  { id: 'd12', workspaceId: 'w2', name: 'Industry Digest — Mar 19', type: 'Markdown', date: '5 days ago', lastModified: '2026-03-19T08:00:00Z', lastViewed: '2026-03-19T10:00:00Z', labels: ['Daily Industry Digest'], creatorName: 'Research Bot', creatorType: 'agent' },
+  { id: 'd11', workspaceId: 'w1', name: 'Industry Digest — Mar 20', type: 'Markdown', date: '4 days ago', lastModified: '2026-03-20T08:00:00Z', lastViewed: '2026-03-20T14:00:00Z', labels: ['Daily Industry Digest'], creatorName: 'Research Bot', creatorType: 'agent' },
+  { id: 'd12', workspaceId: 'w1', name: 'Industry Digest — Mar 19', type: 'Markdown', date: '5 days ago', lastModified: '2026-03-19T08:00:00Z', lastViewed: '2026-03-19T10:00:00Z', labels: ['Daily Industry Digest'], creatorName: 'Research Bot', creatorType: 'agent' },
   // Agent scheduled task outputs — Daily Report
   { id: 'd13', workspaceId: 'w1', name: 'Daily Report — Mar 24', type: 'Markdown', date: 'Today', lastModified: '2026-03-24T18:00:00Z', lastViewed: '2026-03-24T18:30:00Z', labels: ['Daily Report'], creatorName: 'Claude Assistant', creatorType: 'agent' },
   { id: 'd14', workspaceId: 'w1', name: 'Daily Report — Mar 23', type: 'Markdown', date: 'Yesterday', lastModified: '2026-03-23T18:00:00Z', lastViewed: '2026-03-23T20:00:00Z', labels: ['Daily Report'], creatorName: 'Claude Assistant', creatorType: 'agent' },
   { id: 'd15', workspaceId: 'w1', name: 'Daily Report — Mar 22', type: 'Markdown', date: '2 days ago', lastModified: '2026-03-22T18:00:00Z', lastViewed: '2026-03-22T19:00:00Z', labels: ['Daily Report'], creatorName: 'Claude Assistant', creatorType: 'agent' },
   { id: 'd16', workspaceId: 'w1', name: 'Daily Report — Mar 21', type: 'Markdown', date: '3 days ago', lastModified: '2026-03-21T18:00:00Z', lastViewed: '2026-03-21T21:00:00Z', labels: ['Daily Report'], creatorName: 'Claude Assistant', creatorType: 'agent' },
-  { id: 'd17', workspaceId: 'w2', name: 'Daily Report — Mar 20', type: 'Markdown', date: '4 days ago', lastModified: '2026-03-20T18:00:00Z', lastViewed: '2026-03-20T19:30:00Z', labels: ['Daily Report'], creatorName: 'Claude Assistant', creatorType: 'agent' },
-  { id: 'd18', workspaceId: 'w2', name: 'Daily Report — Mar 19', type: 'Markdown', date: '5 days ago', lastModified: '2026-03-19T18:00:00Z', lastViewed: '2026-03-19T20:00:00Z', labels: ['Daily Report', 'Project Alpha'], creatorName: 'Claude Assistant', creatorType: 'agent' }
+  { id: 'd17', workspaceId: 'w1', name: 'Daily Report — Mar 20', type: 'Markdown', date: '4 days ago', lastModified: '2026-03-20T18:00:00Z', lastViewed: '2026-03-20T19:30:00Z', labels: ['Daily Report'], creatorName: 'Claude Assistant', creatorType: 'agent' },
+  { id: 'd18', workspaceId: 'w1', name: 'Daily Report — Mar 19', type: 'Markdown', date: '5 days ago', lastModified: '2026-03-19T18:00:00Z', lastViewed: '2026-03-19T20:00:00Z', labels: ['Daily Report', 'Project Alpha'], creatorName: 'Claude Assistant', creatorType: 'agent' }
 ];
 
 interface Activity {
@@ -129,7 +122,7 @@ const initialActivities: Activity[] = [
     id: 'act2',
     workspaceId: 'w1',
     userId: 'u1',
-    userName: 'Human',
+    userName: currentUser.name,
     userType: 'human',
     action: 'created',
     targetName: 'User Flow Diagram',
@@ -163,7 +156,7 @@ const initialActivities: Activity[] = [
   },
   {
     id: 'act5',
-    workspaceId: 'w2',
+    workspaceId: 'w1',
     userId: 'a3',
     userName: 'Research Bot',
     userType: 'agent',
@@ -211,7 +204,7 @@ const initialActivities: Activity[] = [
   },
   {
     id: 'act9',
-    workspaceId: 'w2',
+    workspaceId: 'w1',
     userId: 'a3',
     userName: 'Research Bot',
     userType: 'agent',
@@ -223,7 +216,7 @@ const initialActivities: Activity[] = [
   },
   {
     id: 'act10',
-    workspaceId: 'w2',
+    workspaceId: 'w1',
     userId: 'a3',
     userName: 'Research Bot',
     userType: 'agent',
@@ -249,7 +242,7 @@ const initialActivities: Activity[] = [
     id: 'act12',
     workspaceId: 'w1',
     userId: 'u1',
-    userName: 'Human',
+    userName: currentUser.name,
     userType: 'human',
     action: 'updated',
     targetName: 'Project Alpha Architecture',
@@ -261,7 +254,7 @@ const initialActivities: Activity[] = [
     id: 'act13',
     workspaceId: 'w1',
     userId: 'u1',
-    userName: 'Human',
+    userName: currentUser.name,
     userType: 'human',
     action: 'commented on',
     targetName: 'Q3 Financial Projections',
@@ -275,10 +268,10 @@ const initialActivities: Activity[] = [
     userId: 'u2',
     userName: 'Alice Chen',
     userType: 'human',
-    action: 'created',
-    targetName: 'Design System Guidelines',
+    action: 'commented on',
+    targetName: 'Project Alpha Architecture',
     targetType: 'Markdown',
-    details: 'Initial brand guidelines document',
+    details: 'Shared handoff notes about service boundaries before design review',
     timestamp: '2026-03-19T11:00:00Z'
   },
   {
@@ -290,7 +283,7 @@ const initialActivities: Activity[] = [
     action: 'modified',
     targetName: 'User Flow Diagram',
     targetType: 'Whiteboard',
-    details: 'Added onboarding flow',
+    details: 'Added stakeholder review and approval path to the onboarding flow',
     timestamp: '2026-03-21T10:20:00Z'
   },
   {
@@ -299,10 +292,10 @@ const initialActivities: Activity[] = [
     userId: 'u3',
     userName: 'Bob Smith',
     userType: 'human',
-    action: 'created',
-    targetName: 'Sprint Planning Notes',
-    targetType: 'Markdown',
-    details: 'Sprint 12 kickoff notes',
+    action: 'commented on',
+    targetName: 'Q3 Financial Projections',
+    targetType: 'Table',
+    details: 'Asked for monthly burn and runway annotations before the finance review',
     timestamp: '2026-03-17T09:00:00Z'
   },
   {
@@ -312,33 +305,33 @@ const initialActivities: Activity[] = [
     userName: 'Bob Smith',
     userType: 'human',
     action: 'commented on',
-    targetName: 'API Integration Guide',
+    targetName: 'Project Alpha Architecture',
     targetType: 'Markdown',
-    details: 'Added edge case notes for auth flow',
+    details: 'Added edge case notes for the auth flow handoff',
     timestamp: '2026-03-21T14:45:00Z'
   },
   {
     id: 'act18',
-    workspaceId: 'w2',
+    workspaceId: 'w1',
     userId: 'u4',
     userName: 'Eve Davis',
     userType: 'human',
-    action: 'created',
+    action: 'commented on',
     targetName: 'Marketing Strategy',
     targetType: 'Markdown',
-    details: 'Q2 marketing plan draft',
+    details: 'Requested launch timing to align with the campaign calendar',
     timestamp: '2026-03-16T13:00:00Z'
   },
   {
     id: 'act19',
-    workspaceId: 'w2',
+    workspaceId: 'w1',
     userId: 'u4',
     userName: 'Eve Davis',
     userType: 'human',
     action: 'updated',
     targetName: 'Marketing Strategy',
     targetType: 'Markdown',
-    details: 'Finalized budget allocations',
+    details: 'Suggested channel mix changes in section 4 after review',
     timestamp: '2026-03-20T16:00:00Z'
   },
   // Agent scheduled task — Daily Industry Digest
@@ -419,28 +412,25 @@ const initialActivities: Activity[] = [
 
 export default function Dashboard() {
   const [workspaces, setWorkspaces] = useState(initialWorkspaces);
-  const [activeWorkspaceId, setActiveWorkspaceId] = useState('w1');
+  const [activeWorkspaceId, setActiveWorkspaceId] = useState(initialWorkspaces[0]?.id ?? 'w1');
   const [agents, setAgents] = useState(initialAgents);
-  const [users, setUsers] = useState(initialUsers);
   const [permissions, setPermissions] = useState(initialPermissions);
   const [documents, setDocuments] = useState(initialDocuments);
   const [activities, setActivities] = useState(initialActivities);
-  const [activeTab, setActiveTabState] = useState<'documents' | 'activity' | 'agents' | 'users' | 'members' | 'settings' | 'labels'>(() => {
+  const [activeTab, setActiveTabState] = useState<'documents' | 'activity' | 'agents' | 'members' | 'settings' | 'labels'>(() => {
     const params = new URLSearchParams(window.location.search);
     const tab = params.get('tab');
-    if (tab && ['documents', 'activity', 'agents', 'users', 'members', 'settings', 'labels'].includes(tab)) {
-      return tab as 'documents' | 'activity' | 'agents' | 'users' | 'members' | 'settings' | 'labels';
+    if (tab && ['documents', 'activity', 'agents', 'members', 'settings', 'labels'].includes(tab)) {
+      return tab as 'documents' | 'activity' | 'agents' | 'members' | 'settings' | 'labels';
     }
     return 'documents';
   });
-  const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
   const [copiedStates, setCopiedStates] = useState<Record<string, boolean>>({});
   const [isCreatingAgent, setIsCreatingAgent] = useState(false);
   const [newAgentName, setNewAgentName] = useState('');
   const [isNewDocMenuOpen, setIsNewDocMenuOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [docSortBy, setDocSortBy] = useState<'lastModified' | 'lastViewed'>('lastModified');
   const [docFilterType, setDocFilterType] = useState<string>('all');
   const [docFilterOwner, setDocFilterOwner] = useState<string>('all');
@@ -457,14 +447,12 @@ export default function Dashboard() {
   const [isLabelTypFilterOpen, setIsLabelTypFilterOpen] = useState(false);
   const [isLabelSortMenuOpen, setIsLabelSortMenuOpen] = useState(false);
   const [isLabelOwnerFilterOpen, setIsLabelOwnerFilterOpen] = useState(false);
-  const [labelFilterWorkspace, setLabelFilterWorkspace] = useState<string>('all');
-  const [isLabelWorkspaceFilterOpen, setIsLabelWorkspaceFilterOpen] = useState(false);
   const { t } = useLanguage();
 
   const location = useLocation();
   const navigate = useNavigate();
 
-  const setActiveTab = (tab: 'documents' | 'activity' | 'agents' | 'users' | 'members' | 'settings' | 'labels') => {
+  const setActiveTab = (tab: 'documents' | 'activity' | 'agents' | 'members' | 'settings' | 'labels') => {
     setActiveTabState(tab);
     const params = new URLSearchParams(window.location.search);
     params.set('tab', tab);
@@ -478,6 +466,41 @@ export default function Dashboard() {
       setShowOnboarding(true);
     }
   }, []);
+
+  // Keep multi-space support in the prototype internals without exposing it in the main UI yet.
+  const switchWorkspace = (workspaceId: string) => {
+    if (!workspaces.some(workspace => workspace.id === workspaceId)) return;
+
+    setActiveWorkspaceId(workspaceId);
+    setDocFilterType('all');
+    setDocFilterOwner('all');
+    setDocFilterLabel('all');
+    setSelectedGlobalLabel(null);
+    setLabelFilterOwner('all');
+    setLabelFilterType('all');
+  };
+
+  const createWorkspace = (name: string) => {
+    const trimmedName = name.trim();
+    if (!trimmedName) return null;
+
+    const newWorkspace = {
+      id: `w${Date.now()}`,
+      name: trimmedName,
+    };
+
+    setWorkspaces(prev => [...prev, newWorkspace]);
+    setActiveWorkspaceId(newWorkspace.id);
+    return newWorkspace.id;
+  };
+
+  const renameActiveWorkspace = (name: string) => {
+    setWorkspaces(prev =>
+      prev.map(workspace =>
+        workspace.id === activeWorkspaceId ? { ...workspace, name } : workspace
+      )
+    );
+  };
 
   const handleOnboardingComplete = (agentName: string) => {
     const newToken = `mx_agt_${Math.random().toString(36).substr(2, 12)}`;
@@ -501,7 +524,7 @@ export default function Dashboard() {
     setActiveTab('agents');
   };
 
-  const activeWorkspace = workspaces.find(w => w.id === activeWorkspaceId);
+  const activeWorkspace = workspaces.find(w => w.id === activeWorkspaceId) ?? workspaces[0];
   const workspaceDocs = documents.filter(d => d.workspaceId === activeWorkspaceId);
   
   // 排序 + 筛选逻辑
@@ -548,10 +571,11 @@ export default function Dashboard() {
 
   const activeFilterCount = (docFilterType !== 'all' ? 1 : 0) + (docFilterOwner !== 'all' ? 1 : 0) + (docFilterLabel !== 'all' ? 1 : 0);
   const workspaceActivities = activities.filter(a => a.workspaceId === activeWorkspaceId);
+  const availableAgents = agents.filter(agent => !permissions.some(permission => permission.workspaceId === activeWorkspaceId && permission.memberId === agent.id));
   
   const workspacePermissions = permissions.filter(p => p.workspaceId === activeWorkspaceId).map(p => {
-    const member = p.memberType === 'Human' 
-      ? users.find(u => u.id === p.memberId) 
+    const member = p.memberType === 'Human'
+      ? (p.memberId === currentUser.id ? currentUser : undefined)
       : agents.find(a => a.id === p.memberId);
     return { ...p, member };
   });
@@ -577,7 +601,7 @@ export default function Dashboard() {
     
     setAgents([newAgent, ...agents]);
     
-    // Automatically add to current workspace as Editor
+    // Automatically add to the current space as Editor
     const newPermission = {
       id: `p${Date.now()}`,
       workspaceId: activeWorkspaceId,
@@ -600,7 +624,7 @@ export default function Dashboard() {
       lastModified: new Date().toISOString(),
       lastViewed: new Date().toISOString(),
       labels: [],
-      creatorName: 'Human',
+      creatorName: currentUser.name,
       creatorType: 'human'
     };
 
@@ -633,43 +657,9 @@ Command: Download the zip package from https://cdn.mindx.com/static/mindx-docs.z
         
         <div className="flex-1 px-3 space-y-0.5 overflow-y-auto">
           <div className="mb-4">
-            <div className="px-3 py-2 flex items-center justify-between group relative">
-              <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">{t('sidebar.workspace')}</span>
-              <button 
-                onClick={() => setIsWorkspaceOpen(!isWorkspaceOpen)}
-                className="flex items-center gap-1 hover:bg-stone-200/50 px-1.5 py-0.5 rounded transition-colors"
-              >
-                <span className="text-xs font-medium text-stone-600 truncate max-w-[100px]">{activeWorkspace?.name}</span>
-                <ChevronDown className="w-3 h-3 text-stone-400" />
-              </button>
-
-              {isWorkspaceOpen && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-stone-200 rounded-md shadow-lg overflow-hidden z-50 py-1">
-                  {workspaces.map(w => (
-                    <button
-                      key={w.id}
-                      onClick={() => {
-                        setActiveWorkspaceId(w.id);
-                        setIsWorkspaceOpen(false);
-                      }}
-                      className={`w-full text-left px-3 py-1.5 text-sm transition-colors flex items-center gap-2 ${
-                        w.id === activeWorkspaceId ? 'bg-stone-100 text-stone-900' : 'hover:bg-stone-50 text-stone-600'
-                      }`}
-                    >
-                      <div className="w-4 h-4 rounded bg-stone-100 flex items-center justify-center shrink-0">
-                        <span className="text-[10px] font-medium text-stone-50 text-stone-500">{w.name.charAt(0)}</span>
-                      </div>
-                      {w.name}
-                    </button>
-                  ))}
-                  <div className="border-t border-stone-100 mt-1 pt-1">
-                    <button className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-stone-500 hover:text-stone-800 hover:bg-stone-50 transition-colors">
-                      <Plus className="w-3.5 h-3.5" /> {t('sidebar.newWorkspace')}
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
+            <p className="px-3 py-2 text-[10px] font-bold text-stone-400 uppercase tracking-wider">
+              Core
+            </p>
             <NavItem 
               icon={<FileText className="w-4 h-4" />} 
               label={t('sidebar.documents')} 
@@ -705,12 +695,6 @@ Command: Download the zip package from https://cdn.mindx.com/static/mindx-docs.z
               onClick={() => { setActiveTab('agents'); setIsCreatingAgent(false); setSelectedAgentId(null); }}
             />
             <NavItem 
-              icon={<User className="w-4 h-4" />} 
-              label={t('sidebar.humanAccounts')} 
-              active={activeTab === 'users'} 
-              onClick={() => { setActiveTab('users'); setIsCreatingAgent(false); setSelectedUserId(null); }}
-            />
-            <NavItem 
               icon={<Tag className="w-4 h-4" />} 
               label="Labels" 
               active={activeTab === 'labels'} 
@@ -719,16 +703,20 @@ Command: Download the zip package from https://cdn.mindx.com/static/mindx-docs.z
           </div>
         </div>
 
-        <div className="p-3">
-          <div className="flex items-center gap-2 px-2.5 py-2 rounded-md hover:bg-stone-200/50 cursor-pointer transition-colors">
-            <div className="w-6 h-6 rounded bg-stone-200 flex items-center justify-center text-stone-600 text-xs font-medium">
-              H
+        <div className="shrink-0 border-t border-stone-200 p-3 bg-[#F7F7F5]">
+          <button
+            onClick={() => setActiveTab('settings')}
+            className="w-full flex items-center gap-2 px-2.5 py-2 rounded-md hover:bg-stone-200/50 transition-colors"
+          >
+            <div className="w-8 h-8 rounded-full bg-stone-200 flex items-center justify-center text-stone-700 text-xs font-semibold">
+              {currentUser.name.charAt(0)}
             </div>
             <div className="flex-1 overflow-hidden">
               <p className="text-sm font-medium truncate">{t('sidebar.humanAccount')}</p>
+              <p className="text-xs text-stone-500 truncate">{currentUser.email}</p>
             </div>
             <LogOut className="w-4 h-4 text-stone-400" />
-          </div>
+          </button>
         </div>
       </aside>
 
@@ -740,7 +728,6 @@ Command: Download the zip package from https://cdn.mindx.com/static/mindx-docs.z
             {activeTab === 'documents' && t('docs.title')}
             {activeTab === 'activity' && t('activity.title')}
             {activeTab === 'agents' && t('agent.title')}
-            {activeTab === 'users' && t('human.title')}
             {activeTab === 'members' && t('access.title')}
             {activeTab === 'settings' && t('settings.title')}
             {activeTab === 'labels' && 'Labels'}
@@ -754,28 +741,23 @@ Command: Download the zip package from https://cdn.mindx.com/static/mindx-docs.z
                 className="pl-9 pr-4 py-1.5 bg-stone-50 border border-stone-200 rounded-md text-sm focus:outline-none focus:border-stone-300 focus:bg-white transition-colors w-64"
               />
             </div>
-            {['documents', 'agents', 'members', 'users'].includes(activeTab) && (
+            {(['documents', 'agents'].includes(activeTab) || (activeTab === 'members' && availableAgents.length > 0)) && (
             <div className="relative">
               <button 
                 onClick={() => {
                   if (activeTab === 'agents') setIsCreatingAgent(true);
                   if (activeTab === 'documents') setIsNewDocMenuOpen(!isNewDocMenuOpen);
                   if (activeTab === 'members') {
-                    // Logic to add a member from global list
-                    const availableUser = users.find(u => !permissions.some(p => p.workspaceId === activeWorkspaceId && p.memberId === u.id));
-                    if (availableUser) {
+                    const nextAgent = availableAgents[0];
+                    if (nextAgent) {
                       setPermissions([...permissions, {
                         id: `p${Date.now()}`,
                         workspaceId: activeWorkspaceId,
-                        memberId: availableUser.id,
-                        memberType: 'Human',
+                        memberId: nextAgent.id,
+                        memberType: 'Agent',
                         role: 'Viewer'
                       }]);
                     }
-                  }
-                  if (activeTab === 'users') {
-                    const newId = `u${Date.now()}`;
-                    setUsers([...users, { id: newId, name: 'New Human', email: 'new@example.com' }]);
                   }
                 }}
                 className="flex items-center gap-1.5 bg-stone-900 text-white px-3 py-1.5 rounded-md text-sm font-medium hover:bg-stone-800 transition-colors"
@@ -783,8 +765,7 @@ Command: Download the zip package from https://cdn.mindx.com/static/mindx-docs.z
                 <Plus className="w-4 h-4" /> 
                 {activeTab === 'documents' && t('docs.newDoc')}
                 {activeTab === 'agents' && t('agent.newAgent')}
-                {activeTab === 'members' && t('access.title')}
-                {activeTab === 'users' && t('human.newHuman')}
+                {activeTab === 'members' && 'Add Agent'}
               </button>
 
               {activeTab === 'documents' && isNewDocMenuOpen && (
@@ -1043,7 +1024,7 @@ Command: Download the zip package from https://cdn.mindx.com/static/mindx-docs.z
                                 </button>
                               </div>
                             ) : (
-                              <p>No documents in this workspace</p>
+                              <p>No documents yet</p>
                             )}
                           </td>
                         </tr>
@@ -1428,136 +1409,6 @@ Command: Download the zip package from https://cdn.mindx.com/static/mindx-docs.z
               </motion.div>
             )}
 
-            {activeTab === 'users' && (
-              <motion.div 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="space-y-6"
-              >
-                {selectedUserId ? (() => {
-                  const user = users.find(u => u.id === selectedUserId);
-                  if (!user) return null;
-                  const userActivities = activities
-                    .filter(a => a.userId === selectedUserId)
-                    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-                  return (
-                    <div>
-                      <button 
-                        onClick={() => setSelectedUserId(null)} 
-                        className="flex items-center gap-2 text-stone-500 hover:text-stone-900 mb-6 transition-colors text-sm font-medium"
-                      >
-                        <ArrowLeft className="w-4 h-4" /> {t('human.backToHumans')}
-                      </button>
-
-                      {/* User Detail Card */}
-                      <div className="p-6 rounded-xl border border-stone-200/80 bg-white shadow-[0_2px_12px_rgba(0,0,0,0.03)] mb-8">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 rounded-full bg-stone-100 flex items-center justify-center text-stone-700 font-semibold text-lg shadow-sm">
-                              {user.name.charAt(0)}
-                            </div>
-                            <div>
-                              <h2 className="text-lg font-semibold text-stone-900 tracking-tight">{user.name}</h2>
-                              <p className="text-xs text-stone-500 font-medium">{user.email}</p>
-                            </div>
-                          </div>
-                          <button className="p-1.5 rounded-md hover:bg-stone-100 text-stone-400 transition-colors">
-                            <MoreVertical className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* User Activity Feed */}
-                      <div>
-                        <h3 className="text-sm font-semibold text-stone-900 mb-4 flex items-center gap-2">
-                          <ActivityIcon className="w-4 h-4 text-stone-500" />
-                          {t('agent.recentActivity')}
-                        </h3>
-                        {userActivities.length > 0 ? (
-                          <div className="space-y-1">
-                            {userActivities.map(activity => (
-                              <div key={activity.id} className="flex items-start gap-4 p-4 rounded-xl hover:bg-stone-50 transition-all group border border-transparent hover:border-stone-200/60 hover:shadow-sm">
-                                <div className="mt-0.5">
-                                  <div className="w-9 h-9 rounded-full bg-stone-100 flex items-center justify-center text-stone-500 border border-stone-200 shadow-sm">
-                                    <User className="w-4 h-4" />
-                                  </div>
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-sm text-stone-600 leading-relaxed">
-                                    <span className="font-bold text-stone-900">{activity.userName}</span>
-                                    {' '}{activity.action}{' '}
-                                    <button
-                                      onClick={(e) => { e.stopPropagation(); navigate(`/document?type=${activity.targetType.toLowerCase().replace(' ', '')}`); }}
-                                      className="font-medium text-stone-900 hover:underline"
-                                    >
-                                      {activity.targetName}
-                                    </button>
-                                    {activity.details && (
-                                      <span className="text-stone-400 italic"> — {activity.details}</span>
-                                    )}
-                                  </p>
-                                  <div className="flex items-center gap-3 mt-1.5">
-                                    <p className="text-[10px] text-stone-400 flex items-center gap-1 font-medium">
-                                      <Clock className="w-3 h-3" />
-                                      {new Date(activity.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                    </p>
-                                    <span className="text-[10px] text-stone-300">•</span>
-                                    <p className="text-[10px] text-stone-400 font-medium">
-                                      {new Date(activity.timestamp).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}
-                                    </p>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="py-12 text-center border border-stone-200/60 border-dashed rounded-xl">
-                            <ActivityIcon className="w-8 h-8 text-stone-200 mx-auto mb-3" />
-                            <p className="text-stone-400 text-sm">{t('human.noActivity')}</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })() : (
-                  users.map(user => {
-                    const userActivityCount = activities.filter(a => a.userId === user.id).length;
-                    return (
-                      <div 
-                        key={user.id} 
-                        onClick={() => setSelectedUserId(user.id)}
-                        className="p-5 rounded-xl border border-stone-200/80 bg-white shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_20px_rgba(0,0,0,0.06)] transition-all duration-300 cursor-pointer group"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-stone-100 flex items-center justify-center text-stone-600 font-medium text-sm shadow-sm">
-                              {user.name.charAt(0)}
-                            </div>
-                            <div>
-                              <h2 className="text-base font-semibold text-stone-900 tracking-tight group-hover:text-stone-700 transition-colors">{user.name}</h2>
-                              <p className="text-xs text-stone-500 font-medium">{user.email}</p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <span className="text-xs text-stone-400 font-medium flex items-center gap-1">
-                              <ActivityIcon className="w-3.5 h-3.5" />
-                              {userActivityCount} {t('agent.activities')}
-                            </span>
-                            <button 
-                              className="p-1.5 rounded-md hover:bg-stone-100 text-stone-400 transition-colors opacity-0 group-hover:opacity-100"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <MoreVertical className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </motion.div>
-            )}
-
             {activeTab === 'members' && (
               <motion.div 
                 initial={{ opacity: 0, y: 10 }}
@@ -1583,7 +1434,7 @@ Command: Download the zip package from https://cdn.mindx.com/static/mindx-docs.z
                               </div>
                               <div>
                                 <span className="font-medium text-stone-800 block">{perm.member?.name}</span>
-                                <span className="text-xs text-stone-400">{perm.memberType === 'Agent' ? 'Agent Account' : (perm.member as any)?.email}</span>
+                                <span className="text-xs text-stone-400">{perm.memberType === 'Agent' ? 'Agent Account' : currentUser.email}</span>
                               </div>
                             </div>
                           </td>
@@ -1629,14 +1480,15 @@ Command: Download the zip package from https://cdn.mindx.com/static/mindx-docs.z
                 <div className="bg-white border border-stone-200/80 rounded-xl shadow-[0_2px_12px_rgba(0,0,0,0.02)] p-8 space-y-8">
                   <div>
                     <h2 className="text-xl font-semibold text-stone-900 mb-2 tracking-tight">{t('settings.title')}</h2>
-                    <p className="text-sm text-stone-500">Manage your workspace configuration and preferences.</p>
+                    <p className="text-sm text-stone-500">Manage your space defaults and internal prototype settings.</p>
                   </div>
                   
                   <div className="space-y-4">
                     <label className="block text-sm font-medium text-stone-700">{t('settings.workspaceName')}</label>
                     <input 
                       type="text" 
-                      defaultValue={activeWorkspace?.name}
+                      value={activeWorkspace?.name ?? ''}
+                      onChange={(e) => renameActiveWorkspace(e.target.value)}
                       className="w-full px-4 py-2.5 bg-stone-50/50 border border-stone-200/80 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-stone-900/10 focus:border-stone-400 transition-all"
                     />
                   </div>
@@ -1657,11 +1509,10 @@ Command: Download the zip package from https://cdn.mindx.com/static/mindx-docs.z
                 animate={{ opacity: 1, y: 0 }}
               >
                 {(() => {
-                  // 收集所有文档的全局 labels（跨 workspace）
-                  const allLabels = Array.from(new Set(documents.flatMap(d => d.labels))).sort();
+                  const allLabels = Array.from(new Set(workspaceDocs.flatMap(d => d.labels))).sort();
                   const activeLabel = selectedGlobalLabel || (allLabels.length > 0 ? allLabels[0] : null);
                   const labelDocs = activeLabel 
-                    ? documents.filter(d => d.labels.includes(activeLabel))
+                    ? workspaceDocs.filter(d => d.labels.includes(activeLabel))
                     : [];
 
                   return allLabels.length === 0 ? (
@@ -1676,11 +1527,11 @@ Command: Download the zip package from https://cdn.mindx.com/static/mindx-docs.z
                       <div className="w-52 shrink-0 space-y-1">
                         <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider px-2 mb-3">All Labels</p>
                         {allLabels.map(label => {
-                          const count = documents.filter(d => d.labels.includes(label)).length;
+                          const count = workspaceDocs.filter(d => d.labels.includes(label)).length;
                           return (
                             <button
                               key={label}
-                              onClick={() => { setSelectedGlobalLabel(label); setLabelFilterOwner('all'); setLabelFilterType('all'); setLabelFilterWorkspace('all'); }}
+                              onClick={() => { setSelectedGlobalLabel(label); setLabelFilterOwner('all'); setLabelFilterType('all'); }}
                               className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                                 activeLabel === label 
                                   ? 'bg-white text-stone-900 shadow-[0_1px_3px_rgba(0,0,0,0.05)] border border-stone-200/50' 
@@ -1704,22 +1555,14 @@ Command: Download the zip package from https://cdn.mindx.com/static/mindx-docs.z
                         {activeLabel && (
                           <>
                             {(() => {
-                              // 筛选 + 排序逻辑
                               const labelOwners = Array.from(new Set(labelDocs.map(d => d.creatorName)));
                               const labelTypes = Array.from(new Set(labelDocs.map(d => d.type)));
-                              const labelWorkspaces = Array.from(new Set(labelDocs.map(d => d.workspaceId))).map(wsId => {
-                                const ws = workspaces.find(w => w.id === wsId);
-                                return { id: wsId, name: ws?.name || 'Unknown' };
-                              });
                               let filteredLabelDocs = [...labelDocs];
                               if (labelFilterOwner !== 'all') {
                                 filteredLabelDocs = filteredLabelDocs.filter(d => d.creatorName === labelFilterOwner);
                               }
                               if (labelFilterType !== 'all') {
                                 filteredLabelDocs = filteredLabelDocs.filter(d => d.type === labelFilterType);
-                              }
-                              if (labelFilterWorkspace !== 'all') {
-                                filteredLabelDocs = filteredLabelDocs.filter(d => d.workspaceId === labelFilterWorkspace);
                               }
                               filteredLabelDocs.sort((a, b) => {
                                 const dateA = new Date(a[labelSortBy]).getTime();
@@ -1749,11 +1592,11 @@ Command: Download the zip package from https://cdn.mindx.com/static/mindx-docs.z
                                       <Tag className="w-4 h-4 text-stone-500" />
                                       <span className="text-sm font-semibold text-stone-900">{activeLabel}</span>
                                     </div>
-                                    <span className="text-xs text-stone-400 font-medium">{labelDocs.length} document{labelDocs.length !== 1 ? 's' : ''} across workspaces</span>
+                                    <span className="text-xs text-stone-400 font-medium">{labelDocs.length} document{labelDocs.length !== 1 ? 's' : ''}</span>
                                   </div>
 
                                   {/* Active filter chips */}
-                                  {(labelFilterType !== 'all' || labelFilterOwner !== 'all' || labelFilterWorkspace !== 'all') && (
+                                  {(labelFilterType !== 'all' || labelFilterOwner !== 'all') && (
                                     <div className="flex items-center gap-1.5 mb-4 flex-wrap">
                                       {labelFilterType !== 'all' && (
                                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-sm font-medium bg-stone-100 text-stone-700">
@@ -1784,17 +1627,6 @@ Command: Download the zip package from https://cdn.mindx.com/static/mindx-docs.z
                                           </button>
                                         </span>
                                       )}
-                                      {labelFilterWorkspace !== 'all' && (
-                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-sm font-medium bg-stone-100 text-stone-700">
-                                          {labelWorkspaces.find(ws => ws.id === labelFilterWorkspace)?.name || 'Unknown'}
-                                          <button
-                                            onClick={() => setLabelFilterWorkspace('all')}
-                                            className="ml-0.5 p-0.5 rounded-full hover:bg-stone-200 text-stone-400 hover:text-stone-600 transition-colors"
-                                          >
-                                            <X className="w-3 h-3" />
-                                          </button>
-                                        </span>
-                                      )}
                                     </div>
                                   )}
 
@@ -1807,7 +1639,7 @@ Command: Download the zip package from https://cdn.mindx.com/static/mindx-docs.z
                                           <th className="px-6 py-3 font-medium whitespace-nowrap bg-stone-50/50">
                                             <div className="relative inline-flex items-center">
                                               <button
-                                                onClick={() => { setIsLabelTypFilterOpen(!isLabelTypFilterOpen); setIsLabelSortMenuOpen(false); setIsLabelOwnerFilterOpen(false); setIsLabelWorkspaceFilterOpen(false); }}
+                                                onClick={() => { setIsLabelTypFilterOpen(!isLabelTypFilterOpen); setIsLabelSortMenuOpen(false); setIsLabelOwnerFilterOpen(false); }}
                                                 className={`flex items-center gap-1.5 hover:text-stone-800 transition-colors ${labelFilterType !== 'all' ? 'text-stone-900' : ''}`}
                                               >
                                                 Name
@@ -1842,47 +1674,11 @@ Command: Download the zip package from https://cdn.mindx.com/static/mindx-docs.z
                                               )}
                                             </div>
                                           </th>
-                                          {/* Workspace column with filter */}
-                                          <th className="px-6 py-3 font-medium whitespace-nowrap">
-                                            <div className="relative inline-flex items-center">
-                                              <button
-                                                onClick={() => { setIsLabelWorkspaceFilterOpen(!isLabelWorkspaceFilterOpen); setIsLabelTypFilterOpen(false); setIsLabelSortMenuOpen(false); setIsLabelOwnerFilterOpen(false); }}
-                                                className={`flex items-center gap-1.5 hover:text-stone-800 transition-colors ${labelFilterWorkspace !== 'all' ? 'text-stone-900' : ''}`}
-                                              >
-                                                Workspace
-                                                <ChevronDown className={`w-3 h-3 transition-transform ${isLabelWorkspaceFilterOpen ? 'rotate-180' : ''}`} />
-                                              </button>
-                                              {isLabelWorkspaceFilterOpen && (
-                                                <>
-                                                  <div className="fixed inset-0 z-10" onClick={() => setIsLabelWorkspaceFilterOpen(false)} />
-                                                  <div className="absolute left-0 top-full mt-1 w-48 bg-white border border-stone-200 rounded-lg shadow-xl z-20 overflow-hidden py-1">
-                                                    <div className="px-3 py-1.5 text-[10px] font-bold text-stone-400 uppercase tracking-wider">Filter by workspace</div>
-                                                    <button
-                                                      onClick={() => { setLabelFilterWorkspace('all'); setIsLabelWorkspaceFilterOpen(false); }}
-                                                      className={`w-full text-left px-3 py-1.5 text-sm transition-colors flex items-center gap-2 ${labelFilterWorkspace === 'all' ? 'bg-stone-50 text-stone-900 font-medium' : 'text-stone-600 hover:bg-stone-50'}`}
-                                                    >
-                                                      All Workspaces
-                                                    </button>
-                                                    {labelWorkspaces.map(ws => (
-                                                      <button
-                                                        key={ws.id}
-                                                        onClick={() => { setLabelFilterWorkspace(ws.id); setIsLabelWorkspaceFilterOpen(false); }}
-                                                        className={`w-full text-left px-3 py-1.5 text-sm transition-colors flex items-center gap-2 ${labelFilterWorkspace === ws.id ? 'bg-stone-50 text-stone-900 font-medium' : 'text-stone-600 hover:bg-stone-50'}`}
-                                                      >
-                                                        {ws.name}
-                                                        {labelFilterWorkspace === ws.id && <Check className="w-3.5 h-3.5 text-stone-900 ml-auto" />}
-                                                      </button>
-                                                    ))}
-                                                  </div>
-                                                </>
-                                              )}
-                                            </div>
-                                          </th>
                                           {/* Owner column with filter */}
                                           <th className="px-6 py-3 font-medium whitespace-nowrap">
                                             <div className="relative inline-flex items-center">
                                               <button
-                                                onClick={() => { setIsLabelOwnerFilterOpen(!isLabelOwnerFilterOpen); setIsLabelTypFilterOpen(false); setIsLabelSortMenuOpen(false); setIsLabelWorkspaceFilterOpen(false); }}
+                                                onClick={() => { setIsLabelOwnerFilterOpen(!isLabelOwnerFilterOpen); setIsLabelTypFilterOpen(false); setIsLabelSortMenuOpen(false); }}
                                                 className={`flex items-center gap-1.5 hover:text-stone-800 transition-colors ${labelFilterOwner !== 'all' ? 'text-stone-900' : ''}`}
                                               >
                                                 Owner
@@ -1925,7 +1721,7 @@ Command: Download the zip package from https://cdn.mindx.com/static/mindx-docs.z
                                           <th className="px-6 py-3 font-medium whitespace-nowrap">
                                             <div className="relative inline-flex items-center">
                                               <button
-                                                onClick={() => { setIsLabelSortMenuOpen(!isLabelSortMenuOpen); setIsLabelTypFilterOpen(false); setIsLabelOwnerFilterOpen(false); setIsLabelWorkspaceFilterOpen(false); }}
+                                                onClick={() => { setIsLabelSortMenuOpen(!isLabelSortMenuOpen); setIsLabelTypFilterOpen(false); setIsLabelOwnerFilterOpen(false); }}
                                                 className="flex items-center gap-1.5 hover:text-stone-800 transition-colors whitespace-nowrap"
                                               >
                                                 {labelSortBy === 'lastModified' ? 'Last Modified' : 'Last Viewed'}
@@ -1962,11 +1758,11 @@ Command: Download the zip package from https://cdn.mindx.com/static/mindx-docs.z
                                       <tbody className="divide-y divide-stone-100">
                                         {filteredLabelDocs.length === 0 ? (
                                           <tr>
-                                            <td colSpan={5} className="px-6 py-12 text-center text-stone-500">
+                                            <td colSpan={4} className="px-6 py-12 text-center text-stone-500">
                                               <FileText className="w-8 h-8 mx-auto mb-3 text-stone-300" />
                                               <p>No documents match the current filters</p>
                                               <button
-                                                onClick={() => { setLabelFilterOwner('all'); setLabelFilterType('all'); setLabelFilterWorkspace('all'); }}
+                                                onClick={() => { setLabelFilterOwner('all'); setLabelFilterType('all'); }}
                                                 className="mt-2 text-sm text-stone-900 font-medium hover:underline"
                                               >
                                                 Clear all filters
@@ -1975,7 +1771,6 @@ Command: Download the zip package from https://cdn.mindx.com/static/mindx-docs.z
                                           </tr>
                                         ) : (
                                           filteredLabelDocs.map(doc => {
-                                            const ws = workspaces.find(w => w.id === doc.workspaceId);
                                             return (
                                               <tr 
                                                 key={doc.id} 
@@ -1990,11 +1785,6 @@ Command: Download the zip package from https://cdn.mindx.com/static/mindx-docs.z
                                                     {(doc.type === 'Markdown' || !['Table', 'Whiteboard', 'Chat Log'].includes(doc.type)) && <FileText className="w-4 h-4 text-stone-400 shrink-0" />}
                                                     <span className="font-medium text-stone-800">{doc.name}</span>
                                                   </div>
-                                                </td>
-                                                <td className="px-6 py-3 whitespace-nowrap">
-                                                  <span className="inline-flex items-center gap-1.5 text-xs font-medium text-stone-500 bg-stone-50 px-2 py-0.5 rounded-md border border-stone-200/50">
-                                                    {ws?.name || 'Unknown'}
-                                                  </span>
                                                 </td>
                                                 <td className="px-6 py-3 whitespace-nowrap">
                                                   <div className="flex items-center gap-2 text-stone-500">
@@ -2156,7 +1946,7 @@ function DocRow({ docId, name, type, date, labels, creatorName, creatorType, onD
               <Bot className="w-3 h-3" />
             </div>
           ) : (
-            <div className="w-5 h-5 rounded bg-stone-100 flex items-center justify-center text-stone-500 shrink-0" title="Human">
+            <div className="w-5 h-5 rounded bg-stone-100 flex items-center justify-center text-stone-500 shrink-0" title={creatorName}>
               <User className="w-3 h-3" />
             </div>
           )}
@@ -2302,7 +2092,7 @@ function ActivityFeed({ activities }: ActivityFeedProps) {
       {activities.length === 0 && (
         <div className="py-20 text-center">
           <ActivityIcon className="w-12 h-12 text-stone-200 mx-auto mb-4" />
-          <p className="text-stone-400 text-sm">No recent activity in this workspace</p>
+          <p className="text-stone-400 text-sm">No recent activity yet</p>
         </div>
       )}
     </div>
