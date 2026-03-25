@@ -8,15 +8,12 @@ import {
   Save, 
   Bot, 
   Clock, 
-  CheckCircle2,
   Sparkles,
   RefreshCw,
   MoreHorizontal,
   Quote,
   Check,
   X,
-  Reply,
-  MessageCircle,
   Send
 } from 'lucide-react';
 
@@ -33,6 +30,93 @@ interface ChatMessage {
   sender: string;
   senderType: 'human' | 'agent';
   time: string;
+}
+
+type CommentThreadType = 'comment' | 'modify';
+
+interface CommentMessage {
+  id: string;
+  author: string;
+  authorType: 'human' | 'agent';
+  text: string;
+  time: string;
+}
+
+interface CommentThread {
+  id: number;
+  highlight: string;
+  type: CommentThreadType;
+  resolved: boolean;
+  createdAtLabel: string;
+  messages: CommentMessage[];
+  draftText: string;
+  isDraft: boolean;
+  isReplying: boolean;
+  replyDraftText: string;
+  isAwaitingReply: boolean;
+}
+
+function formatThreadHighlight(highlight: string) {
+  const normalized = highlight.replace(/\s+/g, ' ').trim();
+  return normalized.length > 60 ? `${normalized.slice(0, 57)}...` : normalized;
+}
+
+function formatCommentRequest(commentText: string) {
+  const normalized = commentText.replace(/\s+/g, ' ').trim();
+  return normalized.length > 90 ? `${normalized.slice(0, 87)}...` : normalized;
+}
+
+function buildModifyFollowUp(highlight: string, commentText: string) {
+  const focusedHighlight = formatThreadHighlight(highlight);
+  const lowerComment = commentText.toLowerCase();
+  const lowerHighlight = highlight.toLowerCase();
+
+  if ((lowerComment.includes('sharp') || lowerComment.includes('product')) && lowerHighlight.includes('core architecture')) {
+    return 'Proposed rewrite: "Project Alpha needs a production-ready architecture that keeps Auth, Data, and Notification services easy to scale independently."';
+  }
+
+  if (lowerComment.includes('clear') || lowerComment.includes('clarify')) {
+    return `I'll rewrite the passage around "${focusedHighlight}" so the decision and next step are explicit in one pass.`;
+  }
+
+  return `I'll revise the passage around "${focusedHighlight}" so the requested tone shift lands without breaking the surrounding flow.`;
+}
+
+function buildCommentFollowUp(highlight: string, commentText: string) {
+  const focusedHighlight = formatThreadHighlight(highlight);
+  const lowerComment = commentText.toLowerCase();
+  const lowerHighlight = highlight.toLowerCase();
+
+  if ((lowerComment.includes('sharp') || lowerComment.includes('product')) && lowerHighlight.includes('core architecture')) {
+    return 'Planned update: reframe the opening so it reads less like a note and more like a product-facing positioning line.';
+  }
+
+  if (lowerComment.includes('staging') || lowerHighlight.includes('deployment')) {
+    return 'Planned update: add a staging approval checkpoint, name the owner, and make the release sequence easier to scan.';
+  }
+
+  if (lowerComment.includes('owner') || lowerComment.includes('responsibility')) {
+    return `Planned update: clarify who owns "${focusedHighlight}" and call out the handoff point directly in the paragraph.`;
+  }
+
+  return `Planned update: address the note on "${focusedHighlight}" and tighten the nearby wording so the intent is clearer.`;
+}
+
+function buildAgentReply(type: CommentThreadType, highlight: string, commentText: string) {
+  const focusedHighlight = formatThreadHighlight(highlight);
+  const summarizedRequest = formatCommentRequest(commentText);
+
+  if (type === 'modify') {
+    return [
+      `Understood. I'll update "${focusedHighlight}" based on your note: "${summarizedRequest}".`,
+      buildModifyFollowUp(highlight, commentText)
+    ];
+  }
+
+  return [
+    `Makes sense. I'll address the note on "${focusedHighlight}" without changing the overall structure of the section.`,
+    buildCommentFollowUp(highlight, commentText)
+  ];
 }
 
 export default function DocumentEditor() {
@@ -107,32 +191,62 @@ export default function DocumentEditor() {
     }
   ]);
 
-  const [comments, setComments] = useState([
+  const [comments, setComments] = useState<CommentThread[]>(() => [
     {
       id: 1,
-      author: 'Claude 3.5 Sonnet',
-      authorType: 'agent' as const,
-      text: 'I suggest we use Redis for caching to improve the performance of the Data Service.',
-      time: '10 mins ago',
-      resolved: false,
       highlight: 'Data Service',
-      type: 'modify'
+      type: 'modify',
+      resolved: false,
+      createdAtLabel: '10 mins ago',
+      draftText: '',
+      isDraft: false,
+      isReplying: false,
+      replyDraftText: '',
+      isAwaitingReply: false,
+      messages: [
+        {
+          id: '1-agent-initial',
+          author: 'Claude 3.5 Sonnet',
+          authorType: 'agent',
+          text: 'I suggest we use Redis for caching to improve the performance of the Data Service.',
+          time: '10 mins ago'
+        }
+      ]
     },
     {
       id: 2,
-      author: externalCollaboratorName,
-      authorType: 'human' as const,
-      text: 'Please also mention the staging approval step before deployment so our review flow is clear.',
-      time: '5 mins ago',
-      resolved: true,
       highlight: '### 3. Deployment',
-      type: 'comment'
+      type: 'comment',
+      resolved: true,
+      createdAtLabel: '5 mins ago',
+      draftText: '',
+      isDraft: false,
+      isReplying: false,
+      replyDraftText: '',
+      isAwaitingReply: false,
+      messages: [
+        {
+          id: '2-human-initial',
+          author: externalCollaboratorName,
+          authorType: 'human',
+          text: 'Please also mention the staging approval step before deployment so our review flow is clear.',
+          time: '5 mins ago'
+        },
+        {
+          id: '2-agent-initial',
+          author: 'Claude 3.5 Sonnet',
+          authorType: 'agent',
+          text: 'Makes sense. I can add a staging approval checkpoint before release so the rollout path is explicit.',
+          time: '4 mins ago'
+        }
+      ]
     }
   ]);
 
-  const [activeCommentId, setActiveCommentId] = useState<number | null>(null);
+  const [selectedCommentId, setSelectedCommentId] = useState<number | null>(null);
   const [selectionMenu, setSelectionMenu] = useState<{ x: number, y: number, text: string } | null>(null);
   const commentRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+  const replyTimeoutsRef = useRef<Array<ReturnType<typeof window.setTimeout>>>([]);
   const editorRef = useRef<HTMLDivElement>(null);
 
   const handleSendMessage = () => {
@@ -149,6 +263,9 @@ export default function DocumentEditor() {
     setChatMessages([...chatMessages, newMsg]);
     setNewMessage('');
   };
+
+  const createTimeLabel = () =>
+    new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
   const handleMouseUp = () => {
     const selection = window.getSelection();
@@ -167,40 +284,167 @@ export default function DocumentEditor() {
     });
   };
 
-  const addNewComment = (type: 'comment' | 'modify' = 'comment') => {
+  const addNewComment = (type: CommentThreadType = 'comment') => {
     if (!selectionMenu) return;
-    
-    const newComment = {
+
+    const newComment: CommentThread = {
       id: Date.now(),
-      author: currentUserName,
-      authorType: 'human' as const,
-      text: '',
-      time: 'Just now',
-      resolved: false,
       highlight: selectionMenu.text,
-      type: type
+      resolved: false,
+      type,
+      createdAtLabel: 'Just now',
+      messages: [],
+      draftText: '',
+      isDraft: true,
+      isReplying: false,
+      replyDraftText: '',
+      isAwaitingReply: false
     };
-    
-    setComments([newComment, ...comments]);
-    setActiveCommentId(newComment.id);
+
+    setComments(prev => [newComment, ...prev]);
+    setSelectedCommentId(newComment.id);
     setSelectionMenu(null);
-    
+
     // Clear selection
     window.getSelection()?.removeAllRanges();
   };
+
   useEffect(() => {
-    if (activeCommentId) {
-      const card = commentRefs.current.get(activeCommentId);
+    if (selectedCommentId) {
+      const card = commentRefs.current.get(selectedCommentId);
       if (card) {
         card.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
-
-      const timer = setTimeout(() => {
-        setActiveCommentId(null);
-      }, 3000);
-      return () => clearTimeout(timer);
     }
-  }, [activeCommentId]);
+  }, [selectedCommentId, comments]);
+
+  useEffect(() => {
+    return () => {
+      replyTimeoutsRef.current.forEach(timeoutId => window.clearTimeout(timeoutId));
+    };
+  }, []);
+
+  const updateDraftText = (commentId: number, draftText: string) => {
+    setComments(prev =>
+      prev.map(comment =>
+        comment.id === commentId ? { ...comment, draftText } : comment
+      )
+    );
+  };
+
+  const cancelDraftComment = (commentId: number) => {
+    setComments(prev =>
+      prev.filter(comment => !(comment.id === commentId && comment.isDraft))
+    );
+    setSelectedCommentId(prev => (prev === commentId ? null : prev));
+  };
+
+  const markCommentResolved = (commentId: number) => {
+    setComments(prev =>
+      prev.map(comment =>
+        comment.id === commentId
+          ? { ...comment, resolved: true, isAwaitingReply: false, isReplying: false, replyDraftText: '' }
+          : comment
+      )
+    );
+  };
+
+  const openReplyComposer = (commentId: number) => {
+    setComments(prev =>
+      prev.map(comment =>
+        comment.id === commentId
+          ? { ...comment, isReplying: true }
+          : { ...comment, isReplying: false }
+      )
+    );
+    setSelectedCommentId(commentId);
+  };
+
+  const updateReplyDraftText = (commentId: number, replyDraftText: string) => {
+    setComments(prev =>
+      prev.map(comment =>
+        comment.id === commentId ? { ...comment, replyDraftText } : comment
+      )
+    );
+  };
+
+  const cancelReplyDraft = (commentId: number) => {
+    setComments(prev =>
+      prev.map(comment =>
+        comment.id === commentId
+          ? { ...comment, isReplying: false, replyDraftText: '' }
+          : comment
+      )
+    );
+  };
+
+  const submitCommentMessage = (commentId: number, source: 'draft' | 'reply') => {
+    const comment = comments.find(item => item.id === commentId);
+    const draftText = source === 'draft'
+      ? comment?.draftText.trim()
+      : comment?.replyDraftText.trim();
+
+    if (!comment || !draftText) return;
+
+    const submittedAt = createTimeLabel();
+    const submittedMessage: CommentMessage = {
+      id: `${commentId}-human-${Date.now()}`,
+      author: currentUserName,
+      authorType: 'human',
+      text: draftText,
+      time: submittedAt
+    };
+    const agentReplyTexts = buildAgentReply(comment.type, comment.highlight, draftText);
+
+    setComments(prev =>
+      prev.map(item =>
+        item.id === commentId
+          ? {
+              ...item,
+              createdAtLabel: 'Just now',
+              messages: [...item.messages, submittedMessage],
+              draftText: '',
+              isDraft: false,
+              isReplying: false,
+              replyDraftText: '',
+              isAwaitingReply: true
+            }
+          : item
+      )
+    );
+    setSelectedCommentId(commentId);
+
+    const replyTimeoutId = window.setTimeout(() => {
+      setComments(prev =>
+        prev.map(item => {
+          if (item.id !== commentId || !item.isAwaitingReply) {
+            return item;
+          }
+
+          return {
+            ...item,
+            isAwaitingReply: false,
+            messages: [
+              ...item.messages,
+              ...agentReplyTexts.map((text, index) => ({
+                id: `${commentId}-agent-${Date.now()}-${index}`,
+                author: 'Claude 3.5 Sonnet',
+                authorType: 'agent' as const,
+                text,
+                time: 'Just now'
+              }))
+            ]
+          };
+        })
+      );
+      replyTimeoutsRef.current = replyTimeoutsRef.current.filter(id => id !== replyTimeoutId);
+    }, 900);
+
+    replyTimeoutsRef.current.push(replyTimeoutId);
+  };
+
+  const isCurrentUserMessage = (message: CommentMessage) =>
+    message.authorType === 'human' && message.author === currentUserName;
 
   const highlightText = (text: string) => {
     let result: (string | React.ReactNode)[] = [text];
@@ -219,10 +463,10 @@ export default function DocumentEditor() {
               newResult.push(
                 <span 
                   key={`${comment.id}-${i}`}
-                  className={`comment-highlight ${activeCommentId === comment.id ? 'active' : ''}`}
+                  className={`comment-highlight ${selectedCommentId === comment.id ? 'active' : ''}`}
                   onClick={(e) => {
                     e.stopPropagation();
-                    setActiveCommentId(comment.id);
+                    setSelectedCommentId(comment.id);
                   }}
                 >
                   {comment.highlight}
@@ -433,9 +677,9 @@ export default function DocumentEditor() {
                 }}
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
-                onClick={() => setActiveCommentId(comment.id)}
+                onClick={() => setSelectedCommentId(comment.id)}
                 className={`p-4 rounded-xl border bg-white shadow-sm cursor-pointer transition-all comment-card ${
-                  activeCommentId === comment.id 
+                  selectedCommentId === comment.id || comment.isDraft
                     ? 'active border-stone-400 ring-2 ring-stone-900/5' 
                     : 'border-stone-200'
                 } ${
@@ -453,9 +697,25 @@ export default function DocumentEditor() {
                     }`}>
                       {comment.type === 'modify' ? 'Suggestion' : 'Comment'}
                     </span>
+                    {comment.isDraft && (
+                      <span className="text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded bg-sky-100 text-sky-700 border border-sky-200">
+                        Draft
+                      </span>
+                    )}
                     <span className="text-[10px] text-stone-400">•</span>
-                    <span className="text-[10px] text-stone-500">{comment.time}</span>
+                    <span className="text-[10px] text-stone-500">{comment.createdAtLabel}</span>
                   </div>
+                  {comment.type === 'comment' && !comment.isDraft && !comment.resolved && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        markCommentResolved(comment.id);
+                      }}
+                      className="text-[10px] font-medium text-stone-400 hover:text-stone-600 px-2 py-1 rounded-md hover:bg-stone-100 transition-colors"
+                    >
+                      Resolve
+                    </button>
+                  )}
                   {comment.resolved && (
                     <span className="text-[10px] font-medium text-emerald-600 flex items-center gap-1">
                       <Check className="w-3 h-3" /> Resolved
@@ -463,19 +723,6 @@ export default function DocumentEditor() {
                   )}
                 </div>
 
-                <div className="flex items-center gap-2 mb-3">
-                  {comment.authorType === 'human' ? (
-                    <div className="w-5 h-5 rounded-full bg-stone-200 flex items-center justify-center text-[10px] text-stone-700">
-                      {comment.author.charAt(0)}
-                    </div>
-                  ) : (
-                    <div className="w-5 h-5 rounded-full bg-stone-100 flex items-center justify-center text-[10px] text-stone-600">
-                      <Bot className="w-3 h-3" />
-                    </div>
-                  )}
-                  <span className="text-xs font-medium text-stone-900">{comment.author}</span>
-                </div>
-                
                 <div className="mb-3">
                   <div className="flex items-start gap-2 mb-2 p-2 bg-stone-50 rounded-lg border-l-2 border-stone-300">
                     <div className="mt-0.5">
@@ -487,77 +734,181 @@ export default function DocumentEditor() {
                       </span>
                     </div>
                   </div>
-                  {activeCommentId === comment.id && !comment.text ? (
+                  {comment.isDraft ? (
                     <div className="px-1">
                       <textarea
-                        autoFocus
+                        autoFocus={selectedCommentId === comment.id}
+                        value={comment.draftText}
                         placeholder="Write a comment..."
                         className="w-full bg-stone-50 border border-stone-200 rounded-lg p-2 text-sm focus:outline-none focus:border-stone-300 transition-colors resize-none"
-                        rows={3}
+                        rows={4}
+                        onChange={(e) => updateDraftText(comment.id, e.target.value)}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' && !e.shiftKey) {
                             e.preventDefault();
-                            const val = (e.target as HTMLTextAreaElement).value;
-                            if (val.trim()) {
-                              setComments(prev => prev.map(c => c.id === comment.id ? { ...c, text: val } : c));
-                            }
+                            submitCommentMessage(comment.id, 'draft');
                           }
                         }}
                       />
                       <div className="flex justify-end gap-2 mt-2">
                         <button 
-                          onClick={() => setComments(prev => prev.filter(c => c.id !== comment.id))}
+                          onClick={() => cancelDraftComment(comment.id)}
                           className="px-2 py-1 text-[10px] font-medium text-stone-500 hover:text-stone-800 transition-colors"
                         >
                           Cancel
                         </button>
                         <button 
-                          onClick={(e) => {
-                            const textarea = e.currentTarget.parentElement?.previousElementSibling as HTMLTextAreaElement;
-                            if (textarea.value.trim()) {
-                              setComments(prev => prev.map(c => c.id === comment.id ? { ...c, text: textarea.value } : c));
-                            }
-                          }}
-                          className="px-2 py-1 bg-stone-900 text-white text-[10px] font-medium rounded hover:bg-stone-800 transition-colors"
+                          onClick={() => submitCommentMessage(comment.id, 'draft')}
+                          disabled={!comment.draftText.trim()}
+                          className="px-2 py-1 bg-stone-900 text-white text-[10px] font-medium rounded hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           Comment
                         </button>
                       </div>
                     </div>
                   ) : (
-                    <p className="text-sm text-stone-700 leading-relaxed px-1">
-                      {comment.text || (
-                        <span className="text-stone-400 italic">Add your comment...</span>
+                    <div className="space-y-2.5 px-1">
+                      {comment.messages.map((message) => (
+                        <div
+                          key={message.id}
+                          className={`rounded-lg border px-3 py-2.5 ${
+                            message.authorType === 'agent'
+                              ? 'bg-stone-50 border-stone-200'
+                              : 'bg-white border-stone-200'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <div className="relative">
+                              <div
+                                className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${
+                                  message.authorType === 'agent'
+                                    ? 'bg-white text-stone-500 border border-stone-200'
+                                    : 'bg-stone-100 text-stone-700 border border-stone-300'
+                                }`}
+                              >
+                                {message.authorType === 'agent' ? (
+                                  <Bot className="w-3 h-3" />
+                                ) : (
+                                  message.author.charAt(0)
+                                )}
+                              </div>
+                              {isCurrentUserMessage(message) && (
+                                <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-stone-900 border border-white" />
+                              )}
+                            </div>
+                            <span
+                              className={`text-[10px] font-bold uppercase tracking-wider ${
+                                message.authorType === 'agent' ? 'text-stone-500' : 'text-stone-600'
+                              }`}
+                            >
+                              {message.author}
+                            </span>
+                            {isCurrentUserMessage(message) && (
+                              <span className="text-[10px] font-medium text-stone-400">you</span>
+                            )}
+                            <span
+                              className={`text-[10px] ${
+                                message.authorType === 'agent' ? 'text-stone-400' : 'text-stone-400'
+                              }`}
+                            >
+                              {message.time}
+                            </span>
+                          </div>
+                          <p
+                            className={`text-sm leading-relaxed ${
+                              message.authorType === 'agent' ? 'text-stone-700' : 'text-stone-700'
+                            }`}
+                          >
+                            {message.text}
+                          </p>
+                        </div>
+                      ))}
+
+                      {comment.isAwaitingReply && (
+                        <div className="rounded-lg border border-dashed border-stone-300 bg-stone-50 px-3 py-3">
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <div className="w-5 h-5 rounded-full bg-white text-stone-500 border border-stone-200 flex items-center justify-center">
+                              <Bot className="w-3 h-3" />
+                            </div>
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-stone-500">
+                              Claude 3.5 Sonnet
+                            </span>
+                          </div>
+                          <p className="text-sm text-stone-400 italic">Drafting a reply...</p>
+                        </div>
                       )}
-                    </p>
+                    </div>
                   )}
                 </div>
                 
-                {!comment.resolved && (
+                {!comment.resolved && !comment.isDraft && (
                   <div className="flex flex-col gap-2 mt-3 pt-3 border-t border-stone-100">
                     {comment.type === 'modify' ? (
-                      <>
-                        <div className="flex items-center gap-2">
-                          <button className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded bg-emerald-50 hover:bg-emerald-100 text-xs font-medium text-emerald-700 transition-colors border border-emerald-200">
+                      <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => markCommentResolved(comment.id)}
+                            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded bg-emerald-50 hover:bg-emerald-100 text-xs font-medium text-emerald-700 transition-colors border border-emerald-200"
+                          >
                             <Check className="w-3 h-3" /> Accept
                           </button>
-                          <button className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded bg-rose-50 hover:bg-rose-100 text-xs font-medium text-rose-700 transition-colors border border-rose-200">
+                          <button
+                            onClick={() => markCommentResolved(comment.id)}
+                            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded bg-rose-50 hover:bg-rose-100 text-xs font-medium text-rose-700 transition-colors border border-rose-200"
+                          >
                             <X className="w-3 h-3" /> Reject
                           </button>
-                        </div>
-                        <button className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded bg-stone-50 hover:bg-stone-100 text-xs font-medium text-stone-600 transition-colors border border-stone-200">
-                          <Reply className="w-3 h-3" /> Reply
-                        </button>
-                      </>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <button className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded bg-stone-50 hover:bg-stone-100 text-xs font-medium text-stone-600 transition-colors border border-stone-200">
-                          <Reply className="w-3 h-3" /> Reply
-                        </button>
-                        <button className="flex items-center justify-center gap-1 flex-1 py-1.5 rounded bg-stone-900 hover:bg-stone-800 text-xs font-medium text-white transition-colors">
-                          <CheckCircle2 className="w-3 h-3" /> Resolve
-                        </button>
                       </div>
+                    ) : (
+                      comment.isReplying ? (
+                        <div className="space-y-2">
+                          <textarea
+                            autoFocus={selectedCommentId === comment.id}
+                            value={comment.replyDraftText}
+                            placeholder="Reply in thread..."
+                            className="w-full bg-stone-50 border border-stone-200 rounded-lg p-2 text-sm focus:outline-none focus:border-stone-300 transition-colors resize-none"
+                            rows={3}
+                            onClick={(e) => e.stopPropagation()}
+                            onChange={(e) => updateReplyDraftText(comment.id, e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                submitCommentMessage(comment.id, 'reply');
+                              }
+                            }}
+                          />
+                          <div className="flex justify-end gap-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                cancelReplyDraft(comment.id);
+                              }}
+                              className="px-2 py-1 text-[10px] font-medium text-stone-500 hover:text-stone-800 transition-colors"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                submitCommentMessage(comment.id, 'reply');
+                              }}
+                              disabled={!comment.replyDraftText.trim()}
+                              className="px-2 py-1 bg-stone-900 text-white text-[10px] font-medium rounded hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              Reply
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openReplyComposer(comment.id);
+                          }}
+                          className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-stone-50 hover:bg-stone-100 text-xs font-medium text-stone-600 transition-colors border border-stone-200"
+                        >
+                          <MessageSquare className="w-3.5 h-3.5" /> Reply in thread
+                        </button>
+                      )
                     )}
                   </div>
                 )}
