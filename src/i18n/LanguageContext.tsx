@@ -144,7 +144,7 @@ const translations: Record<Language, Record<string, string>> = {
     // Dashboard - Extra UI
     'sidebar.core': 'Core',
     'sidebar.labels': 'Labels',
-    'docs.owner': 'Owner',
+    'docs.owner': 'Creator',
     'docs.labels': 'Labels',
     'docs.lastModified': 'Last Modified',
     'docs.lastViewed': 'Last Viewed',
@@ -161,8 +161,13 @@ const translations: Record<Language, Record<string, string>> = {
     'docs.actions.delete': 'Delete',
     'access.addAgent': 'Add Agent',
     'common.new': 'New',
-    'docs.filterByOwner': 'Filter by owner',
-    'docs.allOwners': 'All Owners',
+    'docs.filterByOwner': 'Filter by creator',
+    'docs.allOwners': 'All Creators',
+    'docs.actions.share': 'Share',
+    'share.title': 'Share Document',
+    'share.desc': 'Share this document via a public link',
+    'share.publicLink': 'Public Link',
+    'share.anyoneWithLink': 'Anyone with this link can view this document.',
   },
   zh: {
     // Nav & Common
@@ -299,7 +304,7 @@ const translations: Record<Language, Record<string, string>> = {
     // Dashboard - Extra UI
     'sidebar.core': '核心',
     'sidebar.labels': '标签',
-    'docs.owner': '所有者',
+    'docs.owner': '创建者',
     'docs.labels': '标签',
     'docs.lastModified': '最近修改',
     'docs.lastViewed': '最近查看',
@@ -316,8 +321,13 @@ const translations: Record<Language, Record<string, string>> = {
     'docs.actions.delete': '删除',
     'access.addAgent': '添加 Agent',
     'common.new': '新建',
-    'docs.filterByOwner': '按所有者筛选',
-    'docs.allOwners': '所有所有者',
+    'docs.filterByOwner': '按创建者筛选',
+    'docs.allOwners': '所有创建者',
+    'docs.actions.share': '分享',
+    'share.title': '分享文档',
+    'share.desc': '通过公开链接分享此文档',
+    'share.publicLink': '公开链接',
+    'share.anyoneWithLink': '拥有链接的人均可查看此文档。',
   }
 };
 
