@@ -37,11 +37,13 @@ interface ChatMessage {
 
 export default function DocumentEditor() {
   const navigate = useNavigate();
+  const currentUserName = 'You';
+  const externalCollaboratorName = 'Maya Chen';
   const [isChatLog, setIsChatLog] = useState(false);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
-    { id: 'm1', sender: 'Human', senderType: 'human', text: 'Hey Claude, can you help me draft the architecture for Project Alpha?', time: '10:00 AM' },
+    { id: 'm1', sender: externalCollaboratorName, senderType: 'human', text: 'Hey Claude, can you help me draft the architecture for Project Alpha?', time: '10:00 AM' },
     { id: 'm2', sender: 'Claude 3.5 Sonnet', senderType: 'agent', text: 'Of course! I\'d be happy to help. What are the main requirements for the system?', time: '10:01 AM' },
-    { id: 'm3', sender: 'Human', senderType: 'human', text: 'It needs to be a microservices-based system with an Auth Service, Data Service, and Notification Service.', time: '10:05 AM' },
+    { id: 'm3', sender: externalCollaboratorName, senderType: 'human', text: 'It needs to be a microservices-based system with an Auth Service, Data Service, and Notification Service.', time: '10:05 AM' },
     { id: 'm4', sender: 'Claude 3.5 Sonnet', senderType: 'agent', text: 'Got it. For the Auth Service, I recommend using OAuth 2.0. The Data Service should probably use PostgreSQL for relational data.', time: '10:07 AM' },
   ]);
   const [newMessage, setNewMessage] = useState('');
@@ -58,19 +60,19 @@ export default function DocumentEditor() {
     {
       id: 'p1',
       text: '## Project Alpha Architecture',
-      author: 'Human',
+      author: currentUserName,
       authorType: 'human'
     },
     {
       id: 'p2',
       text: 'This document outlines the core architecture for Project Alpha.',
-      author: 'Human',
+      author: currentUserName,
       authorType: 'human'
     },
     {
       id: 'p3',
       text: '### 1. Overview',
-      author: 'Human',
+      author: currentUserName,
       authorType: 'human'
     },
     {
@@ -82,7 +84,7 @@ export default function DocumentEditor() {
     {
       id: 'p5',
       text: '### 2. Database Schema',
-      author: 'Human',
+      author: currentUserName,
       authorType: 'human'
     },
     {
@@ -94,13 +96,13 @@ export default function DocumentEditor() {
     {
       id: 'p7',
       text: '### 3. Deployment',
-      author: 'Human',
+      author: currentUserName,
       authorType: 'human'
     },
     {
       id: 'p8',
-      text: 'The application will be containerized using Docker and deployed to a Kubernetes cluster. We will use GitHub Actions for CI/CD.',
-      author: 'Human',
+      text: 'The application will be containerized using Docker and deployed to a Kubernetes cluster. Maya also wants staging approval checkpoints called out before the release section.',
+      author: externalCollaboratorName,
       authorType: 'human'
     }
   ]);
@@ -109,6 +111,7 @@ export default function DocumentEditor() {
     {
       id: 1,
       author: 'Claude 3.5 Sonnet',
+      authorType: 'agent' as const,
       text: 'I suggest we use Redis for caching to improve the performance of the Data Service.',
       time: '10 mins ago',
       resolved: false,
@@ -117,11 +120,12 @@ export default function DocumentEditor() {
     },
     {
       id: 2,
-      author: 'Human',
-      text: 'Good idea. Let\'s add that to the next sprint.',
+      author: externalCollaboratorName,
+      authorType: 'human' as const,
+      text: 'Please also mention the staging approval step before deployment so our review flow is clear.',
       time: '5 mins ago',
       resolved: true,
-      highlight: 'Redis for caching',
+      highlight: '### 3. Deployment',
       type: 'comment'
     }
   ]);
@@ -136,7 +140,7 @@ export default function DocumentEditor() {
     
     const newMsg: ChatMessage = {
       id: `m${Date.now()}`,
-      sender: 'Human',
+      sender: currentUserName,
       senderType: 'human',
       text: newMessage,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -168,7 +172,8 @@ export default function DocumentEditor() {
     
     const newComment = {
       id: Date.now(),
-      author: 'Human',
+      author: currentUserName,
+      authorType: 'human' as const,
       text: '',
       time: 'Just now',
       resolved: false,
@@ -248,7 +253,7 @@ export default function DocumentEditor() {
               {isChatLog ? 'Chat Log' : 'Markdown'}
             </span>
             <h1 className="text-sm font-medium text-stone-900">
-              {isChatLog ? 'Claude & Human: Feature Discussion' : 'Project Alpha Architecture'}
+              {isChatLog ? 'Claude & Maya: Feature Discussion' : 'Project Alpha Architecture'}
             </h1>
           </div>
         </div>
@@ -263,8 +268,11 @@ export default function DocumentEditor() {
             <div className="w-6 h-6 rounded-full bg-stone-100 flex items-center justify-center text-[10px] text-stone-600 border border-white z-10" title="Claude 3.5 Sonnet">
               <Bot className="w-3 h-3" />
             </div>
-            <div className="w-6 h-6 rounded-full bg-stone-200 flex items-center justify-center text-[10px] text-stone-700 border border-white z-20" title="Human">
-              H
+            <div
+              className="w-6 h-6 rounded-full bg-stone-200 flex items-center justify-center text-[10px] text-stone-700 border border-white z-20"
+              title={isChatLog ? externalCollaboratorName : currentUserName}
+            >
+              {(isChatLog ? externalCollaboratorName : currentUserName).charAt(0)}
             </div>
           </div>
 
@@ -456,9 +464,9 @@ export default function DocumentEditor() {
                 </div>
 
                 <div className="flex items-center gap-2 mb-3">
-                  {comment.author === 'Human' ? (
+                  {comment.authorType === 'human' ? (
                     <div className="w-5 h-5 rounded-full bg-stone-200 flex items-center justify-center text-[10px] text-stone-700">
-                      H
+                      {comment.author.charAt(0)}
                     </div>
                   ) : (
                     <div className="w-5 h-5 rounded-full bg-stone-100 flex items-center justify-center text-[10px] text-stone-600">
