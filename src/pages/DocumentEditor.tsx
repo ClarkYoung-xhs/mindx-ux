@@ -908,16 +908,6 @@ export default function DocumentEditor() {
                     <Tag className="w-4 h-4 text-stone-400" />
                     设置标签
                   </button>
-                  <button
-                    onClick={() => {
-                      setShowMoreMenu(false);
-                      setAgentPermissionModalOpen(true);
-                    }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
-                  >
-                    <Shield className="w-4 h-4 text-stone-400" />
-                    Agent权限设置
-                  </button>
                 </motion.div>
               </>
             )}
