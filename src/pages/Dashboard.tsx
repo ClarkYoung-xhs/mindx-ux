@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import OnboardingWizard from '../components/OnboardingWizard';
+import { getDocTypeIcon } from '../components/DocIcons';
 import { useLanguage, LanguageSwitcher } from '../i18n/LanguageContext';
 import { 
   Copy, 
@@ -85,12 +86,12 @@ interface AgentPermission {
 }
 
 const initialDocuments: WorkspaceDoc[] = [
-  { id: 'd1', workspaceId: 'w1', name: 'Project Alpha Architecture', type: 'Markdown', date: '2 hours ago', lastModified: '2026-03-24T12:00:00Z', lastViewed: '2026-03-24T13:30:00Z', labels: ['Project Alpha', 'PRD'], creatorName: 'Claude Assistant', creatorType: 'agent', size: 245760 },
-  { id: 'd2', workspaceId: 'w1', name: 'Q3 Financial Projections', type: 'Table', date: 'Yesterday', lastModified: '2026-03-23T10:00:00Z', lastViewed: '2026-03-24T09:00:00Z', labels: ['Data', 'Finance'], creatorName: 'Data Analyzer', creatorType: 'agent', size: 512000 },
-  { id: 'd3', workspaceId: 'w1', name: 'User Flow Diagram', type: 'Whiteboard', date: 'Last week', lastModified: '2026-03-17T15:00:00Z', lastViewed: '2026-03-22T11:00:00Z', labels: ['Design', 'Project Alpha'], creatorName: currentUser.name, creatorType: 'human', size: 102400 },
-  { id: 'd6', workspaceId: 'w1', name: 'Claude & Maya: Feature Discussion', type: 'Chat Log', date: '3 hours ago', lastModified: '2026-03-24T11:00:00Z', lastViewed: '2026-03-24T11:30:00Z', labels: ['Meeting Notes'], creatorName: 'Claude Assistant', creatorType: 'agent', size: 81920 },
-  { id: 'd4', workspaceId: 'w1', name: 'Competitor Analysis', type: 'Markdown', date: '1 hour ago', lastModified: '2026-03-24T13:00:00Z', lastViewed: '2026-03-24T13:45:00Z', labels: ['Research', 'Data'], creatorName: 'Research Bot', creatorType: 'agent', size: 163840 },
-  { id: 'd5', workspaceId: 'w1', name: 'Marketing Strategy', type: 'Markdown', date: '2 days ago', lastModified: '2026-03-22T14:00:00Z', lastViewed: '2026-03-23T16:00:00Z', labels: ['PRD', 'Marketing'], creatorName: currentUser.name, creatorType: 'human', size: 122880 },
+  { id: 'd1', workspaceId: 'w1', name: 'Project Alpha Architecture', type: 'Smart Doc', date: '2 hours ago', lastModified: '2026-03-24T12:00:00Z', lastViewed: '2026-03-24T13:30:00Z', labels: ['Project Alpha', 'PRD'], creatorName: 'Claude Assistant', creatorType: 'agent' },
+  { id: 'd2', workspaceId: 'w1', name: 'Q3 Financial Projections', type: 'Table', date: 'Yesterday', lastModified: '2026-03-23T10:00:00Z', lastViewed: '2026-03-24T09:00:00Z', labels: ['Data', 'Finance'], creatorName: 'Data Analyzer', creatorType: 'agent' },
+  { id: 'd3', workspaceId: 'w1', name: 'User Flow Diagram', type: 'Whiteboard', date: 'Last week', lastModified: '2026-03-17T15:00:00Z', lastViewed: '2026-03-22T11:00:00Z', labels: ['Design', 'Project Alpha'], creatorName: currentUser.name, creatorType: 'human' },
+  { id: 'd6', workspaceId: 'w1', name: 'Claude & Maya: Feature Discussion', type: 'Smart Doc', date: '3 hours ago', lastModified: '2026-03-24T11:00:00Z', lastViewed: '2026-03-24T11:30:00Z', labels: ['Meeting Notes'], creatorName: 'Claude Assistant', creatorType: 'agent' },
+  { id: 'd4', workspaceId: 'w1', name: 'Competitor Analysis', type: 'Markdown', date: '1 hour ago', lastModified: '2026-03-24T13:00:00Z', lastViewed: '2026-03-24T13:45:00Z', labels: ['Research', 'Data'], creatorName: 'Research Bot', creatorType: 'agent' },
+  { id: 'd5', workspaceId: 'w1', name: 'Marketing Strategy', type: 'Smart Doc', date: '2 days ago', lastModified: '2026-03-22T14:00:00Z', lastViewed: '2026-03-23T16:00:00Z', labels: ['PRD', 'Marketing'], creatorName: currentUser.name, creatorType: 'human' },
   // Agent scheduled task outputs — Daily Industry Digest
   { id: 'd7', workspaceId: 'w1', name: 'Industry Digest — Mar 24', type: 'Markdown', date: 'Today', lastModified: '2026-03-24T08:00:00Z', lastViewed: '2026-03-24T10:00:00Z', labels: ['Daily Industry Digest'], creatorName: 'Research Bot', creatorType: 'agent', size: 45056 },
   { id: 'd8', workspaceId: 'w1', name: 'Industry Digest — Mar 23', type: 'Markdown', date: 'Yesterday', lastModified: '2026-03-23T08:00:00Z', lastViewed: '2026-03-23T12:00:00Z', labels: ['Daily Industry Digest'], creatorName: 'Research Bot', creatorType: 'agent', size: 43008 },
@@ -644,11 +645,11 @@ export default function Dashboard() {
     setIsCreatingAgent(false);
   };
 
-  const handleQuickCreateDoc = (type: 'Markdown' | 'Table' | 'Whiteboard' | 'Chat Log') => {
+  const handleQuickCreateDoc = (type: 'Smart Doc' | 'Markdown' | 'Table' | 'Whiteboard' | 'Form') => {
     const newDoc: WorkspaceDoc = {
       id: `d${Date.now()}`,
       workspaceId: activeWorkspaceId,
-      name: type === 'Chat Log' ? 'New Chat Log' : 'Untitled',
+      name: 'Untitled',
       type: type,
       date: 'Just now',
       lastModified: new Date().toISOString(),
@@ -919,6 +920,14 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
               active={activeTab === 'labels'} 
               onClick={() => { setActiveTab('labels'); setIsCreatingAgent(false); }}
             />
+            <Link to="/skills" className="block">
+              <NavItem 
+                icon={<Sparkles className="w-4 h-4" />} 
+                label="Skills" 
+                active={false} 
+                onClick={() => {}}
+              />
+            </Link>
           </div>
         </div>
 
@@ -984,32 +993,39 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                   <div className="fixed inset-0 z-10" onClick={() => setIsNewDocMenuOpen(false)} />
                   <div className="absolute right-0 mt-2 w-48 bg-white border border-stone-200 rounded-lg shadow-xl z-20 overflow-hidden py-1">
                     <button 
-                      onClick={() => handleQuickCreateDoc('Markdown')}
+                      onClick={() => handleQuickCreateDoc('Smart Doc')}
                       className="w-full flex items-center gap-3 px-4 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
                     >
-                      <FileText className="w-4 h-4 text-stone-400" />
-                      <span>{t('docs.document')}</span>
+                      {getDocTypeIcon('Smart Doc', 16)}
+                      <span>{t('docs.smartDoc')}</span>
                     </button>
                     <button 
                       onClick={() => handleQuickCreateDoc('Table')}
                       className="w-full flex items-center gap-3 px-4 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
                     >
-                      <Table className="w-4 h-4 text-stone-400" />
+                      {getDocTypeIcon('Table', 16)}
                       <span>{t('docs.table')}</span>
                     </button>
                     <button 
                       onClick={() => handleQuickCreateDoc('Whiteboard')}
                       className="w-full flex items-center gap-3 px-4 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
                     >
-                      <Layout className="w-4 h-4 text-stone-400" />
+                      {getDocTypeIcon('Whiteboard', 16)}
                       <span>{t('docs.whiteboard')}</span>
                     </button>
                     <button 
-                      onClick={() => handleQuickCreateDoc('Chat Log')}
+                      onClick={() => handleQuickCreateDoc('Form')}
                       className="w-full flex items-center gap-3 px-4 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
                     >
-                      <MessageCircle className="w-4 h-4 text-stone-400" />
-                      <span>{t('docs.chatLog')}</span>
+                      {getDocTypeIcon('Form', 16)}
+                      <span>{t('docs.form')}</span>
+                    </button>
+                    <button 
+                      onClick={() => handleQuickCreateDoc('Markdown')}
+                      className="w-full flex items-center gap-3 px-4 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
+                    >
+                      {getDocTypeIcon('Markdown', 16)}
+                      <span>Markdown</span>
                     </button>
                   </div>
                 </>
@@ -1066,10 +1082,7 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                       <div className="w-px h-5 bg-stone-200 mx-1.5" />
                       {docFilterType !== 'all' && (
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-sm font-medium bg-stone-100 text-stone-700">
-                          {docFilterType === 'Markdown' && <FileText className="w-3.5 h-3.5 text-stone-400" />}
-                          {docFilterType === 'Table' && <Table className="w-3.5 h-3.5 text-stone-400" />}
-                          {docFilterType === 'Whiteboard' && <Layout className="w-3.5 h-3.5 text-stone-400" />}
-                          {docFilterType === 'Chat Log' && <MessageCircle className="w-3.5 h-3.5 text-stone-400" />}
+                          {getDocTypeIcon(docFilterType, 14)}
                           {docFilterType}
                           <button
                             onClick={() => setDocFilterType('all')}
@@ -1126,10 +1139,7 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                                       onClick={() => { setDocFilterType(type); setIsTypeFilterOpen(false); }}
                                       className={`w-full text-left px-3 py-1.5 text-sm transition-colors flex items-center gap-2 ${docFilterType === type ? 'bg-stone-50 text-stone-900 font-medium' : 'text-stone-600 hover:bg-stone-50'}`}
                                     >
-                                      {type === 'Markdown' && <FileText className="w-3.5 h-3.5 text-stone-400" />}
-                                      {type === 'Table' && <Table className="w-3.5 h-3.5 text-stone-400" />}
-                                      {type === 'Whiteboard' && <Layout className="w-3.5 h-3.5 text-stone-400" />}
-                                      {type === 'Chat Log' && <MessageCircle className="w-3.5 h-3.5 text-stone-400" />}
+                                      {getDocTypeIcon(type, 14)}
                                       {type}
                                     </button>
                                   ))}
@@ -1758,7 +1768,7 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                           <>
                             {(() => {
                               const labelOwners = Array.from(new Set(labelDocs.map(d => d.creatorName)));
-                              const labelTypes = Array.from(new Set(labelDocs.map(d => d.type)));
+                              const labelTypes: string[] = Array.from(new Set(labelDocs.map(d => d.type)));
                               let filteredLabelDocs = [...labelDocs];
                               if (labelFilterOwner !== 'all') {
                                 filteredLabelDocs = filteredLabelDocs.filter(d => d.creatorName === labelFilterOwner);
@@ -1864,10 +1874,7 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                                                         onClick={() => { setLabelFilterType(type); setIsLabelTypFilterOpen(false); }}
                                                         className={`w-full text-left px-3 py-1.5 text-sm transition-colors flex items-center gap-2 ${labelFilterType === type ? 'bg-stone-50 text-stone-900 font-medium' : 'text-stone-600 hover:bg-stone-50'}`}
                                                       >
-                                                        {type === 'Markdown' && <FileText className="w-3.5 h-3.5 text-stone-400" />}
-                                                        {type === 'Table' && <Table className="w-3.5 h-3.5 text-stone-400" />}
-                                                        {type === 'Whiteboard' && <Layout className="w-3.5 h-3.5 text-stone-400" />}
-                                                        {type === 'Chat Log' && <MessageCircle className="w-3.5 h-3.5 text-stone-400" />}
+                                                        {getDocTypeIcon(type, 14)}
                                                         {type}
                                                       </button>
                                                     ))}
@@ -2084,19 +2091,7 @@ function DocRow({ docId, name, type, date, labels, creatorName, creatorType, onD
   const [shareCopied, setShareCopied] = useState(false);
   const { t } = useLanguage();
 
-  const getDocIcon = () => {
-    switch (type.toLowerCase()) {
-      case 'table':
-        return <Table className="w-4 h-4 text-stone-400 shrink-0" />;
-      case 'whiteboard':
-        return <Layout className="w-4 h-4 text-stone-400 shrink-0" />;
-      case 'chat log':
-        return <MessageCircle className="w-4 h-4 text-stone-400 shrink-0" />;
-      case 'markdown':
-      default:
-        return <FileText className="w-4 h-4 text-stone-400 shrink-0" />;
-    }
-  };
+  const getDocIcon = () => getDocTypeIcon(type, 18);
 
   const formatDate = (dateStr: string) => {
     const dateObj = new Date(dateStr);

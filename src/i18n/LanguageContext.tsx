@@ -101,6 +101,8 @@ const translations: Record<Language, Record<string, string>> = {
     'docs.table': 'Table',
     'docs.whiteboard': 'Whiteboard',
     'docs.chatLog': 'Chat Log',
+    'docs.smartDoc': 'Smart Doc',
+    'docs.form': 'Form',
 
     // Dashboard - Agent
     'agent.title': 'Agent Accounts',
@@ -261,6 +263,8 @@ const translations: Record<Language, Record<string, string>> = {
     'docs.table': '表格',
     'docs.whiteboard': '白板',
     'docs.chatLog': '会话记录',
+    'docs.smartDoc': '智能文档',
+    'docs.form': '收集表',
 
     // Dashboard - Agent
     'agent.title': 'Agent 账号',
