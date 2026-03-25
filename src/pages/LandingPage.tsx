@@ -77,9 +77,6 @@ export default function LandingPage() {
             <Link to="/skills" className="text-sm font-medium text-stone-500 hover:text-stone-900 transition-colors hidden md:block">
               Skills
             </Link>
-            <a href="#workflow" className="text-sm font-medium text-stone-500 hover:text-stone-900 transition-colors hidden md:block">
-              {t('nav.howItWorks')}
-            </a>
             <LanguageSwitcher />
             <button 
               onClick={() => setShowAuth(true)}

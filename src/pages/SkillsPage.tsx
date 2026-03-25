@@ -9,91 +9,17 @@ import {
   Check, 
   Terminal, 
   FileText, 
-  Table, 
   Shield, 
   Zap, 
-  Bot, 
-  Globe,
-  ChevronRight
+  Bot
 } from 'lucide-react';
 import { useLanguage, LanguageSwitcher } from '../i18n/LanguageContext';
 
-interface Skill {
-  id: string;
-  name: string;
-  nameZh: string;
-  provider: string;
-  description: string;
-  descriptionZh: string;
-  capabilities: string[];
-  capabilitiesZh: string[];
-  downloadUrl: string;
-  tokenEnvName: string;
-  icon: React.ReactNode;
-  color: string;
-  badge?: string;
-}
 
-const SKILLS: Skill[] = [
-  {
-    id: 'mindx-docs',
-    name: 'MindX Docs',
-    nameZh: 'MindX 文档',
-    provider: 'MindX',
-    description: 'Enable your AI agents to create, read, edit and manage documents in MindX workspaces. Supports Markdown, Office, Tables and Whiteboards.',
-    descriptionZh: '让你的 AI Agent 能够在 MindX 工作空间中创建、阅读、编辑和管理文档。支持 Markdown、Office、表格和白板。',
-    capabilities: [
-      'Create & edit Markdown documents',
-      'Read & parse Office files',
-      'Manage multi-dimensional tables',
-      'Draw on whiteboards',
-      'Full workspace access control',
-    ],
-    capabilitiesZh: [
-      '创建和编辑 Markdown 文档',
-      '读取和解析 Office 文件',
-      '管理多维表格',
-      '白板绘图',
-      '完整的工作空间权限控制',
-    ],
-    downloadUrl: 'https://cdn.mindx.com/static/mindx-docs.zip',
-    tokenEnvName: 'MINDX_TOKEN',
-    icon: <FileText className="w-6 h-6" />,
-    color: 'bg-stone-900',
-    badge: 'Core',
-  },
-  {
-    id: 'tencent-docs',
-    name: 'Tencent Docs',
-    nameZh: '腾讯文档',
-    provider: 'Tencent',
-    description: 'Connect your AI agents to Tencent Docs for seamless collaboration on cloud documents, spreadsheets, and slides within the Tencent ecosystem.',
-    descriptionZh: '将你的 AI Agent 连接到腾讯文档，在腾讯生态中无缝协作云文档、电子表格和幻灯片。',
-    capabilities: [
-      'Read & write Tencent cloud documents',
-      'Manage spreadsheets & data',
-      'Create & edit presentations',
-      'Real-time collaboration sync',
-      'Enterprise-grade security',
-    ],
-    capabilitiesZh: [
-      '读写腾讯云文档',
-      '管理电子表格和数据',
-      '创建和编辑演示文稿',
-      '实时协作同步',
-      '企业级安全保障',
-    ],
-    downloadUrl: 'https://cdn.addon.tencentsuite.com/static/tencent-docs.zip',
-    tokenEnvName: 'TENCENT_DOCS_TOKEN',
-    icon: <Globe className="w-6 h-6" />,
-    color: 'bg-blue-600',
-  },
-];
 
 export default function SkillsPage() {
   const { t, lang } = useLanguage();
   const [copiedStates, setCopiedStates] = useState<Record<string, boolean>>({});
-  const [expandedSkill, setExpandedSkill] = useState<string | null>(null);
 
   const copyToClipboard = (text: string, key: string) => {
     navigator.clipboard.writeText(text);
@@ -102,6 +28,32 @@ export default function SkillsPage() {
   };
 
   const isZh = lang === 'zh';
+
+  const capabilities = isZh
+    ? [
+        '创建和编辑 Markdown 文档',
+        '读取和解析 Office 文件',
+        '管理多维表格',
+        '白板绘图',
+        '读写云端文档和电子表格',
+        '实时协作同步',
+        '完整的工作空间权限控制',
+        '企业级安全保障',
+      ]
+    : [
+        'Create & edit Markdown documents',
+        'Read & parse Office files',
+        'Manage multi-dimensional tables',
+        'Draw on whiteboards',
+        'Read & write cloud documents & spreadsheets',
+        'Real-time collaboration sync',
+        'Full workspace access control',
+        'Enterprise-grade security',
+      ];
+
+  const installCommand = `1. Download the zip package from https://cdn.mindx.com/static/mindx-docs.zip and unzip it, help me install this skill, and then set the environment variable MINDX_TOKEN="your_token".
+
+2. Download the zip package from https://cdn.addon.tencentsuite.com/static/tencent-docs.zip and unzip it, help me install this skill, and then set the environment variable TENCENT_DOCS_TOKEN="your_token".`;
 
   return (
     <div className="min-h-screen bg-white text-stone-800 font-sans selection:bg-stone-200">
@@ -195,133 +147,107 @@ export default function SkillsPage() {
         </div>
       </section>
 
-      {/* Skills Grid */}
+      {/* Single Skill Card */}
       <section className="pb-24 px-6">
         <div className="max-w-5xl mx-auto">
           <h2 className="text-lg font-semibold text-stone-900 mb-6">
             {isZh ? '可用 Skills' : 'Available Skills'}
-            <span className="ml-2 text-xs font-medium text-stone-400">{SKILLS.length}</span>
           </h2>
           
-          <div className="space-y-4">
-            {SKILLS.map((skill, i) => (
-              <motion.div
-                key={skill.id}
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: i * 0.12 }}
-                className="border border-stone-200/80 rounded-2xl bg-white shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden"
-              >
-                {/* Card Header */}
-                <div 
-                  className="p-6 cursor-pointer hover:bg-stone-50/50 transition-colors"
-                  onClick={() => setExpandedSkill(expandedSkill === skill.id ? null : skill.id)}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start gap-4">
-                      <div className={`w-12 h-12 rounded-xl ${skill.color} flex items-center justify-center text-white shadow-sm shrink-0`}>
-                        {skill.icon}
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="text-lg font-semibold text-stone-900 tracking-tight">
-                            {isZh ? skill.nameZh : skill.name}
-                          </h3>
-                          {skill.badge && (
-                            <span className="text-[10px] font-bold text-stone-500 uppercase bg-stone-100 px-1.5 py-0.5 rounded">
-                              {skill.badge}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-stone-400 font-medium mb-2">
-                          {isZh ? '提供方' : 'by'} {skill.provider}
-                        </p>
-                        <p className="text-sm text-stone-500 leading-relaxed max-w-xl">
-                          {isZh ? skill.descriptionZh : skill.description}
-                        </p>
-                      </div>
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="border border-stone-200/80 rounded-2xl bg-white shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden"
+          >
+            {/* Card Header */}
+            <div className="p-6">
+              <div className="flex items-start justify-between">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-stone-900 flex items-center justify-center text-white shadow-sm shrink-0">
+                    <FileText className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="text-lg font-semibold text-stone-900 tracking-tight">
+                        MindX Docs
+                      </h3>
+                      <span className="text-[10px] font-bold text-stone-500 uppercase bg-stone-100 px-1.5 py-0.5 rounded">
+                        Core
+                      </span>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0 ml-4">
-                      <ChevronRight className={`w-4 h-4 text-stone-400 transition-transform duration-200 ${expandedSkill === skill.id ? 'rotate-90' : ''}`} />
+                    <p className="text-xs text-stone-400 font-medium mb-2">
+                      {isZh ? '提供方' : 'by'} MindX
+                    </p>
+                    <p className="text-sm text-stone-500 leading-relaxed max-w-xl">
+                      {isZh 
+                        ? '让你的 AI Agent 拥有完整的文档协作能力。支持 Markdown、Office、表格、白板和云端文档的创建、阅读、编辑和管理。'
+                        : 'Give your AI agents full document collaboration capabilities. Create, read, edit and manage Markdown, Office, Tables, Whiteboards and cloud documents.'
+                      }
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Expanded Detail */}
+              <div className="border-t border-stone-100">
+                <div className="p-6 space-y-6">
+                  {/* Capabilities */}
+                  <div>
+                    <h4 className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-3">
+                      {isZh ? '能力' : 'Capabilities'}
+                    </h4>
+                    <div className="grid md:grid-cols-2 gap-2">
+                      {capabilities.map((cap, j) => (
+                        <div key={j} className="flex items-center gap-2 text-sm text-stone-600">
+                          <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                          {cap}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Install Command */}
+                  <div>
+                    <h4 className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                      <Terminal className="w-3.5 h-3.5" />
+                      {isZh ? '安装命令' : 'Install Command'}
+                    </h4>
+                    <div className="relative group">
+                      <div className="bg-stone-900 rounded-xl p-5 text-sm font-mono text-stone-300 leading-relaxed overflow-x-auto whitespace-pre-wrap">
+                        {installCommand}
+                      </div>
+                      <button
+                        onClick={() => copyToClipboard(installCommand, 'install')}
+                        className="absolute right-3 top-3 p-2 rounded-lg bg-stone-800 hover:bg-stone-700 text-stone-400 hover:text-white transition-all opacity-0 group-hover:opacity-100 border border-stone-700"
+                      >
+                        {copiedStates['install'] 
+                          ? <Check className="w-4 h-4 text-emerald-400" /> 
+                          : <Copy className="w-4 h-4" />
+                        }
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Token Info */}
+                  <div className="flex items-start gap-3 bg-amber-50/60 border border-amber-200/50 rounded-xl p-4">
+                    <Shield className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+                    <div>
+                      <p className="text-xs font-semibold text-amber-800 mb-0.5">
+                        {isZh ? '环境变量' : 'Environment Variables'}
+                      </p>
+                      <p className="text-xs text-amber-700 leading-relaxed">
+                        {isZh 
+                          ? '安装后需要设置对应的环境变量。在 MindX Dashboard 中创建 Agent 后会自动生成对应的 Token。'
+                          : 'After installation, set the required environment variables. Tokens will be generated automatically when you create an Agent in the MindX Dashboard.'
+                        }
+                      </p>
                     </div>
                   </div>
                 </div>
-
-                {/* Expanded Detail */}
-                {expandedSkill === skill.id && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    transition={{ duration: 0.3 }}
-                    className="border-t border-stone-100"
-                  >
-                    <div className="p-6 space-y-6">
-                      {/* Capabilities */}
-                      <div>
-                        <h4 className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-3">
-                          {isZh ? '能力' : 'Capabilities'}
-                        </h4>
-                        <div className="grid md:grid-cols-2 gap-2">
-                          {(isZh ? skill.capabilitiesZh : skill.capabilities).map((cap, j) => (
-                            <div key={j} className="flex items-center gap-2 text-sm text-stone-600">
-                              <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                              {cap}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Install Command */}
-                      <div>
-                        <h4 className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                          <Terminal className="w-3.5 h-3.5" />
-                          {isZh ? '安装命令' : 'Install Command'}
-                        </h4>
-                        <div className="relative group">
-                          <div className="bg-stone-900 rounded-xl p-5 text-sm font-mono text-stone-300 leading-relaxed overflow-x-auto">
-                            <span className="text-stone-500 select-none">$ </span>
-                            <span className="text-emerald-400">Download</span>{' '}
-                            <span className="text-stone-300">the zip package from</span>{' '}
-                            <span className="text-sky-400 underline underline-offset-2 break-all">{skill.downloadUrl}</span>{' '}
-                            <span className="text-stone-300">and unzip it, help me install this skill, and then set the environment variable</span>{' '}
-                            <span className="text-amber-400">{skill.tokenEnvName}=&quot;your_token&quot;</span>
-                          </div>
-                          <button
-                            onClick={() => copyToClipboard(
-                              `Download the zip package from ${skill.downloadUrl} and unzip it, help me install this skill, and then set the environment variable ${skill.tokenEnvName}="your_token".`,
-                              `install-${skill.id}`
-                            )}
-                            className="absolute right-3 top-3 p-2 rounded-lg bg-stone-800 hover:bg-stone-700 text-stone-400 hover:text-white transition-all opacity-0 group-hover:opacity-100 border border-stone-700"
-                          >
-                            {copiedStates[`install-${skill.id}`] 
-                              ? <Check className="w-4 h-4 text-emerald-400" /> 
-                              : <Copy className="w-4 h-4" />
-                            }
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Token Info */}
-                      <div className="flex items-start gap-3 bg-amber-50/60 border border-amber-200/50 rounded-xl p-4">
-                        <Shield className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
-                        <div>
-                          <p className="text-xs font-semibold text-amber-800 mb-0.5">
-                            {isZh ? '环境变量' : 'Environment Variable'}
-                          </p>
-                          <p className="text-xs text-amber-700 leading-relaxed">
-                            {isZh 
-                              ? `安装后需要设置 ${skill.tokenEnvName} 环境变量。在 MindX Dashboard 中创建 Agent 后会自动生成对应的 Token。`
-                              : `After installation, set the ${skill.tokenEnvName} environment variable. A token will be generated automatically when you create an Agent in the MindX Dashboard.`
-                            }
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </motion.div>
-            ))}
-          </div>
+              </div>
+          </motion.div>
         </div>
       </section>
 

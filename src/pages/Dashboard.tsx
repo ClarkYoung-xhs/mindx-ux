@@ -661,7 +661,7 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
         <div className="flex-1 px-3 space-y-0.5 overflow-y-auto">
           <div className="mb-4">
             <p className="px-3 py-2 text-[10px] font-bold text-stone-400 uppercase tracking-wider">
-              Core
+              {t('sidebar.core')}
             </p>
             <NavItem 
               icon={<FileText className="w-4 h-4" />} 
@@ -675,12 +675,7 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
               active={activeTab === 'activity'} 
               onClick={() => { setActiveTab('activity'); setIsCreatingAgent(false); }}
             />
-            <NavItem 
-              icon={<Users className="w-4 h-4" />} 
-              label={t('sidebar.accessControl')} 
-              active={activeTab === 'members'} 
-              onClick={() => { setActiveTab('members'); setIsCreatingAgent(false); }}
-            />
+            
             <NavItem 
               icon={<Settings className="w-4 h-4" />} 
               label={t('sidebar.settings')} 
@@ -699,14 +694,17 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
             />
             <NavItem 
               icon={<Tag className="w-4 h-4" />} 
-              label="Labels" 
+              label={t('sidebar.labels')} 
               active={activeTab === 'labels'} 
               onClick={() => { setActiveTab('labels'); setIsCreatingAgent(false); }}
             />
           </div>
         </div>
 
-        <div className="shrink-0 border-t border-stone-200 p-3 bg-[#F7F7F5]">
+        <div className="shrink-0 border-t border-stone-200 p-3 bg-[#F7F7F5] space-y-1">
+          <div className="flex justify-center">
+            <LanguageSwitcher />
+          </div>
           <button
             onClick={() => setActiveTab('settings')}
             className="w-full flex items-center gap-2 px-2.5 py-2 rounded-md hover:bg-stone-200/50 transition-colors"
@@ -731,9 +729,9 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
             {activeTab === 'documents' && t('docs.title')}
             {activeTab === 'activity' && t('activity.title')}
             {activeTab === 'agents' && t('agent.title')}
-            {activeTab === 'members' && t('access.title')}
+
             {activeTab === 'settings' && t('settings.title')}
-            {activeTab === 'labels' && 'Labels'}
+            {activeTab === 'labels' && t('sidebar.labels')}
           </h1>
           <div className="flex items-center gap-4">
             <div className="relative">
@@ -744,31 +742,20 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                 className="pl-9 pr-4 py-1.5 bg-stone-50 border border-stone-200 rounded-md text-sm focus:outline-none focus:border-stone-300 focus:bg-white transition-colors w-64"
               />
             </div>
-            {(['documents', 'agents'].includes(activeTab) || (activeTab === 'members' && availableAgents.length > 0)) && (
+            {(['documents', 'agents'].includes(activeTab)) && (
             <div className="relative">
               <button 
                 onClick={() => {
                   if (activeTab === 'agents') setIsCreatingAgent(true);
                   if (activeTab === 'documents') setIsNewDocMenuOpen(!isNewDocMenuOpen);
-                  if (activeTab === 'members') {
-                    const nextAgent = availableAgents[0];
-                    if (nextAgent) {
-                      setPermissions([...permissions, {
-                        id: `p${Date.now()}`,
-                        workspaceId: activeWorkspaceId,
-                        memberId: nextAgent.id,
-                        memberType: 'Agent',
-                        role: 'Viewer'
-                      }]);
-                    }
-                  }
+
                 }}
                 className="flex items-center gap-1.5 bg-stone-900 text-white px-3 py-1.5 rounded-md text-sm font-medium hover:bg-stone-800 transition-colors"
               >
                 <Plus className="w-4 h-4" /> 
                 {activeTab === 'documents' && t('docs.newDoc')}
                 {activeTab === 'agents' && t('agent.newAgent')}
-                {activeTab === 'members' && 'Add Agent'}
+
               </button>
 
               {activeTab === 'documents' && isNewDocMenuOpen && (
@@ -780,28 +767,28 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                       className="w-full flex items-center gap-3 px-4 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
                     >
                       <FileText className="w-4 h-4 text-stone-400" />
-                      <span>Document</span>
+                      <span>{t('docs.document')}</span>
                     </button>
                     <button 
                       onClick={() => handleQuickCreateDoc('Table')}
                       className="w-full flex items-center gap-3 px-4 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
                     >
                       <Table className="w-4 h-4 text-stone-400" />
-                      <span>Table</span>
+                      <span>{t('docs.table')}</span>
                     </button>
                     <button 
                       onClick={() => handleQuickCreateDoc('Whiteboard')}
                       className="w-full flex items-center gap-3 px-4 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
                     >
                       <Layout className="w-4 h-4 text-stone-400" />
-                      <span>Whiteboard</span>
+                      <span>{t('docs.whiteboard')}</span>
                     </button>
                     <button 
                       onClick={() => handleQuickCreateDoc('Chat Log')}
                       className="w-full flex items-center gap-3 px-4 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
                     >
                       <MessageCircle className="w-4 h-4 text-stone-400" />
-                      <span>Chat Log</span>
+                      <span>{t('docs.chatLog')}</span>
                     </button>
                   </div>
                 </>
@@ -830,7 +817,7 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                         : 'text-stone-500 hover:bg-stone-100 hover:text-stone-700'
                     }`}
                   >
-                    All
+                    {t('docs.all')}
                   </button>
                   {docOwners.map(owner => {
                     const ownerDoc = workspaceDocs.find(d => d.creatorName === owner);
@@ -898,19 +885,19 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                               onClick={() => { setIsTypeFilterOpen(!isTypeFilterOpen); setIsSortMenuOpen(false); setIsLabelFilterOpen(false); }}
                               className={`flex items-center gap-1.5 hover:text-stone-800 transition-colors ${docFilterType !== 'all' ? 'text-stone-900' : ''}`}
                             >
-                              Name
+                              {t('docs.name')}
                               <ChevronDown className={`w-3 h-3 transition-transform ${isTypeFilterOpen ? 'rotate-180' : ''}`} />
                             </button>
                             {isTypeFilterOpen && (
                               <>
                                 <div className="fixed inset-0 z-10" onClick={() => setIsTypeFilterOpen(false)} />
                                 <div className="absolute left-0 top-full mt-1 w-48 bg-white border border-stone-200 rounded-lg shadow-xl z-20 overflow-hidden py-1">
-                                  <div className="px-3 py-1.5 text-[10px] font-bold text-stone-400 uppercase tracking-wider">Filter by type</div>
+                                  <div className="px-3 py-1.5 text-[10px] font-bold text-stone-400 uppercase tracking-wider">{t('docs.filterByType')}</div>
                                   <button
                                     onClick={() => { setDocFilterType('all'); setIsTypeFilterOpen(false); }}
                                     className={`w-full text-left px-3 py-1.5 text-sm transition-colors flex items-center gap-2 ${docFilterType === 'all' ? 'bg-stone-50 text-stone-900 font-medium' : 'text-stone-600 hover:bg-stone-50'}`}
                                   >
-                                    All Types
+                                    {t('docs.allTypes')}
                                   </button>
                                   {docTypes.map(type => (
                                     <button
@@ -932,7 +919,7 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                         </th>
 
                         {/* Owner column (plain label) */}
-                        <th className="px-6 py-3 font-medium">Owner</th>
+                        <th className="px-6 py-3 font-medium">{t('docs.owner')}</th>
 
                         {/* Labels column with Label filter */}
                         <th className="px-6 py-3 font-medium">
@@ -941,19 +928,19 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                               onClick={() => { setIsLabelFilterOpen(!isLabelFilterOpen); setIsTypeFilterOpen(false); setIsSortMenuOpen(false); }}
                               className={`flex items-center gap-1.5 hover:text-stone-800 transition-colors ${docFilterLabel !== 'all' ? 'text-stone-900' : ''}`}
                             >
-                              Labels
+                              {t('docs.labels')}
                               <ChevronDown className={`w-3 h-3 transition-transform ${isLabelFilterOpen ? 'rotate-180' : ''}`} />
                             </button>
                             {isLabelFilterOpen && (
                               <>
                                 <div className="fixed inset-0 z-10" onClick={() => setIsLabelFilterOpen(false)} />
                                 <div className="absolute left-0 top-full mt-1 w-48 bg-white border border-stone-200 rounded-lg shadow-xl z-20 overflow-hidden py-1 max-h-64 overflow-y-auto">
-                                  <div className="px-3 py-1.5 text-[10px] font-bold text-stone-400 uppercase tracking-wider">Filter by label</div>
+                                  <div className="px-3 py-1.5 text-[10px] font-bold text-stone-400 uppercase tracking-wider">{t('docs.filterByLabel')}</div>
                                   <button
                                     onClick={() => { setDocFilterLabel('all'); setIsLabelFilterOpen(false); }}
                                     className={`w-full text-left px-3 py-1.5 text-sm transition-colors flex items-center gap-2 ${docFilterLabel === 'all' ? 'bg-stone-50 text-stone-900 font-medium' : 'text-stone-600 hover:bg-stone-50'}`}
                                   >
-                                    All Labels
+                                    {t('docs.allLabels')}
                                   </button>
                                   {docLabels.map(label => (
                                     <button
@@ -978,20 +965,20 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                               onClick={() => { setIsSortMenuOpen(!isSortMenuOpen); setIsTypeFilterOpen(false); setIsLabelFilterOpen(false); }}
                               className="flex items-center gap-1.5 hover:text-stone-800 transition-colors whitespace-nowrap"
                             >
-                              {docSortBy === 'lastModified' ? 'Last Modified' : 'Last Viewed'}
+                              {docSortBy === 'lastModified' ? t('docs.lastModified') : t('docs.lastViewed')}
                               <ArrowUpDown className="w-3 h-3" />
                             </button>
                             {isSortMenuOpen && (
                               <>
                                 <div className="fixed inset-0 z-10" onClick={() => setIsSortMenuOpen(false)} />
                                 <div className="absolute left-0 top-full mt-1 w-44 bg-white border border-stone-200 rounded-lg shadow-xl z-20 overflow-hidden py-1">
-                                  <div className="px-3 py-1.5 text-[10px] font-bold text-stone-400 uppercase tracking-wider">Sort by</div>
+                                  <div className="px-3 py-1.5 text-[10px] font-bold text-stone-400 uppercase tracking-wider">{t('docs.sortBy')}</div>
                                   <button
                                     onClick={() => { setDocSortBy('lastModified'); setIsSortMenuOpen(false); }}
                                     className={`w-full text-left px-3 py-1.5 text-sm transition-colors flex items-center gap-2 ${docSortBy === 'lastModified' ? 'bg-stone-50 text-stone-900 font-medium' : 'text-stone-600 hover:bg-stone-50'}`}
                                   >
                                     <Clock className="w-3.5 h-3.5 text-stone-400" />
-                                    Last Modified
+                                    {t('docs.lastModified')}
                                     {docSortBy === 'lastModified' && <Check className="w-3.5 h-3.5 text-stone-900 ml-auto" />}
                                   </button>
                                   <button
@@ -999,7 +986,7 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                                     className={`w-full text-left px-3 py-1.5 text-sm transition-colors flex items-center gap-2 ${docSortBy === 'lastViewed' ? 'bg-stone-50 text-stone-900 font-medium' : 'text-stone-600 hover:bg-stone-50'}`}
                                   >
                                     <Clock className="w-3.5 h-3.5 text-stone-400" />
-                                    Last Viewed
+                                    {t('docs.lastViewed')}
                                     {docSortBy === 'lastViewed' && <Check className="w-3.5 h-3.5 text-stone-900 ml-auto" />}
                                   </button>
                                 </div>
@@ -1412,67 +1399,6 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
               </motion.div>
             )}
 
-            {activeTab === 'members' && (
-              <motion.div 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-              >
-                <div className="border border-stone-200/80 rounded-xl overflow-hidden bg-white shadow-[0_2px_12px_rgba(0,0,0,0.02)]">
-                  <table className="w-full text-left text-sm">
-                    <thead className="bg-stone-50/50 text-stone-500 border-b border-stone-200/80">
-                      <tr>
-                        <th className="px-6 py-3 font-medium">{t('access.member')}</th>
-                        <th className="px-6 py-3 font-medium">{t('access.memberType')}</th>
-                        <th className="px-6 py-3 font-medium">{t('access.role')}</th>
-                        <th className="px-6 py-3 font-medium text-right"></th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-stone-100">
-                      {workspacePermissions.map(perm => (
-                        <tr key={perm.id} className="hover:bg-stone-50 transition-colors group">
-                          <td className="px-6 py-3">
-                            <div className="flex items-center gap-3">
-                              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-stone-600 font-medium text-xs ${perm.memberType === 'Agent' ? 'bg-stone-100 border border-stone-200/60' : 'bg-stone-100'}`}>
-                                {perm.memberType === 'Agent' ? <Bot className="w-4 h-4" /> : perm.member?.name.charAt(0)}
-                              </div>
-                              <div>
-                                <span className="font-medium text-stone-800 block">{perm.member?.name}</span>
-                                <span className="text-xs text-stone-400">{perm.memberType === 'Agent' ? 'Agent Account' : currentUser.email}</span>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-3">
-                            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${perm.memberType === 'Agent' ? 'bg-stone-50 text-stone-500 border border-stone-200/50' : 'text-stone-400'}`}>
-                              {perm.memberType}
-                            </span>
-                          </td>
-                          <td className="px-6 py-3">
-                            <select 
-                              value={perm.role}
-                              onChange={(e) => {
-                                const newRole = e.target.value;
-                                setPermissions(prev => prev.map(p => p.id === perm.id ? { ...p, role: newRole } : p));
-                              }}
-                              className="bg-transparent border-none text-xs font-medium focus:ring-0 cursor-pointer hover:text-stone-900 transition-colors"
-                            >
-                              <option value="Viewer">Viewer</option>
-                              <option value="Editor">Editor</option>
-                              <option value="Admin">Admin</option>
-                              <option value="Owner" disabled>Owner</option>
-                            </select>
-                          </td>
-                          <td className="px-6 py-3 text-right">
-                            <button className="p-1 rounded hover:bg-stone-200 text-stone-400 opacity-0 group-hover:opacity-100 transition-all">
-                              <MoreVertical className="w-4 h-4" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </motion.div>
-            )}
 
             {activeTab === 'settings' && (
               <motion.div 
@@ -1495,13 +1421,6 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                       className="w-full px-4 py-2.5 bg-stone-50/50 border border-stone-200/80 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-stone-900/10 focus:border-stone-400 transition-all"
                     />
                   </div>
-
-                  <div className="pt-6 border-t border-stone-100">
-                    <h3 className="text-sm font-semibold text-stone-900 mb-4">{t('settings.dangerZone')}</h3>
-                    <button className="px-4 py-2 border border-red-200 text-red-600 text-sm font-medium rounded-lg hover:bg-red-50 transition-colors">
-                      {t('settings.deleteWorkspace')}
-                    </button>
-                  </div>
                 </div>
               </motion.div>
             )}
@@ -1521,14 +1440,14 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                   return allLabels.length === 0 ? (
                     <div className="py-20 text-center">
                       <Tag className="w-12 h-12 text-stone-200 mx-auto mb-4" />
-                      <h3 className="text-sm font-medium text-stone-900 mb-1">No Labels Yet</h3>
-                      <p className="text-stone-400 text-sm">Labels will appear here once documents are tagged.</p>
+                      <h3 className="text-sm font-medium text-stone-900 mb-1">{t('docs.noLabels')}</h3>
+                      <p className="text-stone-400 text-sm">{t('docs.noLabelsDesc')}</p>
                     </div>
                   ) : (
                     <div className="flex gap-8">
                       {/* Label list sidebar */}
                       <div className="w-52 shrink-0 space-y-1">
-                        <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider px-2 mb-3">All Labels</p>
+                        <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider px-2 mb-3">{t('docs.allLabels')}</p>
                         {allLabels.map(label => {
                           const count = workspaceDocs.filter(d => d.labels.includes(label)).length;
                           return (
@@ -1645,19 +1564,19 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                                                 onClick={() => { setIsLabelTypFilterOpen(!isLabelTypFilterOpen); setIsLabelSortMenuOpen(false); setIsLabelOwnerFilterOpen(false); }}
                                                 className={`flex items-center gap-1.5 hover:text-stone-800 transition-colors ${labelFilterType !== 'all' ? 'text-stone-900' : ''}`}
                                               >
-                                                Name
+                                                {t('docs.name')}
                                                 <ChevronDown className={`w-3 h-3 transition-transform ${isLabelTypFilterOpen ? 'rotate-180' : ''}`} />
                                               </button>
                                               {isLabelTypFilterOpen && (
                                                 <>
                                                   <div className="fixed inset-0 z-10" onClick={() => setIsLabelTypFilterOpen(false)} />
                                                   <div className="absolute left-0 top-full mt-1 w-48 bg-white border border-stone-200 rounded-lg shadow-xl z-20 overflow-hidden py-1">
-                                                    <div className="px-3 py-1.5 text-[10px] font-bold text-stone-400 uppercase tracking-wider">Filter by type</div>
+                                                    <div className="px-3 py-1.5 text-[10px] font-bold text-stone-400 uppercase tracking-wider">{t('docs.filterByType')}</div>
                                                     <button
                                                       onClick={() => { setLabelFilterType('all'); setIsLabelTypFilterOpen(false); }}
                                                       className={`w-full text-left px-3 py-1.5 text-sm transition-colors flex items-center gap-2 ${labelFilterType === 'all' ? 'bg-stone-50 text-stone-900 font-medium' : 'text-stone-600 hover:bg-stone-50'}`}
                                                     >
-                                                      All Types
+                                                      {t('docs.allTypes')}
                                                     </button>
                                                     {labelTypes.map(type => (
                                                       <button
@@ -1684,19 +1603,19 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                                                 onClick={() => { setIsLabelOwnerFilterOpen(!isLabelOwnerFilterOpen); setIsLabelTypFilterOpen(false); setIsLabelSortMenuOpen(false); }}
                                                 className={`flex items-center gap-1.5 hover:text-stone-800 transition-colors ${labelFilterOwner !== 'all' ? 'text-stone-900' : ''}`}
                                               >
-                                                Owner
+                                                {t('docs.owner')}
                                                 <ChevronDown className={`w-3 h-3 transition-transform ${isLabelOwnerFilterOpen ? 'rotate-180' : ''}`} />
                                               </button>
                                               {isLabelOwnerFilterOpen && (
                                                 <>
                                                   <div className="fixed inset-0 z-10" onClick={() => setIsLabelOwnerFilterOpen(false)} />
                                                   <div className="absolute left-0 top-full mt-1 w-48 bg-white border border-stone-200 rounded-lg shadow-xl z-20 overflow-hidden py-1">
-                                                    <div className="px-3 py-1.5 text-[10px] font-bold text-stone-400 uppercase tracking-wider">Filter by owner</div>
+                                                    <div className="px-3 py-1.5 text-[10px] font-bold text-stone-400 uppercase tracking-wider">{t('docs.filterByOwner')}</div>
                                                     <button
                                                       onClick={() => { setLabelFilterOwner('all'); setIsLabelOwnerFilterOpen(false); }}
                                                       className={`w-full text-left px-3 py-1.5 text-sm transition-colors flex items-center gap-2 ${labelFilterOwner === 'all' ? 'bg-stone-50 text-stone-900 font-medium' : 'text-stone-600 hover:bg-stone-50'}`}
                                                     >
-                                                      All Owners
+                                                      {t('docs.allOwners')}
                                                     </button>
                                                     {labelOwners.map(owner => {
                                                       const ownerDoc = labelDocs.find(d => d.creatorName === owner);
@@ -1719,7 +1638,7 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                                               )}
                                             </div>
                                           </th>
-                                          <th className="px-6 py-3 font-medium whitespace-nowrap">Labels</th>
+                                          <th className="px-6 py-3 font-medium whitespace-nowrap">{t('docs.labels')}</th>
                                           {/* Date column with Sort toggle */}
                                           <th className="px-6 py-3 font-medium whitespace-nowrap">
                                             <div className="relative inline-flex items-center">
@@ -1727,20 +1646,20 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                                                 onClick={() => { setIsLabelSortMenuOpen(!isLabelSortMenuOpen); setIsLabelTypFilterOpen(false); setIsLabelOwnerFilterOpen(false); }}
                                                 className="flex items-center gap-1.5 hover:text-stone-800 transition-colors whitespace-nowrap"
                                               >
-                                                {labelSortBy === 'lastModified' ? 'Last Modified' : 'Last Viewed'}
+                                                {labelSortBy === 'lastModified' ? t('docs.lastModified') : t('docs.lastViewed')}
                                                 <ArrowUpDown className="w-3 h-3" />
                                               </button>
                                               {isLabelSortMenuOpen && (
                                                 <>
                                                   <div className="fixed inset-0 z-10" onClick={() => setIsLabelSortMenuOpen(false)} />
                                                   <div className="absolute left-0 top-full mt-1 w-44 bg-white border border-stone-200 rounded-lg shadow-xl z-20 overflow-hidden py-1">
-                                                    <div className="px-3 py-1.5 text-[10px] font-bold text-stone-400 uppercase tracking-wider">Sort by</div>
+                                                    <div className="px-3 py-1.5 text-[10px] font-bold text-stone-400 uppercase tracking-wider">{t('docs.sortBy')}</div>
                                                     <button
                                                       onClick={() => { setLabelSortBy('lastModified'); setIsLabelSortMenuOpen(false); }}
                                                       className={`w-full text-left px-3 py-1.5 text-sm transition-colors flex items-center gap-2 ${labelSortBy === 'lastModified' ? 'bg-stone-50 text-stone-900 font-medium' : 'text-stone-600 hover:bg-stone-50'}`}
                                                     >
                                                       <Clock className="w-3.5 h-3.5 text-stone-400" />
-                                                      Last Modified
+                                                      {t('docs.lastModified')}
                                                       {labelSortBy === 'lastModified' && <Check className="w-3.5 h-3.5 text-stone-900 ml-auto" />}
                                                     </button>
                                                     <button
@@ -1748,7 +1667,7 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                                                       className={`w-full text-left px-3 py-1.5 text-sm transition-colors flex items-center gap-2 ${labelSortBy === 'lastViewed' ? 'bg-stone-50 text-stone-900 font-medium' : 'text-stone-600 hover:bg-stone-50'}`}
                                                     >
                                                       <Clock className="w-3.5 h-3.5 text-stone-400" />
-                                                      Last Viewed
+                                                      {t('docs.lastViewed')}
                                                       {labelSortBy === 'lastViewed' && <Check className="w-3.5 h-3.5 text-stone-900 ml-auto" />}
                                                     </button>
                                                   </div>

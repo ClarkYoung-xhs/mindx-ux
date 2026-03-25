@@ -245,7 +245,14 @@ export default function AuthModal({ onClose, onAuth }: AuthModalProps) {
             </motion.div>
           )}
 
-          <p className="text-center text-[11px] text-stone-400 mt-6">
+          <button
+            onClick={() => onAuth('demo@mindx.com')}
+            className="w-full mt-4 py-2.5 rounded-xl text-xs font-medium text-stone-400 hover:text-stone-600 hover:bg-stone-50 border border-dashed border-stone-200 hover:border-stone-300 transition-all flex items-center justify-center gap-1.5"
+          >
+            ⚡ {lang === 'zh' ? '快捷登录（测试）' : 'Quick Login (Test)'}
+          </button>
+
+          <p className="text-center text-[11px] text-stone-400 mt-4">
             {t('auth.terms')}
           </p>
         </div>
