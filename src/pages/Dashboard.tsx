@@ -1513,113 +1513,64 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                         className="rounded-xl bg-white border border-stone-200/80 shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_20px_rgba(0,0,0,0.06)] transition-all duration-300 cursor-pointer group"
                       >
                         {/* Header */}
-                        <div className="p-5 pb-0">
+                        <div className="p-5">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
                               {getAgentAvatar(agent.name, 28)}
                               <div>
                                 <h2 className="text-base font-semibold text-stone-900 tracking-tight group-hover:text-stone-700 transition-colors">{agent.name}</h2>
-                                <p className="text-xs text-stone-400 font-medium mt-0.5">Global Agent Account</p>
+                                <p className="text-xs text-stone-500 font-medium mt-0.5">{t('agent.globalAccount')}</p>
                               </div>
                             </div>
                             <div className="flex items-center gap-3">
                               <span className="text-xs text-stone-400 font-medium flex items-center gap-1">
                                 <ActivityIcon className="w-3.5 h-3.5" />
-                                {agentActivityCount} activities
+                                {agentActivityCount} {t('agent.activities')}
                               </span>
                               <div className="relative">
-                              <button 
-                                className="p-1.5 rounded-md hover:bg-stone-100 text-stone-400 transition-colors opacity-0 group-hover:opacity-100"
-                                onClick={(e) => { e.stopPropagation(); setAgentListMenuOpen(agentListMenuOpen === agent.id ? null : agent.id); }}
-                              >
-                                <MoreVertical className="w-4 h-4" />
-                              </button>
-                              {agentListMenuOpen === agent.id && (
-                                <>
-                                  <div className="fixed inset-0 z-10" onClick={(e) => { e.stopPropagation(); setAgentListMenuOpen(null); }} />
-                                  <div className="absolute right-0 top-full mt-1 w-52 bg-white border border-stone-200 rounded-lg shadow-xl z-20 overflow-hidden py-1">
-                                    <button
-                                      onClick={(e) => { e.stopPropagation(); setAgentListMenuOpen(null); }}
-                                      className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
-                                    >
-                                      <Shield className="w-4 h-4 text-stone-400" />
-                                      Manage Permissions
-                                    </button>
-                                    <button
-                                      onClick={(e) => { e.stopPropagation(); setAgentListMenuOpen(null); }}
-                                      className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
-                                    >
-                                      <StopCircle className="w-4 h-4 text-stone-400" />
-                                      Stop Sync
-                                    </button>
-                                    <div className="border-t border-stone-100 my-0.5" />
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setAgentListMenuOpen(null);
-                                        setAgents(prev => prev.filter(a => a.id !== agent.id));
-                                      }}
-                                      className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                                    >
-                                      <Trash2 className="w-4 h-4 text-red-400" />
-                                      Delete
-                                    </button>
-                                  </div>
-                                </>
-                              )}
+                                <button 
+                                  className="p-1.5 rounded-md hover:bg-stone-100 text-stone-400 transition-colors opacity-0 group-hover:opacity-100"
+                                  onClick={(e) => { e.stopPropagation(); setAgentListMenuOpen(agentListMenuOpen === agent.id ? null : agent.id); }}
+                                >
+                                  <MoreVertical className="w-4 h-4" />
+                                </button>
+                                {agentListMenuOpen === agent.id && (
+                                  <>
+                                    <div className="fixed inset-0 z-10" onClick={(e) => { e.stopPropagation(); setAgentListMenuOpen(null); }} />
+                                    <div className="absolute right-0 top-full mt-1 w-52 bg-white border border-stone-200 rounded-lg shadow-xl z-20 overflow-hidden py-1">
+                                      <button
+                                        onClick={(e) => { e.stopPropagation(); setAgentListMenuOpen(null); }}
+                                        className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
+                                      >
+                                        <Shield className="w-4 h-4 text-stone-400" />
+                                        Manage Permissions
+                                      </button>
+                                      <button
+                                        onClick={(e) => { e.stopPropagation(); setAgentListMenuOpen(null); }}
+                                        className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
+                                      >
+                                        <StopCircle className="w-4 h-4 text-stone-400" />
+                                        Stop Sync
+                                      </button>
+                                      <div className="border-t border-stone-100 my-0.5" />
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setAgentListMenuOpen(null);
+                                          setAgents(prev => prev.filter(a => a.id !== agent.id));
+                                        }}
+                                        className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                                      >
+                                        <Trash2 className="w-4 h-4 text-red-400" />
+                                        Delete
+                                      </button>
+                                    </div>
+                                  </>
+                                )}
+                              </div>
                             </div>
-                            </div>
-                            <div>
-                              <h2 className="text-base font-semibold text-stone-900 tracking-tight group-hover:text-stone-700 transition-colors">{agent.name}</h2>
-                              <p className="text-xs text-stone-500 font-medium">{t('agent.globalAccount')}</p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <span className="text-xs text-stone-400 font-medium flex items-center gap-1">
-                              <ActivityIcon className="w-3.5 h-3.5" />
-                              {agentActivityCount} {t('agent.activities')}
-                            </span>
-                            <button 
-                              className="p-1.5 rounded-md hover:bg-stone-100 text-stone-400 transition-colors opacity-0 group-hover:opacity-100"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <MoreVertical className="w-4 h-4" />
-                            </button>
                           </div>
                         </div>
-
-                        {/* Recent 3 activities */}
-                        {recentActivities.length > 0 && (
-                          <div className="mt-3.5 mx-5 mb-5 pt-3.5 border-t border-stone-100 space-y-1.5">
-                            {recentActivities.map(activity => (
-                              <div key={activity.id} className="flex items-start gap-2 text-xs leading-relaxed">
-                                <span className="text-stone-300 shrink-0 w-12 text-right font-medium pt-px">
-                                  {(() => {
-                                    const date = new Date(activity.timestamp);
-                                    const now = new Date();
-                                    const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-                                    if (diffDays === 0) return 'Today';
-                                    if (diffDays === 1) return '1d ago';
-                                    if (diffDays < 7) return `${diffDays}d ago`;
-                                    return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
-                                  })()}
-                                </span>
-                                <span className="text-stone-500 min-w-0">
-                                  <span className="text-stone-400">{activity.action} </span>
-                                  <span className="font-semibold text-stone-800">{activity.targetName}</span>
-                                  {activity.details && (
-                                    <span className="text-stone-400"> — {activity.details}</span>
-                                  )}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                        {recentActivities.length === 0 && (
-                          <div className="mt-3.5 mx-5 mb-5 pt-3.5 border-t border-stone-100">
-                            <p className="text-xs text-stone-300 italic">No recent activity</p>
-                          </div>
-                        )}
                       </div>
                     );
                   })
