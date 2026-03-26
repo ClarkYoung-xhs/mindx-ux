@@ -29,7 +29,9 @@ import {
   Tag,
   Shield,
   Plus,
-  Globe
+  Globe,
+  Lock,
+  Pencil
 } from 'lucide-react';
 
 interface Paragraph {
@@ -161,6 +163,9 @@ export default function DocumentEditor() {
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [sharePublishToWeb, setSharePublishToWeb] = useState(false);
   const [shareLinkCopied, setShareLinkCopied] = useState(false);
+  const [shareAccessLevel, setShareAccessLevel] = useState<'invited' | 'view' | 'edit'>('invited');
+  const [showAccessDropdown, setShowAccessDropdown] = useState(false);
+  const [shareInviteMode, setShareInviteMode] = useState(false);
   useEffect(() => {
     // Simple check to simulate different document types
     const params = new URLSearchParams(window.location.search);
@@ -709,7 +714,7 @@ export default function DocumentEditor() {
   });
 
   return (
-    <div className="min-h-screen bg-white text-stone-800 flex flex-col font-sans selection:bg-stone-200">
+    <div className="h-screen bg-white text-stone-800 flex flex-col font-sans selection:bg-stone-200 overflow-hidden">
       {/* Header */}
       <header className="h-14 flex items-center justify-between px-4 border-b border-stone-200 bg-white/80 backdrop-blur-md sticky top-0 z-10">
         <div className="flex items-center gap-4">
@@ -776,14 +781,67 @@ export default function DocumentEditor() {
 
             {isShareOpen && (
               <>
-                <div className="fixed inset-0 z-30" onClick={() => setIsShareOpen(false)} />
+                <div className="fixed inset-0 z-30" onClick={() => { setIsShareOpen(false); setShareInviteMode(false); }} />
                 <div className="absolute right-0 top-full mt-2 w-[420px] bg-white border border-stone-200 rounded-xl shadow-2xl z-40 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+                  
+                  {shareInviteMode ? (
+                    <>
+                      {/* Invite sub-page header */}
+                      <div className="flex items-center gap-2 px-4 pt-4 pb-2">
+                        <button 
+                          onClick={() => setShareInviteMode(false)}
+                          className="p-1 rounded-md hover:bg-stone-100 transition-colors"
+                        >
+                          <ArrowLeft className="w-4 h-4 text-stone-500" />
+                        </button>
+                        <span className="text-sm font-semibold text-stone-900">邀请</span>
+                      </div>
+                      {/* Invite input */}
+                      <div className="px-4 pb-4">
+                        <div className="flex items-center gap-2">
+                          <input 
+                            type="text" 
+                            placeholder="Agent 名称或邮件地址，以逗号分隔" 
+                            autoFocus
+                            className="flex-1 bg-white border-2 border-stone-900 rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors placeholder:text-stone-400"
+                          />
+                          <button className="px-3 py-2 bg-stone-900 text-white text-sm font-medium rounded-lg hover:bg-stone-800 transition-colors shrink-0">
+                            邀请
+                          </button>
+                        </div>
+                      </div>
+                      {/* Import contacts */}
+                      <div className="flex flex-col items-center justify-center py-10 px-6">
+                        <div className="flex items-center gap-4 mb-4">
+                          {/* WeChat icon */}
+                          <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity">
+                            <svg viewBox="0 0 24 24" className="w-5 h-5 text-white" fill="currentColor">
+                              <path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 0 1 .213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.29.295a.326.326 0 0 0 .167-.054l1.903-1.114a.864.864 0 0 1 .717-.098 10.16 10.16 0 0 0 2.837.403c.276 0 .543-.027.811-.05-.857-2.578.157-4.972 1.932-6.446 1.703-1.415 3.882-1.98 5.853-1.838-.576-3.583-4.196-6.348-8.596-6.348zM5.785 5.991c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 0 1-1.162 1.178A1.17 1.17 0 0 1 4.623 7.17c0-.651.52-1.18 1.162-1.18zm5.813 0c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 0 1-1.162 1.178 1.17 1.17 0 0 1-1.162-1.178c0-.651.52-1.18 1.162-1.18zm3.21 4.127c-3.894 0-7.164 2.58-7.164 5.638 0 3.06 3.27 5.64 7.164 5.64.867 0 1.703-.142 2.478-.4a.712.712 0 0 1 .59.08l1.563.924a.266.266 0 0 0 .136.045c.131 0 .237-.108.237-.241 0-.06-.023-.117-.039-.174l-.32-1.217a.481.481 0 0 1 .176-.546C21.096 19.158 22 17.486 22 15.756c0-3.059-3.27-5.638-7.192-5.638zm-2.335 2.934c.528 0 .956.434.956.97a.963.963 0 0 1-.956.97.963.963 0 0 1-.957-.97c0-.536.428-.97.957-.97zm4.672 0c.528 0 .956.434.956.97a.963.963 0 0 1-.956.97.963.963 0 0 1-.957-.97c0-.536.428-.97.957-.97z"/>
+                            </svg>
+                          </div>
+                          {/* QQ icon */}
+                          <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity">
+                            <svg viewBox="0 0 24 24" className="w-5 h-5 text-white" fill="currentColor">
+                              <path d="M21.395 15.035a39.548 39.548 0 0 0-1.066-2.158c-.09-.17-.178-.336-.263-.5a13.157 13.157 0 0 0 .064-1.274c0-4.545-2.558-8.23-5.714-8.23h-.002c-.324 0-.643.039-.955.107A4.357 4.357 0 0 0 12 2.467a4.357 4.357 0 0 0-1.459.513c-.312-.068-.631-.107-.955-.107h-.002c-3.156 0-5.714 3.685-5.714 8.23 0 .433.023.864.064 1.274-.085.164-.173.33-.263.5a39.548 39.548 0 0 0-1.066 2.158c-.378.817-1.456 3.332-.709 3.946.339.278.822-.015 1.376-.588.192-.199.394-.437.604-.71a7.847 7.847 0 0 0 2.087 2.593c-.066.253-.108.49-.108.687 0 .638.223.923.636 1.077-.063.164-.098.336-.098.507 0 .87.768 1.453 2.078 1.453.745 0 1.553-.152 2.185-.552a3.03 3.03 0 0 0 1.344.321 3.03 3.03 0 0 0 1.344-.321c.632.4 1.44.552 2.185.552 1.31 0 2.078-.583 2.078-1.453 0-.17-.035-.343-.098-.507.413-.154.636-.439.636-1.077 0-.197-.042-.434-.108-.687a7.847 7.847 0 0 0 2.087-2.593c.21.273.412.511.604.71.554.573 1.037.866 1.376.588.747-.614-.331-3.13-.709-3.946z"/>
+                            </svg>
+                          </div>
+                        </div>
+                        <p className="text-sm font-semibold text-stone-800 mb-1">导入联系人</p>
+                        <p className="text-xs text-stone-400 mb-4">关联微信、QQ 快速添加协作成员</p>
+                        <button className="px-4 py-1.5 border border-stone-200 rounded-lg text-sm text-stone-700 font-medium hover:bg-stone-50 transition-colors">
+                          立即开始
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
                   {/* Invite input */}
                   <div className="p-4 border-b border-stone-100">
                     <div className="flex items-center gap-2">
                       <input 
                         type="text" 
                         placeholder="添加用户、Agent或邮箱..." 
+                        onFocus={() => setShareInviteMode(true)}
                         className="flex-1 bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-stone-400 focus:bg-white transition-colors placeholder:text-stone-400"
                       />
                       <button className="px-3 py-2 bg-stone-900 text-white text-sm font-medium rounded-lg hover:bg-stone-800 transition-colors shrink-0">
@@ -794,9 +852,9 @@ export default function DocumentEditor() {
 
                   {/* Members list */}
                   <div className="p-2 max-h-60 overflow-y-auto">
-                    <div className="px-2 py-1 text-[10px] font-bold text-stone-400 uppercase tracking-wider">已拥有权限的成员</div>
+                    <div className="px-2 py-1 text-xs font-bold text-stone-400 uppercase tracking-wider">协作成员</div>
                     
-                    {/* Owner */}
+                    {/* Owner - 我 */}
                     <div className="flex items-center justify-between px-2 py-2 rounded-lg hover:bg-stone-50 transition-colors">
                       <div className="flex items-center gap-3">
                         <div className="w-7 h-7 rounded-full bg-stone-600 flex items-center justify-center text-white text-xs font-medium">我</div>
@@ -808,7 +866,37 @@ export default function DocumentEditor() {
                       <span className="text-xs text-stone-400 font-medium">创建者</span>
                     </div>
 
-                    {/* Claude agent */}
+                    {/* Human collaborator - Clark */}
+                    <div className="flex items-center justify-between px-2 py-2 rounded-lg hover:bg-stone-50 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-medium">C</div>
+                        <div>
+                          <p className="text-sm font-medium text-stone-900">Clark</p>
+                          <p className="text-[11px] text-stone-400">clark@example.com</p>
+                        </div>
+                      </div>
+                      <select className="text-xs text-stone-600 font-medium bg-transparent border border-stone-200 rounded-md px-2 py-1 focus:outline-none cursor-pointer hover:bg-stone-50">
+                        <option>可编辑</option>
+                        <option>可查看</option>
+                      </select>
+                    </div>
+
+                    {/* Human collaborator - Maya */}
+                    <div className="flex items-center justify-between px-2 py-2 rounded-lg hover:bg-stone-50 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className="w-7 h-7 rounded-full bg-violet-600 flex items-center justify-center text-white text-xs font-medium">M</div>
+                        <div>
+                          <p className="text-sm font-medium text-stone-900">Maya Chen</p>
+                          <p className="text-[11px] text-stone-400">maya@example.com</p>
+                        </div>
+                      </div>
+                      <select className="text-xs text-stone-600 font-medium bg-transparent border border-stone-200 rounded-md px-2 py-1 focus:outline-none cursor-pointer hover:bg-stone-50">
+                        <option>可编辑</option>
+                        <option>可查看</option>
+                      </select>
+                    </div>
+
+                    {/* Agent - Claude 3.5 Sonnet (owner: 我) */}
                     <div className="flex items-center justify-between px-2 py-2 rounded-lg hover:bg-stone-50 transition-colors">
                       <div className="flex items-center gap-3">
                         <div className="w-7 h-7 rounded-full bg-amber-600 flex items-center justify-center text-white text-xs">
@@ -816,43 +904,111 @@ export default function DocumentEditor() {
                         </div>
                         <div>
                           <p className="text-sm font-medium text-stone-900">Claude 3.5 Sonnet</p>
-                          <p className="text-[11px] text-stone-400">Agent</p>
+                          <p className="text-[11px] text-stone-400">Agent｜我</p>
                         </div>
                       </div>
                       <select className="text-xs text-stone-600 font-medium bg-transparent border border-stone-200 rounded-md px-2 py-1 focus:outline-none cursor-pointer hover:bg-stone-50">
                         <option>可编辑</option>
                         <option>可查看</option>
-                        <option>可评论</option>
+                      </select>
+                    </div>
+
+                    {/* Agent - Research Bot (owner: Clark) */}
+                    <div className="flex items-center justify-between px-2 py-2 rounded-lg hover:bg-stone-50 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className="w-7 h-7 rounded-full bg-emerald-600 flex items-center justify-center text-white text-xs">
+                          <Bot className="w-3.5 h-3.5" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-stone-900">Research Bot</p>
+                          <p className="text-[11px] text-stone-400">Agent｜Clark</p>
+                        </div>
+                      </div>
+                      <select className="text-xs text-stone-600 font-medium bg-transparent border border-stone-200 rounded-md px-2 py-1 focus:outline-none cursor-pointer hover:bg-stone-50">
+                        <option>可查看</option>
+                        <option>可编辑</option>
+                      </select>
+                    </div>
+
+                    {/* Agent - Data Analyzer (owner: Maya Chen) */}
+                    <div className="flex items-center justify-between px-2 py-2 rounded-lg hover:bg-stone-50 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className="w-7 h-7 rounded-full bg-rose-600 flex items-center justify-center text-white text-xs">
+                          <Bot className="w-3.5 h-3.5" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-stone-900">Data Analyzer</p>
+                          <p className="text-[11px] text-stone-400">Agent｜Maya Chen</p>
+                        </div>
+                      </div>
+                      <select className="text-xs text-stone-600 font-medium bg-transparent border border-stone-200 rounded-md px-2 py-1 focus:outline-none cursor-pointer hover:bg-stone-50">
+                        <option>可编辑</option>
+                        <option>可查看</option>
                       </select>
                     </div>
                   </div>
 
-                  {/* Copy link & Publish */}
-                  <div className="border-t border-stone-100 p-3 space-y-2">
-                    <button 
-                      onClick={() => {
-                        navigator.clipboard.writeText(`https://mindx.app/d/project-alpha`);
-                        setShareLinkCopied(true);
-                        setTimeout(() => setShareLinkCopied(false), 2000);
-                      }}
-                      className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-stone-50 text-sm text-stone-700 font-medium transition-colors"
-                    >
-                      {shareLinkCopied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4 text-stone-400" />}
-                      {shareLinkCopied ? '链接已复制！' : '复制文档链接'}
-                    </button>
-                    <div className="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-stone-50 transition-colors">
-                      <div className="flex items-center gap-2">
-                        <Globe className="w-4 h-4 text-stone-400" />
-                        <span className="text-sm text-stone-700 font-medium">发布到 Web</span>
+                  {/* Access permission & Copy link */}
+                  <div className="border-t border-stone-100 p-3">
+                    <div className="flex items-center gap-2">
+                      <div className="relative flex-1">
+                        <button
+                          onClick={() => setShowAccessDropdown(!showAccessDropdown)}
+                          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-stone-200 hover:bg-stone-50 text-sm text-stone-700 font-medium transition-colors"
+                        >
+                          {shareAccessLevel === 'invited' && <Lock className="w-3.5 h-3.5 text-stone-500" />}
+                          {shareAccessLevel === 'view' && <Eye className="w-3.5 h-3.5 text-stone-500" />}
+                          {shareAccessLevel === 'edit' && <Pencil className="w-3.5 h-3.5 text-stone-500" />}
+                          <span className="truncate">
+                            {shareAccessLevel === 'invited' && '仅限协作成员访问'}
+                            {shareAccessLevel === 'view' && '获得链接的任何人都可查看'}
+                            {shareAccessLevel === 'edit' && '获得链接的任何人都可编辑'}
+                          </span>
+                          <ChevronDown className="w-3.5 h-3.5 text-stone-400 ml-auto flex-shrink-0" />
+                        </button>
+                        {showAccessDropdown && (
+                          <div className="absolute bottom-full left-0 right-0 mb-1 bg-white rounded-xl shadow-lg border border-stone-200 py-1 z-50">
+                            <button
+                              onClick={() => { setShareAccessLevel('invited'); setShowAccessDropdown(false); }}
+                              className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-stone-50 transition-colors text-left"
+                            >
+                              <Lock className="w-4 h-4 text-stone-500" />
+                              <span className="text-sm text-stone-700">仅限协作成员访问</span>
+                              {shareAccessLevel === 'invited' && <Check className="w-4 h-4 text-stone-900 ml-auto" />}
+                            </button>
+                            <button
+                              onClick={() => { setShareAccessLevel('view'); setShowAccessDropdown(false); }}
+                              className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-stone-50 transition-colors text-left"
+                            >
+                              <Eye className="w-4 h-4 text-stone-500" />
+                              <span className="text-sm text-stone-700">获得链接的任何人都可查看</span>
+                              {shareAccessLevel === 'view' && <Check className="w-4 h-4 text-stone-900 ml-auto" />}
+                            </button>
+                            <button
+                              onClick={() => { setShareAccessLevel('edit'); setShowAccessDropdown(false); }}
+                              className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-stone-50 transition-colors text-left"
+                            >
+                              <Pencil className="w-4 h-4 text-stone-500" />
+                              <span className="text-sm text-stone-700">获得链接的任何人都可编辑</span>
+                              {shareAccessLevel === 'edit' && <Check className="w-4 h-4 text-stone-900 ml-auto" />}
+                            </button>
+                          </div>
+                        )}
                       </div>
                       <button
-                        onClick={() => setSharePublishToWeb(!sharePublishToWeb)}
-                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${sharePublishToWeb ? 'bg-stone-900' : 'bg-stone-200'}`}
+                        onClick={() => {
+                          navigator.clipboard.writeText(`https://mindx.app/d/project-alpha`);
+                          setShareLinkCopied(true);
+                          setTimeout(() => setShareLinkCopied(false), 2000);
+                        }}
+                        className="flex-shrink-0 px-4 py-2 rounded-lg bg-stone-900 hover:bg-stone-800 text-white text-sm font-medium transition-colors"
                       >
-                        <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform shadow-sm ${sharePublishToWeb ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                        {shareLinkCopied ? '已复制！' : '复制链接'}
                       </button>
                     </div>
                   </div>
+                    </>
+                  )}
                 </div>
               </>
             )}
@@ -914,6 +1070,7 @@ export default function DocumentEditor() {
           </div>
         </div>
       </header>
+
 
       {/* Editor & Sidebar */}
       <div className={`flex-1 flex overflow-hidden relative transition-all duration-300 ${
@@ -1091,7 +1248,7 @@ export default function DocumentEditor() {
             </span>
           </div>
           
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div className={`flex-1 p-4 space-y-4 ${showCommentsSidebar ? 'overflow-y-auto' : 'overflow-hidden'}`}>
             {comments.map((comment) => (
               <motion.div 
                 key={comment.id}
@@ -1099,8 +1256,8 @@ export default function DocumentEditor() {
                   if (el) commentRefs.current.set(comment.id, el);
                   else commentRefs.current.delete(comment.id);
                 }}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
                 onClick={() => setActiveCommentId(comment.id)}
                 className={`p-4 rounded-xl border bg-white shadow-sm cursor-pointer transition-all comment-card ${
                   activeCommentId === comment.id || comment.isDraft
