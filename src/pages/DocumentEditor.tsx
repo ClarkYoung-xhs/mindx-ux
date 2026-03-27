@@ -31,7 +31,8 @@ import {
   Plus,
   Globe,
   Lock,
-  Pencil
+  Pencil,
+  UserMinus
 } from 'lucide-react';
 
 interface Paragraph {
@@ -166,6 +167,16 @@ export default function DocumentEditor() {
   const [shareAccessLevel, setShareAccessLevel] = useState<'invited' | 'view' | 'edit'>('invited');
   const [showAccessDropdown, setShowAccessDropdown] = useState(false);
   const [shareInviteMode, setShareInviteMode] = useState(false);
+  const [openMemberDropdown, setOpenMemberDropdown] = useState<string | null>(null);
+  const [invitePermission, setInvitePermission] = useState<'可编辑' | '可查看'>('可编辑');
+  const [showInvitePermDropdown, setShowInvitePermDropdown] = useState(false);
+  const [shareMembers, setShareMembers] = useState([
+    { id: 'clark', name: 'Clark', email: 'clark@example.com', type: 'human' as const, color: 'bg-blue-600', initials: 'C', permission: '可编辑' },
+    { id: 'maya', name: 'Maya Chen', email: 'maya@example.com', type: 'human' as const, color: 'bg-violet-600', initials: 'M', permission: '可编辑' },
+    { id: 'claude', name: 'Claude 3.5 Sonnet', owner: '我', type: 'agent' as const, color: 'bg-amber-600', permission: '可编辑' },
+    { id: 'research', name: 'Research Bot', owner: 'Clark', type: 'agent' as const, color: 'bg-emerald-600', permission: '可查看' },
+    { id: 'data', name: 'Data Analyzer', owner: 'Maya Chen', type: 'agent' as const, color: 'bg-rose-600', permission: '可编辑' },
+  ]);
   useEffect(() => {
     // Simple check to simulate different document types
     const params = new URLSearchParams(window.location.search);
@@ -781,7 +792,7 @@ export default function DocumentEditor() {
 
             {isShareOpen && (
               <>
-                <div className="fixed inset-0 z-30" onClick={() => { setIsShareOpen(false); setShareInviteMode(false); }} />
+                <div className="fixed inset-0 z-30" onClick={() => { setIsShareOpen(false); setShareInviteMode(false); setOpenMemberDropdown(null); setShowInvitePermDropdown(false); }} />
                 <div className="absolute right-0 top-full mt-2 w-[420px] bg-white border border-stone-200 rounded-xl shadow-2xl z-40 overflow-hidden" onClick={(e) => e.stopPropagation()}>
                   
                   {shareInviteMode ? (
@@ -799,12 +810,60 @@ export default function DocumentEditor() {
                       {/* Invite input */}
                       <div className="px-4 pb-4">
                         <div className="flex items-center gap-2">
-                          <input 
-                            type="text" 
-                            placeholder="Agent 名称或邮件地址，以逗号分隔" 
-                            autoFocus
-                            className="flex-1 bg-white border-2 border-stone-900 rounded-lg px-3 py-2 text-sm focus:outline-none transition-colors placeholder:text-stone-400"
-                          />
+                          <div className="flex-1 relative flex items-center bg-white border-2 border-stone-900 rounded-lg">
+                            <input 
+                              type="text" 
+                              placeholder="Agent 名称或邮件地址，以逗号分隔" 
+                              autoFocus
+                              className="flex-1 min-w-0 px-3 py-2 text-sm focus:outline-none placeholder:text-stone-400 bg-transparent rounded-lg"
+                            />
+                            <div className="shrink-0 mr-1.5">
+                              <button
+                                onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); setShowInvitePermDropdown(!showInvitePermDropdown); }}
+                                className="flex items-center gap-0.5 px-2 py-1 text-xs text-stone-500 hover:text-stone-700 hover:bg-stone-100 rounded-md transition-colors font-medium cursor-pointer select-none"
+                              >
+                                {invitePermission}
+                                <ChevronDown className="w-3 h-3" />
+                              </button>
+                            </div>
+                            {showInvitePermDropdown && (
+                              <>
+                                <div className="fixed inset-0 z-[60]" onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); setShowInvitePermDropdown(false); }} />
+                                <div className="absolute right-0 top-full mt-1 w-32 bg-white rounded-lg shadow-lg border border-stone-200 py-1 z-[70]">
+                                  <button
+                                    onMouseDown={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      setInvitePermission('可编辑');
+                                      setShowInvitePermDropdown(false);
+                                    }}
+                                    className="w-full flex items-center justify-between px-3 py-1.5 text-xs text-stone-700 hover:bg-stone-50 transition-colors"
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <Pencil className="w-3 h-3 text-stone-400" />
+                                      可编辑
+                                    </div>
+                                    {invitePermission === '可编辑' && <Check className="w-3 h-3 text-stone-900" />}
+                                  </button>
+                                  <button
+                                    onMouseDown={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      setInvitePermission('可查看');
+                                      setShowInvitePermDropdown(false);
+                                    }}
+                                    className="w-full flex items-center justify-between px-3 py-1.5 text-xs text-stone-700 hover:bg-stone-50 transition-colors"
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <Eye className="w-3 h-3 text-stone-400" />
+                                      可查看
+                                    </div>
+                                    {invitePermission === '可查看' && <Check className="w-3 h-3 text-stone-900" />}
+                                  </button>
+                                </div>
+                              </>
+                            )}
+                          </div>
                           <button className="px-3 py-2 bg-stone-900 text-white text-sm font-medium rounded-lg hover:bg-stone-800 transition-colors shrink-0">
                             邀请
                           </button>
@@ -866,86 +925,77 @@ export default function DocumentEditor() {
                       <span className="text-xs text-stone-400 font-medium">创建者</span>
                     </div>
 
-                    {/* Human collaborator - Clark */}
-                    <div className="flex items-center justify-between px-2 py-2 rounded-lg hover:bg-stone-50 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-medium">C</div>
-                        <div>
-                          <p className="text-sm font-medium text-stone-900">Clark</p>
-                          <p className="text-[11px] text-stone-400">clark@example.com</p>
+                    {shareMembers.map((member) => (
+                      <div key={member.id} className="flex items-center justify-between px-2 py-2 rounded-lg hover:bg-stone-50 transition-colors">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-7 h-7 rounded-full ${member.color} flex items-center justify-center text-white text-xs ${member.type === 'human' ? 'font-medium' : ''}`}>
+                            {member.type === 'agent' ? <Bot className="w-3.5 h-3.5" /> : member.initials}
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-stone-900">{member.name}</p>
+                            <p className="text-[11px] text-stone-400">
+                              {member.type === 'agent' ? `Agent｜${member.owner}` : member.email}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="relative">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setOpenMemberDropdown(openMemberDropdown === member.id ? null : member.id); }}
+                            className="text-xs text-stone-600 font-medium bg-transparent border border-stone-200 rounded-md px-2 py-1 cursor-pointer hover:bg-stone-50 flex items-center gap-1 transition-colors"
+                          >
+                            {member.permission}
+                            <ChevronDown className="w-3 h-3 text-stone-400" />
+                          </button>
+                          {openMemberDropdown === member.id && (
+                            <>
+                              <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); setOpenMemberDropdown(null); }} />
+                              <div className="absolute right-0 top-full mt-1 w-36 bg-white rounded-lg shadow-lg border border-stone-200 py-1 z-50">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setShareMembers(prev => prev.map(m => m.id === member.id ? { ...m, permission: '可编辑' } : m));
+                                    setOpenMemberDropdown(null);
+                                  }}
+                                  className="w-full flex items-center justify-between px-3 py-1.5 text-xs text-stone-700 hover:bg-stone-50 transition-colors"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <Pencil className="w-3 h-3 text-stone-400" />
+                                    可编辑
+                                  </div>
+                                  {member.permission === '可编辑' && <Check className="w-3 h-3 text-stone-900" />}
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setShareMembers(prev => prev.map(m => m.id === member.id ? { ...m, permission: '可查看' } : m));
+                                    setOpenMemberDropdown(null);
+                                  }}
+                                  className="w-full flex items-center justify-between px-3 py-1.5 text-xs text-stone-700 hover:bg-stone-50 transition-colors"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <Eye className="w-3 h-3 text-stone-400" />
+                                    可查看
+                                  </div>
+                                  {member.permission === '可查看' && <Check className="w-3 h-3 text-stone-900" />}
+                                </button>
+                                <div className="border-t border-stone-200 my-1" />
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setShareMembers(prev => prev.filter(m => m.id !== member.id));
+                                    setOpenMemberDropdown(null);
+                                  }}
+                                  className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-red-600 hover:bg-red-50 transition-colors"
+                                >
+                                  <UserMinus className="w-3 h-3" />
+                                  移除
+                                </button>
+                              </div>
+                            </>
+                          )}
                         </div>
                       </div>
-                      <select className="text-xs text-stone-600 font-medium bg-transparent border border-stone-200 rounded-md px-2 py-1 focus:outline-none cursor-pointer hover:bg-stone-50">
-                        <option>可编辑</option>
-                        <option>可查看</option>
-                      </select>
-                    </div>
-
-                    {/* Human collaborator - Maya */}
-                    <div className="flex items-center justify-between px-2 py-2 rounded-lg hover:bg-stone-50 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <div className="w-7 h-7 rounded-full bg-violet-600 flex items-center justify-center text-white text-xs font-medium">M</div>
-                        <div>
-                          <p className="text-sm font-medium text-stone-900">Maya Chen</p>
-                          <p className="text-[11px] text-stone-400">maya@example.com</p>
-                        </div>
-                      </div>
-                      <select className="text-xs text-stone-600 font-medium bg-transparent border border-stone-200 rounded-md px-2 py-1 focus:outline-none cursor-pointer hover:bg-stone-50">
-                        <option>可编辑</option>
-                        <option>可查看</option>
-                      </select>
-                    </div>
-
-                    {/* Agent - Claude 3.5 Sonnet (owner: 我) */}
-                    <div className="flex items-center justify-between px-2 py-2 rounded-lg hover:bg-stone-50 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <div className="w-7 h-7 rounded-full bg-amber-600 flex items-center justify-center text-white text-xs">
-                          <Bot className="w-3.5 h-3.5" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-stone-900">Claude 3.5 Sonnet</p>
-                          <p className="text-[11px] text-stone-400">Agent｜我</p>
-                        </div>
-                      </div>
-                      <select className="text-xs text-stone-600 font-medium bg-transparent border border-stone-200 rounded-md px-2 py-1 focus:outline-none cursor-pointer hover:bg-stone-50">
-                        <option>可编辑</option>
-                        <option>可查看</option>
-                      </select>
-                    </div>
-
-                    {/* Agent - Research Bot (owner: Clark) */}
-                    <div className="flex items-center justify-between px-2 py-2 rounded-lg hover:bg-stone-50 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <div className="w-7 h-7 rounded-full bg-emerald-600 flex items-center justify-center text-white text-xs">
-                          <Bot className="w-3.5 h-3.5" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-stone-900">Research Bot</p>
-                          <p className="text-[11px] text-stone-400">Agent｜Clark</p>
-                        </div>
-                      </div>
-                      <select className="text-xs text-stone-600 font-medium bg-transparent border border-stone-200 rounded-md px-2 py-1 focus:outline-none cursor-pointer hover:bg-stone-50">
-                        <option>可查看</option>
-                        <option>可编辑</option>
-                      </select>
-                    </div>
-
-                    {/* Agent - Data Analyzer (owner: Maya Chen) */}
-                    <div className="flex items-center justify-between px-2 py-2 rounded-lg hover:bg-stone-50 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <div className="w-7 h-7 rounded-full bg-rose-600 flex items-center justify-center text-white text-xs">
-                          <Bot className="w-3.5 h-3.5" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-stone-900">Data Analyzer</p>
-                          <p className="text-[11px] text-stone-400">Agent｜Maya Chen</p>
-                        </div>
-                      </div>
-                      <select className="text-xs text-stone-600 font-medium bg-transparent border border-stone-200 rounded-md px-2 py-1 focus:outline-none cursor-pointer hover:bg-stone-50">
-                        <option>可编辑</option>
-                        <option>可查看</option>
-                      </select>
-                    </div>
+                    ))}
                   </div>
 
                   {/* Access permission & Copy link */}
