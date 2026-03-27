@@ -39,7 +39,12 @@ import {
   ExternalLink,
   Package,
   Terminal,
-  Zap
+  Zap,
+  CalendarDays,
+  EyeOff,
+  Timer,
+  Bookmark,
+  Brain
 } from 'lucide-react';
 
 const initialWorkspaces = [
@@ -78,6 +83,8 @@ interface WorkspaceDoc {
   creatorType: 'human' | 'agent';
   size: number; // Size in bytes
   isNew?: boolean; // Whether this doc was created while the user was away
+  isRead?: boolean; // Whether the user has read this doc
+  source?: 'normal' | 'scheduled' | 'webclip' | 'memory'; // Document source
 }
 
 interface AgentPermission {
@@ -170,26 +177,35 @@ const absenceSummaryData: AbsenceSummaryData = {
 };
 
 const initialDocuments: WorkspaceDoc[] = [
-  { id: 'd1', workspaceId: 'w1', name: 'Project Alpha Architecture', type: 'Smart Doc', date: '2 hours ago', lastModified: '2026-03-24T12:00:00Z', lastViewed: '2026-03-24T13:30:00Z', labels: ['Project Alpha', 'PRD'], creatorName: 'Claude Assistant', creatorType: 'agent', size: 32768, isNew: true },
-  { id: 'd2', workspaceId: 'w1', name: 'Q3 Financial Projections', type: 'Table', date: 'Yesterday', lastModified: '2026-03-23T10:00:00Z', lastViewed: '2026-03-24T09:00:00Z', labels: ['Data', 'Finance'], creatorName: 'Data Analyzer', creatorType: 'agent', size: 65536 },
-  { id: 'd3', workspaceId: 'w1', name: 'User Flow Diagram', type: 'Whiteboard', date: 'Last week', lastModified: '2026-03-17T15:00:00Z', lastViewed: '2026-03-22T11:00:00Z', labels: ['Design', 'Project Alpha'], creatorName: currentUser.name, creatorType: 'human', size: 128000 },
-  { id: 'd6', workspaceId: 'w1', name: 'Claude & Maya: Feature Discussion', type: 'Smart Doc', date: '3 hours ago', lastModified: '2026-03-24T11:00:00Z', lastViewed: '2026-03-24T11:30:00Z', labels: ['Meeting Notes'], creatorName: 'Claude Assistant', creatorType: 'agent', size: 24576, isNew: true },
-  { id: 'd4', workspaceId: 'w1', name: 'Competitor Analysis', type: 'Markdown', date: '1 hour ago', lastModified: '2026-03-24T13:00:00Z', lastViewed: '2026-03-24T13:45:00Z', labels: ['Research', 'Data'], creatorName: 'Research Bot', creatorType: 'agent', size: 40960, isNew: true },
-  { id: 'd5', workspaceId: 'w1', name: 'Marketing Strategy', type: 'Smart Doc', date: '2 days ago', lastModified: '2026-03-22T14:00:00Z', lastViewed: '2026-03-23T16:00:00Z', labels: ['PRD', 'Marketing'], creatorName: currentUser.name, creatorType: 'human', size: 53248 },
+  { id: 'd1', workspaceId: 'w1', name: 'Project Alpha Architecture', type: 'Smart Doc', date: '2 hours ago', lastModified: '2026-03-27T12:00:00Z', lastViewed: '2026-03-27T13:30:00Z', labels: ['Project Alpha', 'PRD'], creatorName: 'Claude Assistant', creatorType: 'agent', size: 32768, isNew: true, isRead: false, source: 'normal' },
+  { id: 'd2', workspaceId: 'w1', name: 'Q3 Financial Projections', type: 'Table', date: 'Yesterday', lastModified: '2026-03-23T10:00:00Z', lastViewed: '2026-03-24T09:00:00Z', labels: ['Data', 'Finance'], creatorName: 'Data Analyzer', creatorType: 'agent', size: 65536, isRead: true, source: 'normal' },
+  { id: 'd3', workspaceId: 'w1', name: 'User Flow Diagram', type: 'Whiteboard', date: 'Last week', lastModified: '2026-03-17T15:00:00Z', lastViewed: '2026-03-22T11:00:00Z', labels: ['Design', 'Project Alpha'], creatorName: currentUser.name, creatorType: 'human', size: 128000, isRead: true, source: 'normal' },
+  { id: 'd6', workspaceId: 'w1', name: 'Claude & Maya: Feature Discussion', type: 'Smart Doc', date: '3 hours ago', lastModified: '2026-03-27T11:00:00Z', lastViewed: '2026-03-27T11:30:00Z', labels: ['Meeting Notes'], creatorName: 'Claude Assistant', creatorType: 'agent', size: 24576, isNew: true, isRead: false, source: 'normal' },
+  { id: 'd4', workspaceId: 'w1', name: 'Competitor Analysis', type: 'Markdown', date: '1 hour ago', lastModified: '2026-03-27T13:00:00Z', lastViewed: '2026-03-27T13:45:00Z', labels: ['Research', 'Data'], creatorName: 'Research Bot', creatorType: 'agent', size: 40960, isNew: true, isRead: false, source: 'normal' },
+  { id: 'd5', workspaceId: 'w1', name: 'Marketing Strategy', type: 'Smart Doc', date: '2 days ago', lastModified: '2026-03-22T14:00:00Z', lastViewed: '2026-03-23T16:00:00Z', labels: ['PRD', 'Marketing'], creatorName: currentUser.name, creatorType: 'human', size: 53248, isRead: true, source: 'normal' },
   // Agent scheduled task outputs — Daily Industry Digest
-  { id: 'd7', workspaceId: 'w1', name: 'Industry Digest — Mar 24', type: 'Markdown', date: 'Today', lastModified: '2026-03-24T08:00:00Z', lastViewed: '2026-03-24T10:00:00Z', labels: ['Daily Industry Digest'], creatorName: 'Research Bot', creatorType: 'agent', size: 45056, isNew: true },
-  { id: 'd8', workspaceId: 'w1', name: 'Industry Digest — Mar 23', type: 'Markdown', date: 'Yesterday', lastModified: '2026-03-23T08:00:00Z', lastViewed: '2026-03-23T12:00:00Z', labels: ['Daily Industry Digest'], creatorName: 'Research Bot', creatorType: 'agent', size: 43008 },
-  { id: 'd9', workspaceId: 'w1', name: 'Industry Digest — Mar 22', type: 'Markdown', date: '2 days ago', lastModified: '2026-03-22T08:00:00Z', lastViewed: '2026-03-22T09:30:00Z', labels: ['Daily Industry Digest'], creatorName: 'Research Bot', creatorType: 'agent', size: 48128 },
-  { id: 'd10', workspaceId: 'w1', name: 'Industry Digest — Mar 21', type: 'Markdown', date: '3 days ago', lastModified: '2026-03-21T08:00:00Z', lastViewed: '2026-03-21T11:00:00Z', labels: ['Daily Industry Digest'], creatorName: 'Research Bot', creatorType: 'agent', size: 51200 },
-  { id: 'd11', workspaceId: 'w1', name: 'Industry Digest — Mar 20', type: 'Markdown', date: '4 days ago', lastModified: '2026-03-20T08:00:00Z', lastViewed: '2026-03-20T14:00:00Z', labels: ['Daily Industry Digest'], creatorName: 'Research Bot', creatorType: 'agent', size: 46080 },
-  { id: 'd12', workspaceId: 'w1', name: 'Industry Digest — Mar 19', type: 'Markdown', date: '5 days ago', lastModified: '2026-03-19T08:00:00Z', lastViewed: '2026-03-19T10:00:00Z', labels: ['Daily Industry Digest'], creatorName: 'Research Bot', creatorType: 'agent', size: 49152 },
+  { id: 'd7', workspaceId: 'w1', name: 'Industry Digest — Mar 27', type: 'Markdown', date: 'Today', lastModified: '2026-03-27T08:00:00Z', lastViewed: '2026-03-27T10:00:00Z', labels: ['Daily Industry Digest'], creatorName: 'Research Bot', creatorType: 'agent', size: 45056, isNew: true, isRead: false, source: 'scheduled' },
+  { id: 'd8', workspaceId: 'w1', name: 'Industry Digest — Mar 23', type: 'Markdown', date: 'Yesterday', lastModified: '2026-03-23T08:00:00Z', lastViewed: '2026-03-23T12:00:00Z', labels: ['Daily Industry Digest'], creatorName: 'Research Bot', creatorType: 'agent', size: 43008, isRead: true, source: 'scheduled' },
+  { id: 'd9', workspaceId: 'w1', name: 'Industry Digest — Mar 22', type: 'Markdown', date: '2 days ago', lastModified: '2026-03-22T08:00:00Z', lastViewed: '2026-03-22T09:30:00Z', labels: ['Daily Industry Digest'], creatorName: 'Research Bot', creatorType: 'agent', size: 48128, isRead: true, source: 'scheduled' },
+  { id: 'd10', workspaceId: 'w1', name: 'Industry Digest — Mar 21', type: 'Markdown', date: '3 days ago', lastModified: '2026-03-21T08:00:00Z', lastViewed: '2026-03-21T11:00:00Z', labels: ['Daily Industry Digest'], creatorName: 'Research Bot', creatorType: 'agent', size: 51200, isRead: true, source: 'scheduled' },
+  { id: 'd11', workspaceId: 'w1', name: 'Industry Digest — Mar 20', type: 'Markdown', date: '4 days ago', lastModified: '2026-03-20T08:00:00Z', lastViewed: '2026-03-20T14:00:00Z', labels: ['Daily Industry Digest'], creatorName: 'Research Bot', creatorType: 'agent', size: 46080, isRead: true, source: 'scheduled' },
+  { id: 'd12', workspaceId: 'w1', name: 'Industry Digest — Mar 19', type: 'Markdown', date: '5 days ago', lastModified: '2026-03-19T08:00:00Z', lastViewed: '2026-03-19T10:00:00Z', labels: ['Daily Industry Digest'], creatorName: 'Research Bot', creatorType: 'agent', size: 49152, isRead: true, source: 'scheduled' },
   // Agent scheduled task outputs — Daily Report
-  { id: 'd13', workspaceId: 'w1', name: 'Daily Report — Mar 24', type: 'Markdown', date: 'Today', lastModified: '2026-03-24T18:00:00Z', lastViewed: '2026-03-24T18:30:00Z', labels: ['Daily Report'], creatorName: 'Claude Assistant', creatorType: 'agent', size: 73728, isNew: true },
-  { id: 'd14', workspaceId: 'w1', name: 'Daily Report — Mar 23', type: 'Markdown', date: 'Yesterday', lastModified: '2026-03-23T18:00:00Z', lastViewed: '2026-03-23T20:00:00Z', labels: ['Daily Report'], creatorName: 'Claude Assistant', creatorType: 'agent', size: 71680 },
-  { id: 'd15', workspaceId: 'w1', name: 'Daily Report — Mar 22', type: 'Markdown', date: '2 days ago', lastModified: '2026-03-22T18:00:00Z', lastViewed: '2026-03-22T19:00:00Z', labels: ['Daily Report'], creatorName: 'Claude Assistant', creatorType: 'agent', size: 69632 },
-  { id: 'd16', workspaceId: 'w1', name: 'Daily Report — Mar 21', type: 'Markdown', date: '3 days ago', lastModified: '2026-03-21T18:00:00Z', lastViewed: '2026-03-21T21:00:00Z', labels: ['Daily Report'], creatorName: 'Claude Assistant', creatorType: 'agent', size: 75776 },
-  { id: 'd17', workspaceId: 'w1', name: 'Daily Report — Mar 20', type: 'Markdown', date: '4 days ago', lastModified: '2026-03-20T18:00:00Z', lastViewed: '2026-03-20T19:30:00Z', labels: ['Daily Report'], creatorName: 'Claude Assistant', creatorType: 'agent', size: 72704 },
-  { id: 'd18', workspaceId: 'w1', name: 'Daily Report — Mar 19', type: 'Markdown', date: '5 days ago', lastModified: '2026-03-19T18:00:00Z', lastViewed: '2026-03-19T20:00:00Z', labels: ['Daily Report', 'Project Alpha'], creatorName: 'Claude Assistant', creatorType: 'agent', size: 77824 }
+  { id: 'd13', workspaceId: 'w1', name: 'Daily Report — Mar 27', type: 'Markdown', date: 'Today', lastModified: '2026-03-27T18:00:00Z', lastViewed: '2026-03-27T18:30:00Z', labels: ['Daily Report'], creatorName: 'Claude Assistant', creatorType: 'agent', size: 73728, isNew: true, isRead: false, source: 'scheduled' },
+  { id: 'd14', workspaceId: 'w1', name: 'Daily Report — Mar 23', type: 'Markdown', date: 'Yesterday', lastModified: '2026-03-23T18:00:00Z', lastViewed: '2026-03-23T20:00:00Z', labels: ['Daily Report'], creatorName: 'Claude Assistant', creatorType: 'agent', size: 71680, isRead: true, source: 'scheduled' },
+  { id: 'd15', workspaceId: 'w1', name: 'Daily Report — Mar 22', type: 'Markdown', date: '2 days ago', lastModified: '2026-03-22T18:00:00Z', lastViewed: '2026-03-22T19:00:00Z', labels: ['Daily Report'], creatorName: 'Claude Assistant', creatorType: 'agent', size: 69632, isRead: true, source: 'scheduled' },
+  { id: 'd16', workspaceId: 'w1', name: 'Daily Report — Mar 21', type: 'Markdown', date: '3 days ago', lastModified: '2026-03-21T18:00:00Z', lastViewed: '2026-03-21T21:00:00Z', labels: ['Daily Report'], creatorName: 'Claude Assistant', creatorType: 'agent', size: 75776, isRead: true, source: 'scheduled' },
+  { id: 'd17', workspaceId: 'w1', name: 'Daily Report — Mar 20', type: 'Markdown', date: '4 days ago', lastModified: '2026-03-20T18:00:00Z', lastViewed: '2026-03-20T19:30:00Z', labels: ['Daily Report'], creatorName: 'Claude Assistant', creatorType: 'agent', size: 72704, isRead: true, source: 'scheduled' },
+  { id: 'd18', workspaceId: 'w1', name: 'Daily Report — Mar 19', type: 'Markdown', date: '5 days ago', lastModified: '2026-03-19T18:00:00Z', lastViewed: '2026-03-19T20:00:00Z', labels: ['Daily Report', 'Project Alpha'], creatorName: 'Claude Assistant', creatorType: 'agent', size: 77824, isRead: true, source: 'scheduled' },
+  // Web clippings
+  { id: 'd19', workspaceId: 'w1', name: 'OpenAI GPT-5 发布全解析', type: 'Markdown', date: 'Today', lastModified: '2026-03-27T14:00:00Z', lastViewed: '2026-03-27T14:30:00Z', labels: [], creatorName: currentUser.name, creatorType: 'human', size: 28672, isRead: false, source: 'webclip' },
+  { id: 'd20', workspaceId: 'w1', name: 'The Future of AI Agents — TechCrunch', type: 'Markdown', date: 'Yesterday', lastModified: '2026-03-23T16:00:00Z', lastViewed: '2026-03-23T17:00:00Z', labels: [], creatorName: currentUser.name, creatorType: 'human', size: 35840, isRead: true, source: 'webclip' },
+  { id: 'd21', workspaceId: 'w1', name: '产品经理如何拥抱 AI 时代 — 少数派', type: 'Markdown', date: '2 days ago', lastModified: '2026-03-22T10:00:00Z', lastViewed: '2026-03-22T12:00:00Z', labels: [], creatorName: currentUser.name, creatorType: 'human', size: 22528, isRead: true, source: 'webclip' },
+  // Agent memories
+  { id: 'd22', workspaceId: 'w1', name: '用户偏好：Maya 喜欢简洁的报告风格', type: 'Smart Doc', date: 'Today', lastModified: '2026-03-27T09:30:00Z', lastViewed: '2026-03-27T10:00:00Z', labels: [], creatorName: 'Claude Assistant', creatorType: 'agent', size: 8192, isNew: true, isRead: false, source: 'memory' },
+  { id: 'd23', workspaceId: 'w1', name: 'Project Alpha 关键决策记录', type: 'Smart Doc', date: '2 days ago', lastModified: '2026-03-25T14:00:00Z', lastViewed: '2026-03-25T15:00:00Z', labels: [], creatorName: 'Claude Assistant', creatorType: 'agent', size: 12288, isRead: true, source: 'memory' },
+  { id: 'd24', workspaceId: 'w1', name: '团队会议要点与行动项汇总', type: 'Smart Doc', date: '3 days ago', lastModified: '2026-03-24T16:00:00Z', lastViewed: '2026-03-24T17:00:00Z', labels: [], creatorName: 'Research Bot', creatorType: 'agent', size: 15360, isRead: true, source: 'memory' },
+  { id: 'd25', workspaceId: 'w1', name: '竞品分析洞察备忘', type: 'Markdown', date: '4 days ago', lastModified: '2026-03-23T11:00:00Z', lastViewed: '2026-03-23T12:00:00Z', labels: [], creatorName: 'Research Bot', creatorType: 'agent', size: 10240, isRead: true, source: 'memory' },
 ];
 
 interface Activity {
@@ -587,9 +603,9 @@ export default function Dashboard() {
   const [docFilterType, setDocFilterType] = useState<string>('all');
   const [docFilterOwner, setDocFilterOwner] = useState<string>('all');
   const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
-  const [docFilterLabel, setDocFilterLabel] = useState<string>('all');
-  const [isLabelFilterOpen, setIsLabelFilterOpen] = useState(false);
+  const [docSceneFilter, setDocSceneFilter] = useState<'all' | 'today' | 'unread' | 'scheduled' | 'webclip' | 'memory'>('all');
   const [isTypeFilterOpen, setIsTypeFilterOpen] = useState(false);
+  const [isOwnerFilterOpen, setIsOwnerFilterOpen] = useState(false);
   const [isAgentMenuOpen, setIsAgentMenuOpen] = useState(false);
   const [agentListMenuOpen, setAgentListMenuOpen] = useState<string | null>(null);
   const [activityFilterOwner, setActivityFilterOwner] = useState<string>('all');
@@ -635,7 +651,7 @@ export default function Dashboard() {
     setActiveWorkspaceId(workspaceId);
     setDocFilterType('all');
     setDocFilterOwner('all');
-    setDocFilterLabel('all');
+    setDocSceneFilter('all');
     setActivityFilterOwner('all');
 
 
@@ -702,9 +718,18 @@ export default function Dashboard() {
       docs = docs.filter(d => d.creatorName === docFilterOwner);
     }
 
-    // 按 label 筛选
-    if (docFilterLabel !== 'all') {
-      docs = docs.filter(d => d.labels.includes(docFilterLabel));
+    // 按场景筛选
+    if (docSceneFilter === 'today') {
+      const todayStr = new Date().toISOString().slice(0, 10);
+      docs = docs.filter(d => d.lastModified.slice(0, 10) === todayStr);
+    } else if (docSceneFilter === 'unread') {
+      docs = docs.filter(d => d.isNew === true);
+    } else if (docSceneFilter === 'scheduled') {
+      docs = docs.filter(d => d.source === 'scheduled');
+    } else if (docSceneFilter === 'webclip') {
+      docs = docs.filter(d => d.source === 'webclip');
+    } else if (docSceneFilter === 'memory') {
+      docs = docs.filter(d => d.source === 'memory');
     }
     
     // 排序
@@ -715,7 +740,7 @@ export default function Dashboard() {
     });
     
     return docs;
-  }, [workspaceDocs, docSortBy, docFilterType, docFilterOwner, docFilterLabel]);
+  }, [workspaceDocs, docSortBy, docFilterType, docFilterOwner, docSceneFilter]);
 
   // 获取当前 workspace 的文档类型列表和 owner 列表（用于筛选选项）
   const docTypes = React.useMemo(() => {
@@ -727,11 +752,7 @@ export default function Dashboard() {
     return owners.sort((a, b) => a === currentUser.name ? -1 : b === currentUser.name ? 1 : 0);
   }, [workspaceDocs]);
 
-  const docLabels = React.useMemo(() => {
-    return Array.from(new Set(workspaceDocs.flatMap(d => d.labels))).sort();
-  }, [workspaceDocs]);
-
-  const activeFilterCount = (docFilterType !== 'all' ? 1 : 0) + (docFilterOwner !== 'all' ? 1 : 0) + (docFilterLabel !== 'all' ? 1 : 0);
+  const activeFilterCount = (docFilterType !== 'all' ? 1 : 0) + (docFilterOwner !== 'all' ? 1 : 0) + (docSceneFilter !== 'all' ? 1 : 0);
   const workspaceActivities = activities.filter(a => a.workspaceId === activeWorkspaceId);
   const activityOwners = React.useMemo(() => {
     return Array.from(new Set(workspaceActivities.map(a => a.userName)));
@@ -796,7 +817,9 @@ export default function Dashboard() {
       labels: [],
       creatorName: currentUser.name,
       creatorType: 'human',
-      size: 0
+      size: 0,
+      isRead: true,
+      source: 'normal'
     };
 
     setDocuments([newDoc, ...documents]);
@@ -1177,64 +1200,27 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                   />
                 )}
 
-                {/* Owner filter row */}
-                <div className="flex items-center gap-1.5 mb-3 flex-wrap">
-                  <button
-                    onClick={() => setDocFilterOwner('all')}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                      docFilterOwner === 'all' 
-                        ? 'bg-stone-800 text-white' 
-                        : 'bg-stone-100 text-stone-500 hover:bg-stone-200 hover:text-stone-700'
-                    }`}
-                  >
-                    <Users className="w-3 h-3" />
-                    {t('docs.all')}
-                  </button>
-                  {docOwners.map(owner => {
-                    const ownerDoc = workspaceDocs.find(d => d.creatorName === owner);
-                    return (
-                      <button
-                        key={owner}
-                        onClick={() => setDocFilterOwner(docFilterOwner === owner ? 'all' : owner)}
-                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                          docFilterOwner === owner 
-                            ? 'bg-stone-800 text-white' 
-                            : 'bg-stone-100 text-stone-500 hover:bg-stone-200 hover:text-stone-700'
-                        }`}
-                      >
-                        {ownerDoc?.creatorType === 'agent' 
-                          ? getAgentAvatar(owner, 14)
-                          : getUserAvatar(14)}
-                        {owner}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Labels filter row */}
-                <div className="flex items-center gap-1.5 mb-4 flex-wrap">
-                  <button
-                    onClick={() => setDocFilterLabel('all')}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                      docFilterLabel === 'all' 
-                        ? 'bg-stone-800 text-white' 
-                        : 'bg-stone-100 text-stone-500 hover:bg-stone-200 hover:text-stone-700'
-                    }`}
-                  >
-                    <Tag className="w-3 h-3" />
-                    {t('docs.all')}
-                  </button>
-                  {docLabels.map(label => (
+                {/* Scene filter tabs */}
+                <div className="flex items-center gap-1 mb-4">
+                  {([
+                    { key: 'all', label: lang === 'zh' ? '全部文档' : 'All', icon: <FileText className="w-3.5 h-3.5" /> },
+                    { key: 'today', label: lang === 'zh' ? '今日更新' : 'Today', icon: <CalendarDays className="w-3.5 h-3.5" /> },
+                    { key: 'unread', label: lang === 'zh' ? '未读文档' : 'Unread', icon: <EyeOff className="w-3.5 h-3.5" /> },
+                    { key: 'scheduled', label: lang === 'zh' ? '定时任务' : 'Scheduled', icon: <Timer className="w-3.5 h-3.5" /> },
+                    { key: 'webclip', label: lang === 'zh' ? '网页剪藏' : 'Web Clips', icon: <Bookmark className="w-3.5 h-3.5" /> },
+                    { key: 'memory', label: lang === 'zh' ? '我的记忆' : 'Memories', icon: <Brain className="w-3.5 h-3.5" /> },
+                  ] as const).map(tab => (
                     <button
-                      key={label}
-                      onClick={() => setDocFilterLabel(docFilterLabel === label ? 'all' : label)}
+                      key={tab.key}
+                      onClick={() => setDocSceneFilter(tab.key)}
                       className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                        docFilterLabel === label 
-                          ? 'bg-stone-800 text-white' 
+                        docSceneFilter === tab.key
+                          ? 'bg-stone-800 text-white'
                           : 'bg-stone-100 text-stone-500 hover:bg-stone-200 hover:text-stone-700'
                       }`}
                     >
-                      {label}
+                      {tab.icon}
+                      {tab.label}
                     </button>
                   ))}
                 </div>
@@ -1249,7 +1235,7 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                         <th className="px-6 py-3 font-medium bg-stone-50/50">
                           <div className="relative inline-flex items-center ml-5">
                             <button
-                              onClick={() => { setIsTypeFilterOpen(!isTypeFilterOpen); setIsSortMenuOpen(false); setIsLabelFilterOpen(false); }}
+                              onClick={() => { setIsTypeFilterOpen(!isTypeFilterOpen); setIsSortMenuOpen(false); setIsOwnerFilterOpen(false); }}
                               className={`flex items-center gap-1.5 hover:text-stone-800 transition-colors ${docFilterType !== 'all' ? 'text-stone-900' : ''}`}
                             >
                               {t('docs.name')}
@@ -1282,51 +1268,55 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                           </div>
                         </th>
 
-                        {/* Owner column (plain label) */}
-                        <th className="px-6 py-3 font-medium">{t('docs.owner')}</th>
-
-                        {/* Labels column with Label filter */}
+                        {/* Owner column with Owner filter */}
                         <th className="px-6 py-3 font-medium">
                           <div className="relative inline-flex items-center">
                             <button
-                              onClick={() => { setIsLabelFilterOpen(!isLabelFilterOpen); setIsTypeFilterOpen(false); setIsSortMenuOpen(false); }}
-                              className={`flex items-center gap-1.5 hover:text-stone-800 transition-colors ${docFilterLabel !== 'all' ? 'text-stone-900' : ''}`}
+                              onClick={() => { setIsOwnerFilterOpen(!isOwnerFilterOpen); setIsTypeFilterOpen(false); setIsSortMenuOpen(false); }}
+                              className={`flex items-center gap-1.5 hover:text-stone-800 transition-colors ${docFilterOwner !== 'all' ? 'text-stone-900' : ''}`}
                             >
-                              {t('docs.labels')}
-                              <ChevronDown className={`w-3 h-3 transition-transform ${isLabelFilterOpen ? 'rotate-180' : ''}`} />
+                              {t('docs.owner')}
+                              <ChevronDown className={`w-3 h-3 transition-transform ${isOwnerFilterOpen ? 'rotate-180' : ''}`} />
                             </button>
-                            {isLabelFilterOpen && (
+                            {isOwnerFilterOpen && (
                               <>
-                                <div className="fixed inset-0 z-10" onClick={() => setIsLabelFilterOpen(false)} />
+                                <div className="fixed inset-0 z-10" onClick={() => setIsOwnerFilterOpen(false)} />
                                 <div className="absolute left-0 top-full mt-1 w-48 bg-white border border-stone-200 rounded-lg shadow-xl z-20 overflow-hidden py-1 max-h-64 overflow-y-auto">
-                                  <div className="px-3 py-1.5 text-[10px] font-bold text-stone-400 uppercase tracking-wider">{t('docs.filterByLabel')}</div>
+                                  <div className="px-3 py-1.5 text-[10px] font-bold text-stone-400 uppercase tracking-wider">{lang === 'zh' ? '按创建者筛选' : 'Filter by owner'}</div>
                                   <button
-                                    onClick={() => { setDocFilterLabel('all'); setIsLabelFilterOpen(false); }}
-                                    className={`w-full text-left px-3 py-1.5 text-sm transition-colors flex items-center gap-2 ${docFilterLabel === 'all' ? 'bg-stone-50 text-stone-900 font-medium' : 'text-stone-600 hover:bg-stone-50'}`}
+                                    onClick={() => { setDocFilterOwner('all'); setIsOwnerFilterOpen(false); }}
+                                    className={`w-full text-left px-3 py-1.5 text-sm transition-colors flex items-center gap-2 ${docFilterOwner === 'all' ? 'bg-stone-50 text-stone-900 font-medium' : 'text-stone-600 hover:bg-stone-50'}`}
                                   >
-                                    {t('docs.allLabels')}
+                                    <Users className="w-3.5 h-3.5 text-stone-400" />
+                                    {lang === 'zh' ? '全部创建者' : 'All owners'}
                                   </button>
-                                  {docLabels.map(label => (
-                                    <button
-                                      key={label}
-                                      onClick={() => { setDocFilterLabel(label); setIsLabelFilterOpen(false); }}
-                                      className={`w-full text-left px-3 py-1.5 text-sm transition-colors flex items-center gap-2 ${docFilterLabel === label ? 'bg-stone-50 text-stone-900 font-medium' : 'text-stone-600 hover:bg-stone-50'}`}
-                                    >
-                                      <Tag className="w-3.5 h-3.5 text-stone-400" />
-                                      {label}
-                                    </button>
-                                  ))}
+                                  {docOwners.map(owner => {
+                                    const ownerDoc = workspaceDocs.find(d => d.creatorName === owner);
+                                    return (
+                                      <button
+                                        key={owner}
+                                        onClick={() => { setDocFilterOwner(owner); setIsOwnerFilterOpen(false); }}
+                                        className={`w-full text-left px-3 py-1.5 text-sm transition-colors flex items-center gap-2 ${docFilterOwner === owner ? 'bg-stone-50 text-stone-900 font-medium' : 'text-stone-600 hover:bg-stone-50'}`}
+                                      >
+                                        {ownerDoc?.creatorType === 'agent' 
+                                          ? getAgentAvatar(owner, 14)
+                                          : getUserAvatar(14)}
+                                        {owner}
+                                      </button>
+                                    );
+                                  })}
                                 </div>
                               </>
                             )}
                           </div>
                         </th>
 
+
                         {/* Date column with Sort toggle */}
                         <th className="px-6 py-3 font-medium whitespace-nowrap">
                           <div className="relative inline-flex items-center">
                             <button
-                              onClick={() => { setIsSortMenuOpen(!isSortMenuOpen); setIsTypeFilterOpen(false); setIsLabelFilterOpen(false); }}
+                              onClick={() => { setIsSortMenuOpen(!isSortMenuOpen); setIsTypeFilterOpen(false); setIsOwnerFilterOpen(false); }}
                               className="flex items-center gap-1.5 hover:text-stone-800 transition-colors whitespace-nowrap"
                             >
                               {docSortBy === 'lastModified' ? t('docs.lastModified') : t('docs.lastViewed')}
@@ -1371,7 +1361,7 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                               <div>
                                 <p>No documents match the current filters</p>
                                 <button
-                                  onClick={() => { setDocFilterType('all'); setDocFilterOwner('all'); setDocFilterLabel('all'); }}
+                                  onClick={() => { setDocFilterType('all'); setDocFilterOwner('all'); setDocSceneFilter('all'); }}
                                   className="mt-2 text-sm text-stone-600 underline hover:text-stone-900 transition-colors"
                                 >
                                   Clear filters
@@ -1390,13 +1380,11 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                             name={doc.name} 
                             type={doc.type} 
                             date={docSortBy === 'lastModified' ? doc.lastModified : doc.lastViewed}
-                            labels={doc.labels}
                             creatorName={doc.creatorName}
                             creatorType={doc.creatorType}
                             isNew={doc.isNew}
                             onDelete={(id) => setDocuments(prev => prev.filter(d => d.id !== id))}
-                            onMarkRead={(id) => setDocuments(prev => prev.map(d => d.id === id ? { ...d, isNew: false } : d))}
-                            onLabelClick={(label) => { setDocFilterLabel(label); }}
+                            onMarkRead={(id) => setDocuments(prev => prev.map(d => d.id === id ? { ...d, isNew: false, isRead: true } : d))}
                           />
                         ))
                       )}
@@ -2069,7 +2057,7 @@ function AbsenceSummaryCard({ data, onDocClick, onDismiss, onViewAll }: AbsenceS
       {/* Header: numeric summary + view-all + close */}
       <div className="flex items-center px-5 pt-4 pb-3">
         <div className="text-sm ml-[12px]">
-          <span className="text-stone-500">你离开期间，Agent{' '}</span>
+          <span className="text-stone-500">你离开期间，Agents{' '}</span>
           {[
             counts.created ? <span key="c">新建 <span className="font-semibold text-stone-800">{counts.created}</span> 篇</span> : null,
             counts.modified ? <span key="m">更新 <span className="font-semibold text-stone-800">{counts.modified}</span> 篇</span> : null,
@@ -2142,18 +2130,16 @@ interface DocRowProps {
   name: string;
   type: string;
   date: string;
-  labels: string[];
   creatorName: string;
   creatorType: 'human' | 'agent';
   isNew?: boolean;
   onDelete: (id: string) => void;
   onMarkRead?: (id: string) => void;
-  onLabelClick?: (label: string) => void;
   onSetLabel?: (id: string) => void;
   onSetAgentPermission?: (id: string) => void;
 }
 
-function DocRow({ docId, name, type, date, labels, creatorName, creatorType, isNew, onDelete, onMarkRead, onLabelClick, onSetLabel, onSetAgentPermission }: DocRowProps) {
+function DocRow({ docId, name, type, date, creatorName, creatorType, isNew, onDelete, onMarkRead, onSetLabel, onSetAgentPermission }: DocRowProps) {
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
@@ -2228,23 +2214,6 @@ function DocRow({ docId, name, type, date, labels, creatorName, creatorType, isN
             getUserAvatar(18)
           )}
           <span className="text-sm">{creatorName}</span>
-        </div>
-      </td>
-      <td className="px-6 py-3">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          {labels.map(label => (
-            <button
-              key={label}
-              onClick={(e) => { e.stopPropagation(); onLabelClick?.(label); }}
-              className="inline-flex items-center gap-1 bg-stone-100 text-stone-600 text-xs font-medium px-2 py-0.5 rounded-full hover:bg-stone-200 hover:text-stone-800 transition-colors cursor-pointer"
-            >
-              <Tag className="w-3 h-3 text-stone-400 shrink-0" />
-              {label}
-            </button>
-          ))}
-          {labels.length === 0 && (
-            <span className="text-stone-300 text-xs">—</span>
-          )}
         </div>
       </td>
       <td className="px-6 py-3 text-stone-500 text-sm whitespace-nowrap">{formatDate(date)}</td>
