@@ -110,72 +110,6 @@ interface AbsenceSummaryData {
   changes: AbsenceChange[];
 }
 
-const absenceSummaryData: AbsenceSummaryData = {
-  lastVisitTime: '2026-03-24T08:00:00Z',
-  changes: [
-    {
-      id: 'doc_001',
-      action: 'created',
-      docTitle: 'Daily Report — Mar 24',
-      docType: 'Markdown',
-      agentName: 'Claude Assistant',
-      agentColor: '#F97316',
-      changeDescription: '汇总了 12 项任务进展、3 个阻塞问题和本周里程碑完成情况',
-      timestamp: '2026-03-24T18:00:00Z',
-    },
-    {
-      id: 'doc_002',
-      action: 'modified',
-      docTitle: 'Project Alpha Architecture',
-      docType: 'Rich Text',
-      agentName: 'Claude Assistant',
-      agentColor: '#F97316',
-      changeDescription: '新增了「数据库架构」章节，包含 ER 图与索引策略',
-      timestamp: '2026-03-24T12:00:00Z',
-    },
-    {
-      id: 'doc_003',
-      action: 'created',
-      docTitle: 'Industry Digest — Mar 24',
-      docType: 'Markdown',
-      agentName: 'Research Bot',
-      agentColor: '#8B5CF6',
-      changeDescription: '覆盖 AI 芯片、云计算、自动驾驶三个赛道共 8 条行业动态',
-      timestamp: '2026-03-24T08:30:00Z',
-    },
-    {
-      id: 'doc_004',
-      action: 'created',
-      docTitle: 'Competitor Analysis',
-      docType: 'Spreadsheet',
-      agentName: 'Research Bot',
-      agentColor: '#8B5CF6',
-      changeDescription: '对比了 5 家竞品的功能矩阵、定价策略和市场份额',
-      timestamp: '2026-03-24T13:00:00Z',
-    },
-    {
-      id: 'doc_005',
-      action: 'commented',
-      docTitle: 'Q3 Financial Projections',
-      docType: 'Spreadsheet',
-      agentName: 'Data Analyzer',
-      agentColor: '#06B6D4',
-      changeDescription: '对收入预估模型提出了 3 条修改建议',
-      timestamp: '2026-03-24T10:00:00Z',
-    },
-    {
-      id: 'doc_006',
-      action: 'created',
-      docTitle: 'Claude & Maya: Feature Discussion',
-      docType: 'Rich Text',
-      agentName: 'Claude Assistant',
-      agentColor: '#F97316',
-      changeDescription: '整理了关于智能表格和权限系统的讨论要点与待办事项',
-      timestamp: '2026-03-24T11:00:00Z',
-    },
-  ],
-};
-
 const initialDocuments: WorkspaceDoc[] = [
   { id: 'd1', workspaceId: 'w1', name: 'Project Alpha Architecture', type: 'Smart Doc', date: '2 hours ago', lastModified: '2026-03-27T12:00:00Z', lastViewed: '2026-03-27T13:30:00Z', labels: ['Project Alpha', 'PRD'], creatorName: 'Claude Assistant', creatorType: 'agent', size: 32768, isNew: true, isRead: false, source: 'normal' },
   { id: 'd2', workspaceId: 'w1', name: 'Q3 Financial Projections', type: 'Table', date: 'Yesterday', lastModified: '2026-03-23T10:00:00Z', lastViewed: '2026-03-24T09:00:00Z', labels: ['Data', 'Finance'], creatorName: 'Data Analyzer', creatorType: 'agent', size: 65536, isRead: true, source: 'normal' },
@@ -191,7 +125,7 @@ const initialDocuments: WorkspaceDoc[] = [
   { id: 'd11', workspaceId: 'w1', name: 'Industry Digest — Mar 20', type: 'Markdown', date: '4 days ago', lastModified: '2026-03-20T08:00:00Z', lastViewed: '2026-03-20T14:00:00Z', labels: ['Daily Industry Digest'], creatorName: 'Research Bot', creatorType: 'agent', size: 46080, isRead: true, source: 'scheduled' },
   { id: 'd12', workspaceId: 'w1', name: 'Industry Digest — Mar 19', type: 'Markdown', date: '5 days ago', lastModified: '2026-03-19T08:00:00Z', lastViewed: '2026-03-19T10:00:00Z', labels: ['Daily Industry Digest'], creatorName: 'Research Bot', creatorType: 'agent', size: 49152, isRead: true, source: 'scheduled' },
   // Agent scheduled task outputs — Daily Report
-  { id: 'd13', workspaceId: 'w1', name: 'Daily Report — Mar 27', type: 'Markdown', date: 'Today', lastModified: '2026-03-27T18:00:00Z', lastViewed: '2026-03-27T18:30:00Z', labels: ['Daily Report'], creatorName: 'Claude Assistant', creatorType: 'agent', size: 73728, isNew: true, isRead: false, source: 'scheduled' },
+  { id: 'd13', workspaceId: 'w1', name: 'Daily Report — Mar 27', type: 'Markdown', date: 'Today', lastModified: '2026-03-27T17:00:00Z', lastViewed: '2026-03-27T17:30:00Z', labels: ['Daily Report'], creatorName: 'Claude Assistant', creatorType: 'agent', size: 73728, isNew: true, isRead: false, source: 'scheduled' },
   { id: 'd14', workspaceId: 'w1', name: 'Daily Report — Mar 23', type: 'Markdown', date: 'Yesterday', lastModified: '2026-03-23T18:00:00Z', lastViewed: '2026-03-23T20:00:00Z', labels: ['Daily Report'], creatorName: 'Claude Assistant', creatorType: 'agent', size: 71680, isRead: true, source: 'scheduled' },
   { id: 'd15', workspaceId: 'w1', name: 'Daily Report — Mar 22', type: 'Markdown', date: '2 days ago', lastModified: '2026-03-22T18:00:00Z', lastViewed: '2026-03-22T19:00:00Z', labels: ['Daily Report'], creatorName: 'Claude Assistant', creatorType: 'agent', size: 69632, isRead: true, source: 'scheduled' },
   { id: 'd16', workspaceId: 'w1', name: 'Daily Report — Mar 21', type: 'Markdown', date: '3 days ago', lastModified: '2026-03-21T18:00:00Z', lastViewed: '2026-03-21T21:00:00Z', labels: ['Daily Report'], creatorName: 'Claude Assistant', creatorType: 'agent', size: 75776, isRead: true, source: 'scheduled' },
@@ -218,56 +152,122 @@ interface Activity {
   actionZh: string;
   targetName: string;
   targetType: string;
+  docId?: string; // Reference to WorkspaceDoc.id
   details?: string;
   detailsZh?: string;
   timestamp: string;
 }
 
 const initialActivities: Activity[] = [
+  // === Today (Mar 27) — corresponds to documents with today's lastModified ===
   {
-    id: 'act1',
+    id: 'act26',
     workspaceId: 'w1',
     userId: 'a1',
     userName: 'Claude Assistant',
     userType: 'agent',
-    action: 'modified',
-    actionZh: '修改了',
+    action: 'updated',
+    actionZh: '更新了',
     targetName: 'Project Alpha Architecture',
-    targetType: 'Markdown',
-    details: 'Added "Database Schema" section with ER diagram and index strategy',
-    detailsZh: '新增了「数据库架构」章节，包含 ER 图与索引策略',
-    timestamp: '2026-03-19T08:30:00Z'
+    targetType: 'Smart Doc',
+    docId: 'd1',
+    details: 'Revised system architecture to support multi-tenant deployment',
+    detailsZh: '修订了系统架构以支持多租户部署',
+    timestamp: '2026-03-27T12:00:00Z'
   },
   {
-    id: 'act2',
+    id: 'act27',
+    workspaceId: 'w1',
+    userId: 'a3',
+    userName: 'Research Bot',
+    userType: 'agent',
+    action: 'updated',
+    actionZh: '更新了',
+    targetName: 'Competitor Analysis',
+    targetType: 'Markdown',
+    docId: 'd4',
+    details: 'Added Q1 market share data and refreshed pricing comparison',
+    detailsZh: '新增了 Q1 市场份额数据并刷新了定价对比',
+    timestamp: '2026-03-27T13:00:00Z'
+  },
+  {
+    id: 'act28',
+    workspaceId: 'w1',
+    userId: 'a1',
+    userName: 'Claude Assistant',
+    userType: 'agent',
+    action: 'updated',
+    actionZh: '更新了',
+    targetName: 'Claude & Maya: Feature Discussion',
+    targetType: 'Smart Doc',
+    docId: 'd6',
+    details: 'Appended action items from today\'s sync meeting',
+    detailsZh: '追加了今天同步会议的待办事项',
+    timestamp: '2026-03-27T11:00:00Z'
+  },
+  {
+    id: 'act29',
+    workspaceId: 'w1',
+    userId: 'a3',
+    userName: 'Research Bot',
+    userType: 'agent',
+    action: 'created',
+    actionZh: '创建了',
+    targetName: 'Industry Digest — Mar 27',
+    targetType: 'Markdown',
+    docId: 'd7',
+    details: 'Scheduled task: compiled 14 industry news items from 9 sources',
+    detailsZh: '定时任务：从 9 个来源汇编了 14 条行业资讯',
+    timestamp: '2026-03-27T08:00:00Z'
+  },
+  {
+    id: 'act30',
+    workspaceId: 'w1',
+    userId: 'a1',
+    userName: 'Claude Assistant',
+    userType: 'agent',
+    action: 'created',
+    actionZh: '创建了',
+    targetName: 'Daily Report — Mar 27',
+    targetType: 'Markdown',
+    docId: 'd13',
+    details: 'Scheduled task: summarized 9 document changes, 4 new comments, 3 tasks completed',
+    detailsZh: '定时任务：汇总了 9 项文档变更、4 条新评论、3 项任务完成',
+    timestamp: '2026-03-27T17:00:00Z'
+  },
+  {
+    id: 'act31',
     workspaceId: 'w1',
     userId: 'u1',
     userName: currentUser.name,
     userType: 'human',
+    action: 'clipped',
+    actionZh: '剪藏了',
+    targetName: 'OpenAI GPT-5 发布全解析',
+    targetType: 'Markdown',
+    docId: 'd19',
+    details: 'Web clipping saved from browser',
+    detailsZh: '从浏览器保存的网页剪藏',
+    timestamp: '2026-03-27T14:00:00Z'
+  },
+  {
+    id: 'act32',
+    workspaceId: 'w1',
+    userId: 'a1',
+    userName: 'Claude Assistant',
+    userType: 'agent',
     action: 'created',
     actionZh: '创建了',
-    targetName: 'User Flow Diagram',
-    targetType: 'Whiteboard',
-    details: 'Initial onboarding and checkout flow wireframes',
-    detailsZh: '绘制了初始的注册引导与结账流程线框图',
-    timestamp: '2026-03-18T14:20:00Z'
+    targetName: '用户偏好：Maya 喜欢简洁的报告风格',
+    targetType: 'Smart Doc',
+    docId: 'd22',
+    details: 'Memory note: captured user preference for concise report style',
+    detailsZh: '记忆笔记：记录了用户偏好简洁报告风格',
+    timestamp: '2026-03-27T09:30:00Z'
   },
+  // === Yesterday (Mar 26) ===
   {
-    id: 'act3',
-    workspaceId: 'w1',
-    userId: 'a2',
-    userName: 'Data Analyzer',
-    userType: 'agent',
-    action: 'updated',
-    actionZh: '更新了',
-    targetName: 'Q3 Financial Projections',
-    targetType: 'Table',
-    details: 'Revised August revenue forecast (+8.3%) based on new pipeline data',
-    detailsZh: '根据最新渠道数据修订了 8 月营收预测（+8.3%）',
-    timestamp: '2026-03-17T10:15:00Z'
-  },
-  {
-    id: 'act4',
+    id: 'act33',
     workspaceId: 'w1',
     userId: 'a1',
     userName: 'Claude Assistant',
@@ -275,24 +275,254 @@ const initialActivities: Activity[] = [
     action: 'commented on',
     actionZh: '评论了',
     targetName: 'Project Alpha Architecture',
-    targetType: 'Markdown',
-    details: 'Suggested Redis caching layer for session management',
-    detailsZh: '建议为会话管理增加 Redis 缓存层',
-    timestamp: '2026-03-12T16:45:00Z'
+    targetType: 'Smart Doc',
+    docId: 'd1',
+    details: 'Raised concern about rate-limiting strategy for public APIs',
+    detailsZh: '对公共 API 的限流策略提出了关注',
+    timestamp: '2026-03-26T15:30:00Z'
   },
   {
-    id: 'act5',
+    id: 'act34',
+    workspaceId: 'w1',
+    userId: 'u1',
+    userName: currentUser.name,
+    userType: 'human',
+    action: 'updated',
+    actionZh: '更新了',
+    targetName: 'Marketing Strategy',
+    targetType: 'Smart Doc',
+    docId: 'd5',
+    details: 'Finalized Q2 campaign budget allocation',
+    detailsZh: '确定了 Q2 推广预算分配方案',
+    timestamp: '2026-03-26T10:00:00Z'
+  },
+  // === Earlier this week (Mar 25, Tuesday) ===
+  {
+    id: 'act35',
+    workspaceId: 'w1',
+    userId: 'a1',
+    userName: 'Claude Assistant',
+    userType: 'agent',
+    action: 'created',
+    actionZh: '创建了',
+    targetName: 'Project Alpha 关键决策记录',
+    targetType: 'Smart Doc',
+    docId: 'd23',
+    details: 'Memory note: archived 5 key decisions from project discussions',
+    detailsZh: '记忆笔记：归档了项目讨论中的 5 项关键决策',
+    timestamp: '2026-03-25T14:00:00Z'
+  },
+  {
+    id: 'act36',
+    workspaceId: 'w1',
+    userId: 'a2',
+    userName: 'Data Analyzer',
+    userType: 'agent',
+    action: 'commented on',
+    actionZh: '评论了',
+    targetName: 'Q3 Financial Projections',
+    targetType: 'Table',
+    docId: 'd2',
+    details: 'Detected anomaly in March expense data — flagged for review',
+    detailsZh: '检测到 3 月费用数据异常 — 已标记待审',
+    timestamp: '2026-03-25T11:20:00Z'
+  },
+  // === Mar 24 (Monday — still this week) ===
+  {
+    id: 'act37',
     workspaceId: 'w1',
     userId: 'a3',
     userName: 'Research Bot',
     userType: 'agent',
     action: 'created',
     actionZh: '创建了',
+    targetName: '团队会议要点与行动项汇总',
+    targetType: 'Smart Doc',
+    docId: 'd24',
+    details: 'Memory note: summarized meeting outcomes and 8 action items',
+    detailsZh: '记忆笔记：汇总了会议成果和 8 项待办事项',
+    timestamp: '2026-03-24T16:00:00Z'
+  },
+  {
+    id: 'act20',
+    workspaceId: 'w1',
+    userId: 'a3',
+    userName: 'Research Bot',
+    userType: 'agent',
+    action: 'created',
+    actionZh: '创建了',
+    targetName: 'Industry Digest — Mar 24',
+    targetType: 'Markdown',
+    details: 'Scheduled task: compiled 12 industry news items from 8 sources',
+    detailsZh: '定时任务：从 8 个来源汇编了 12 条行业资讯',
+    timestamp: '2026-03-24T08:00:00Z'
+  },
+  {
+    id: 'act23',
+    workspaceId: 'w1',
+    userId: 'a1',
+    userName: 'Claude Assistant',
+    userType: 'agent',
+    action: 'created',
+    actionZh: '创建了',
+    targetName: 'Daily Report — Mar 24',
+    targetType: 'Markdown',
+    details: 'Scheduled task: summarized 6 document changes, 3 new comments, 2 tasks completed',
+    detailsZh: '定时任务：汇总了 6 项文档变更、3 条新评论、2 项任务完成',
+    timestamp: '2026-03-24T18:00:00Z'
+  },
+  // === Mar 23 (Sunday — still this week) ===
+  {
+    id: 'act38',
+    workspaceId: 'w1',
+    userId: 'a3',
+    userName: 'Research Bot',
+    userType: 'agent',
+    action: 'created',
+    actionZh: '创建了',
+    targetName: '竞品分析洞察备忘',
+    targetType: 'Markdown',
+    docId: 'd25',
+    details: 'Memory note: distilled key insights from latest competitor analysis',
+    detailsZh: '记忆笔记：提炼了最新竞品分析的关键洞察',
+    timestamp: '2026-03-23T11:00:00Z'
+  },
+  {
+    id: 'act21',
+    workspaceId: 'w1',
+    userId: 'a3',
+    userName: 'Research Bot',
+    userType: 'agent',
+    action: 'created',
+    actionZh: '创建了',
+    targetName: 'Industry Digest — Mar 23',
+    targetType: 'Markdown',
+    docId: 'd8',
+    details: 'Scheduled task: compiled 9 industry news items from 7 sources',
+    detailsZh: '定时任务：从 7 个来源汇编了 9 条行业资讯',
+    timestamp: '2026-03-23T08:00:00Z'
+  },
+  {
+    id: 'act24',
+    workspaceId: 'w1',
+    userId: 'a1',
+    userName: 'Claude Assistant',
+    userType: 'agent',
+    action: 'created',
+    actionZh: '创建了',
+    targetName: 'Daily Report — Mar 23',
+    targetType: 'Markdown',
+    docId: 'd14',
+    details: 'Scheduled task: summarized 4 document changes, 5 new comments, 1 task completed',
+    detailsZh: '定时任务：汇总了 4 项文档变更、5 条新评论、1 项任务完成',
+    timestamp: '2026-03-23T18:00:00Z'
+  },
+  // === Mar 22 (Saturday — still this week; week starts Sunday Mar 22 if today is Fri Mar 27) ===
+  {
+    id: 'act22',
+    workspaceId: 'w1',
+    userId: 'a3',
+    userName: 'Research Bot',
+    userType: 'agent',
+    action: 'created',
+    actionZh: '创建了',
+    targetName: 'Industry Digest — Mar 22',
+    targetType: 'Markdown',
+    docId: 'd9',
+    details: 'Scheduled task: compiled 15 industry news items from 10 sources',
+    detailsZh: '定时任务：从 10 个来源汇编了 15 条行业资讯',
+    timestamp: '2026-03-22T08:00:00Z'
+  },
+  {
+    id: 'act25',
+    workspaceId: 'w1',
+    userId: 'a1',
+    userName: 'Claude Assistant',
+    userType: 'agent',
+    action: 'created',
+    actionZh: '创建了',
+    targetName: 'Daily Report — Mar 22',
+    targetType: 'Markdown',
+    docId: 'd15',
+    details: 'Scheduled task: summarized 8 document changes, 2 new comments, 4 tasks completed',
+    detailsZh: '定时任务：汇总了 8 项文档变更、2 条新评论、4 项任务完成',
+    timestamp: '2026-03-22T18:00:00Z'
+  },
+  {
+    id: 'act12',
+    workspaceId: 'w1',
+    userId: 'u1',
+    userName: currentUser.name,
+    userType: 'human',
+    action: 'updated',
+    actionZh: '更新了',
+    targetName: 'Project Alpha Architecture',
+    targetType: 'Smart Doc',
+    docId: 'd1',
+    details: 'Reviewed and approved final version',
+    detailsZh: '审阅并批准了最终版本',
+    timestamp: '2026-03-22T09:00:00Z'
+  },
+  // === Last week (Mar 15–21) ===
+  {
+    id: 'act9',
+    workspaceId: 'w1',
+    userId: 'a3',
+    userName: 'Research Bot',
+    userType: 'agent',
+    action: 'updated',
+    actionZh: '更新了',
     targetName: 'Competitor Analysis',
     targetType: 'Markdown',
-    details: 'Initial draft covering 5 competitors with feature matrix',
-    detailsZh: '初稿覆盖了 5 家竞品的功能对比矩阵',
-    timestamp: '2026-03-19T07:00:00Z'
+    docId: 'd4',
+    details: 'Added pricing comparison table across all tiers',
+    detailsZh: '新增了各档位定价对比表',
+    timestamp: '2026-03-21T08:15:00Z'
+  },
+  {
+    id: 'act11',
+    workspaceId: 'w1',
+    userId: 'a1',
+    userName: 'Claude Assistant',
+    userType: 'agent',
+    action: 'updated',
+    actionZh: '更新了',
+    targetName: 'Project Alpha Architecture',
+    targetType: 'Smart Doc',
+    docId: 'd1',
+    details: 'Refactored microservice diagram — split auth into standalone service',
+    detailsZh: '重构了微服务架构图 — 将认证拆分为独立服务',
+    timestamp: '2026-03-21T16:00:00Z'
+  },
+  {
+    id: 'act15',
+    workspaceId: 'w1',
+    userId: 'u2',
+    userName: 'Alice Chen',
+    userType: 'human',
+    action: 'modified',
+    actionZh: '修改了',
+    targetName: 'User Flow Diagram',
+    targetType: 'Whiteboard',
+    docId: 'd3',
+    details: 'Added stakeholder review and approval path to the onboarding flow',
+    detailsZh: '在注册引导流程中增加了利益相关方审核与审批路径',
+    timestamp: '2026-03-21T10:20:00Z'
+  },
+  {
+    id: 'act17',
+    workspaceId: 'w1',
+    userId: 'u3',
+    userName: 'Bob Smith',
+    userType: 'human',
+    action: 'commented on',
+    actionZh: '评论了',
+    targetName: 'Project Alpha Architecture',
+    targetType: 'Smart Doc',
+    docId: 'd1',
+    details: 'Added edge case notes for the auth flow handoff',
+    detailsZh: '补充了认证流程交接的边缘场景说明',
+    timestamp: '2026-03-21T14:45:00Z'
   },
   {
     id: 'act6',
@@ -323,32 +553,94 @@ const initialActivities: Activity[] = [
     timestamp: '2026-03-20T14:30:00Z'
   },
   {
-    id: 'act8',
+    id: 'act13',
     workspaceId: 'w1',
-    userId: 'a2',
-    userName: 'Data Analyzer',
-    userType: 'agent',
+    userId: 'u1',
+    userName: currentUser.name,
+    userType: 'human',
     action: 'commented on',
     actionZh: '评论了',
     targetName: 'Q3 Financial Projections',
     targetType: 'Table',
-    details: 'Flagged $42k discrepancy in Q2 actuals vs. reported figures',
-    detailsZh: '标记了 Q2 实际数据与报告数字之间 $42k 的差异',
-    timestamp: '2026-03-15T09:20:00Z'
+    docId: 'd2',
+    details: 'Requested breakdown by region',
+    detailsZh: '要求按区域拆分数据',
+    timestamp: '2026-03-20T15:30:00Z'
   },
   {
-    id: 'act9',
+    id: 'act19',
+    workspaceId: 'w1',
+    userId: 'u4',
+    userName: 'Eve Davis',
+    userType: 'human',
+    action: 'updated',
+    actionZh: '更新了',
+    targetName: 'Marketing Strategy',
+    targetType: 'Smart Doc',
+    docId: 'd5',
+    details: 'Suggested channel mix changes in section 4 after review',
+    detailsZh: '评审后建议调整第 4 节的渠道组合方案',
+    timestamp: '2026-03-20T16:00:00Z'
+  },
+  {
+    id: 'act1',
+    workspaceId: 'w1',
+    userId: 'a1',
+    userName: 'Claude Assistant',
+    userType: 'agent',
+    action: 'modified',
+    actionZh: '修改了',
+    targetName: 'Project Alpha Architecture',
+    targetType: 'Smart Doc',
+    docId: 'd1',
+    details: 'Added "Database Schema" section with ER diagram and index strategy',
+    detailsZh: '新增了「数据库架构」章节，包含 ER 图与索引策略',
+    timestamp: '2026-03-19T08:30:00Z'
+  },
+  {
+    id: 'act5',
     workspaceId: 'w1',
     userId: 'a3',
     userName: 'Research Bot',
     userType: 'agent',
-    action: 'updated',
-    actionZh: '更新了',
+    action: 'created',
+    actionZh: '创建了',
     targetName: 'Competitor Analysis',
     targetType: 'Markdown',
-    details: 'Added pricing comparison table across all tiers',
-    detailsZh: '新增了各档位定价对比表',
-    timestamp: '2026-03-21T08:15:00Z'
+    docId: 'd4',
+    details: 'Initial draft covering 5 competitors with feature matrix',
+    detailsZh: '初稿覆盖了 5 家竞品的功能对比矩阵',
+    timestamp: '2026-03-19T07:00:00Z'
+  },
+  {
+    id: 'act14',
+    workspaceId: 'w1',
+    userId: 'u2',
+    userName: 'Alice Chen',
+    userType: 'human',
+    action: 'commented on',
+    actionZh: '评论了',
+    targetName: 'Project Alpha Architecture',
+    targetType: 'Smart Doc',
+    docId: 'd1',
+    details: 'Shared handoff notes about service boundaries before design review',
+    detailsZh: '在设计评审前分享了关于服务边界的交接说明',
+    timestamp: '2026-03-19T11:00:00Z'
+  },
+  {
+    id: 'act2',
+    workspaceId: 'w1',
+    userId: 'u1',
+    userName: currentUser.name,
+    userType: 'human',
+    action: 'created',
+    actionZh: '创建了',
+    targetName: 'User Flow Diagram',
+    targetType: 'Whiteboard',
+    docId: 'd3',
+    details: 'Initial onboarding and checkout flow wireframes',
+    detailsZh: '绘制了初始的注册引导与结账流程线框图',
+    timestamp: '2026-03-18T14:20:00Z'
   },
   {
     id: 'act10',
@@ -365,74 +657,19 @@ const initialActivities: Activity[] = [
     timestamp: '2026-03-18T11:00:00Z'
   },
   {
-    id: 'act11',
+    id: 'act3',
     workspaceId: 'w1',
-    userId: 'a1',
-    userName: 'Claude Assistant',
+    userId: 'a2',
+    userName: 'Data Analyzer',
     userType: 'agent',
     action: 'updated',
     actionZh: '更新了',
-    targetName: 'Project Alpha Architecture',
-    targetType: 'Markdown',
-    details: 'Refactored microservice diagram — split auth into standalone service',
-    detailsZh: '重构了微服务架构图 — 将认证拆分为独立服务',
-    timestamp: '2026-03-21T16:00:00Z'
-  },
-  {
-    id: 'act12',
-    workspaceId: 'w1',
-    userId: 'u1',
-    userName: currentUser.name,
-    userType: 'human',
-    action: 'updated',
-    actionZh: '更新了',
-    targetName: 'Project Alpha Architecture',
-    targetType: 'Markdown',
-    details: 'Reviewed and approved final version',
-    detailsZh: '审阅并批准了最终版本',
-    timestamp: '2026-03-22T09:00:00Z'
-  },
-  {
-    id: 'act13',
-    workspaceId: 'w1',
-    userId: 'u1',
-    userName: currentUser.name,
-    userType: 'human',
-    action: 'commented on',
-    actionZh: '评论了',
     targetName: 'Q3 Financial Projections',
     targetType: 'Table',
-    details: 'Requested breakdown by region',
-    detailsZh: '要求按区域拆分数据',
-    timestamp: '2026-03-20T15:30:00Z'
-  },
-  {
-    id: 'act14',
-    workspaceId: 'w1',
-    userId: 'u2',
-    userName: 'Alice Chen',
-    userType: 'human',
-    action: 'commented on',
-    actionZh: '评论了',
-    targetName: 'Project Alpha Architecture',
-    targetType: 'Markdown',
-    details: 'Shared handoff notes about service boundaries before design review',
-    detailsZh: '在设计评审前分享了关于服务边界的交接说明',
-    timestamp: '2026-03-19T11:00:00Z'
-  },
-  {
-    id: 'act15',
-    workspaceId: 'w1',
-    userId: 'u2',
-    userName: 'Alice Chen',
-    userType: 'human',
-    action: 'modified',
-    actionZh: '修改了',
-    targetName: 'User Flow Diagram',
-    targetType: 'Whiteboard',
-    details: 'Added stakeholder review and approval path to the onboarding flow',
-    detailsZh: '在注册引导流程中增加了利益相关方审核与审批路径',
-    timestamp: '2026-03-21T10:20:00Z'
+    docId: 'd2',
+    details: 'Revised August revenue forecast (+8.3%) based on new pipeline data',
+    detailsZh: '根据最新渠道数据修订了 8 月营收预测（+8.3%）',
+    timestamp: '2026-03-17T10:15:00Z'
   },
   {
     id: 'act16',
@@ -444,23 +681,10 @@ const initialActivities: Activity[] = [
     actionZh: '评论了',
     targetName: 'Q3 Financial Projections',
     targetType: 'Table',
+    docId: 'd2',
     details: 'Asked for monthly burn and runway annotations before the finance review',
     detailsZh: '要求在财务评审前补充月度消耗和资金跑道标注',
     timestamp: '2026-03-17T09:00:00Z'
-  },
-  {
-    id: 'act17',
-    workspaceId: 'w1',
-    userId: 'u3',
-    userName: 'Bob Smith',
-    userType: 'human',
-    action: 'commented on',
-    actionZh: '评论了',
-    targetName: 'Project Alpha Architecture',
-    targetType: 'Markdown',
-    details: 'Added edge case notes for the auth flow handoff',
-    detailsZh: '补充了认证流程交接的边缘场景说明',
-    timestamp: '2026-03-21T14:45:00Z'
   },
   {
     id: 'act18',
@@ -471,112 +695,76 @@ const initialActivities: Activity[] = [
     action: 'commented on',
     actionZh: '评论了',
     targetName: 'Marketing Strategy',
-    targetType: 'Markdown',
+    targetType: 'Smart Doc',
+    docId: 'd5',
     details: 'Requested launch timing to align with the campaign calendar',
     detailsZh: '要求上线时间与营销日历对齐',
     timestamp: '2026-03-16T13:00:00Z'
   },
   {
-    id: 'act19',
+    id: 'act8',
     workspaceId: 'w1',
-    userId: 'u4',
-    userName: 'Eve Davis',
-    userType: 'human',
-    action: 'updated',
-    actionZh: '更新了',
-    targetName: 'Marketing Strategy',
-    targetType: 'Markdown',
-    details: 'Suggested channel mix changes in section 4 after review',
-    detailsZh: '评审后建议调整第 4 节的渠道组合方案',
-    timestamp: '2026-03-20T16:00:00Z'
-  },
-  // Agent scheduled task — Daily Industry Digest
-  {
-    id: 'act20',
-    workspaceId: 'w1',
-    userId: 'a3',
-    userName: 'Research Bot',
+    userId: 'a2',
+    userName: 'Data Analyzer',
     userType: 'agent',
-    action: 'created',
-    actionZh: '创建了',
-    targetName: 'Industry Digest — Mar 24',
-    targetType: 'Markdown',
-    details: 'Scheduled task: compiled 12 industry news items from 8 sources',
-    detailsZh: '定时任务：从 8 个来源汇编了 12 条行业资讯',
-    timestamp: '2026-03-24T08:00:00Z'
+    action: 'commented on',
+    actionZh: '评论了',
+    targetName: 'Q3 Financial Projections',
+    targetType: 'Table',
+    docId: 'd2',
+    details: 'Flagged $42k discrepancy in Q2 actuals vs. reported figures',
+    detailsZh: '标记了 Q2 实际数据与报告数字之间 $42k 的差异',
+    timestamp: '2026-03-15T09:20:00Z'
   },
+  // === Older ===
   {
-    id: 'act21',
-    workspaceId: 'w1',
-    userId: 'a3',
-    userName: 'Research Bot',
-    userType: 'agent',
-    action: 'created',
-    actionZh: '创建了',
-    targetName: 'Industry Digest — Mar 23',
-    targetType: 'Markdown',
-    details: 'Scheduled task: compiled 9 industry news items from 7 sources',
-    detailsZh: '定时任务：从 7 个来源汇编了 9 条行业资讯',
-    timestamp: '2026-03-23T08:00:00Z'
-  },
-  {
-    id: 'act22',
-    workspaceId: 'w1',
-    userId: 'a3',
-    userName: 'Research Bot',
-    userType: 'agent',
-    action: 'created',
-    actionZh: '创建了',
-    targetName: 'Industry Digest — Mar 22',
-    targetType: 'Markdown',
-    details: 'Scheduled task: compiled 15 industry news items from 10 sources',
-    detailsZh: '定时任务：从 10 个来源汇编了 15 条行业资讯',
-    timestamp: '2026-03-22T08:00:00Z'
-  },
-  // Agent scheduled task — Daily Report
-  {
-    id: 'act23',
+    id: 'act4',
     workspaceId: 'w1',
     userId: 'a1',
     userName: 'Claude Assistant',
     userType: 'agent',
-    action: 'created',
-    actionZh: '创建了',
-    targetName: 'Daily Report — Mar 24',
-    targetType: 'Markdown',
-    details: 'Scheduled task: summarized 6 document changes, 3 new comments, 2 tasks completed',
-    detailsZh: '定时任务：汇总了 6 项文档变更、3 条新评论、2 项任务完成',
-    timestamp: '2026-03-24T18:00:00Z'
-  },
-  {
-    id: 'act24',
-    workspaceId: 'w1',
-    userId: 'a1',
-    userName: 'Claude Assistant',
-    userType: 'agent',
-    action: 'created',
-    actionZh: '创建了',
-    targetName: 'Daily Report — Mar 23',
-    targetType: 'Markdown',
-    details: 'Scheduled task: summarized 4 document changes, 5 new comments, 1 task completed',
-    detailsZh: '定时任务：汇总了 4 项文档变更、5 条新评论、1 项任务完成',
-    timestamp: '2026-03-23T18:00:00Z'
-  },
-  {
-    id: 'act25',
-    workspaceId: 'w1',
-    userId: 'a1',
-    userName: 'Claude Assistant',
-    userType: 'agent',
-    action: 'created',
-    actionZh: '创建了',
-    targetName: 'Daily Report — Mar 22',
-    targetType: 'Markdown',
-    details: 'Scheduled task: summarized 8 document changes, 2 new comments, 4 tasks completed',
-    detailsZh: '定时任务：汇总了 8 项文档变更、2 条新评论、4 项任务完成',
-    timestamp: '2026-03-22T18:00:00Z'
+    action: 'commented on',
+    actionZh: '评论了',
+    targetName: 'Project Alpha Architecture',
+    targetType: 'Smart Doc',
+    docId: 'd1',
+    details: 'Suggested Redis caching layer for session management',
+    detailsZh: '建议为会话管理增加 Redis 缓存层',
+    timestamp: '2026-03-12T16:45:00Z'
   }
 ];
+
+const absenceLastVisitTime = '2026-03-24T08:00:00Z';
+
+const agentColorMap: Record<string, string> = {
+  'Claude Assistant': '#F97316',
+  'Research Bot': '#8B5CF6',
+  'Data Analyzer': '#06B6D4',
+};
+
+// Derive absence summary from initialActivities — single source of truth
+const absenceSummaryData: AbsenceSummaryData = {
+  lastVisitTime: absenceLastVisitTime,
+  changes: initialActivities
+    .filter(a => a.userType === 'agent' && new Date(a.timestamp) > new Date(absenceLastVisitTime))
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    .map(a => {
+      let action: 'created' | 'modified' | 'commented' = 'modified';
+      if (a.action === 'created') action = 'created';
+      else if (a.action === 'commented on') action = 'commented';
+      else action = 'modified'; // 'updated', 'modified' etc.
+      return {
+        id: a.docId || a.id,
+        action,
+        docTitle: a.targetName,
+        docType: a.targetType,
+        agentName: a.userName,
+        agentColor: agentColorMap[a.userName] || '#94A3B8',
+        changeDescription: a.detailsZh,
+        timestamp: a.timestamp,
+      };
+    }),
+};
 
 export default function Dashboard() {
   const [workspaces, setWorkspaces] = useState(initialWorkspaces);
@@ -1116,64 +1304,18 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                 className="pl-9 pr-4 py-1.5 bg-stone-50 border border-stone-200 rounded-md text-sm focus:outline-none focus:border-stone-300 focus:bg-white transition-colors w-64"
               />
             </div>
-            {(['documents', 'agents'].includes(activeTab)) && (
+            {activeTab === 'agents' && (
             <div className="relative">
               <button 
                 onClick={() => {
-                  if (activeTab === 'agents') setIsCreatingAgent(true);
-                  if (activeTab === 'documents') setIsNewDocMenuOpen(!isNewDocMenuOpen);
-
+                  setIsCreatingAgent(true);
                 }}
                 className="flex items-center gap-1.5 bg-stone-900 text-white px-3 py-1.5 rounded-md text-sm font-medium hover:bg-stone-800 transition-colors"
               >
                 <Plus className="w-4 h-4" /> 
-                {activeTab === 'documents' && t('docs.newDoc')}
-                {activeTab === 'agents' && t('agent.newAgent')}
+                {t('agent.newAgent')}
 
               </button>
-
-              {activeTab === 'documents' && isNewDocMenuOpen && (
-                <>
-                  <div className="fixed inset-0 z-10" onClick={() => setIsNewDocMenuOpen(false)} />
-                  <div className="absolute right-0 mt-2 w-48 bg-white border border-stone-200 rounded-lg shadow-xl z-20 overflow-hidden py-1">
-                    <button 
-                      onClick={() => handleQuickCreateDoc('Smart Doc')}
-                      className="w-full flex items-center gap-3 px-4 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
-                    >
-                      {getDocTypeIcon('Smart Doc', 16)}
-                      <span>{t('docs.smartDoc')}</span>
-                    </button>
-                    <button 
-                      onClick={() => handleQuickCreateDoc('Table')}
-                      className="w-full flex items-center gap-3 px-4 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
-                    >
-                      {getDocTypeIcon('Table', 16)}
-                      <span>{t('docs.table')}</span>
-                    </button>
-                    <button 
-                      onClick={() => handleQuickCreateDoc('Whiteboard')}
-                      className="w-full flex items-center gap-3 px-4 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
-                    >
-                      {getDocTypeIcon('Whiteboard', 16)}
-                      <span>{t('docs.whiteboard')}</span>
-                    </button>
-                    <button 
-                      onClick={() => handleQuickCreateDoc('Form')}
-                      className="w-full flex items-center gap-3 px-4 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
-                    >
-                      {getDocTypeIcon('Form', 16)}
-                      <span>{t('docs.form')}</span>
-                    </button>
-                    <button 
-                      onClick={() => handleQuickCreateDoc('Markdown')}
-                      className="w-full flex items-center gap-3 px-4 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
-                    >
-                      {getDocTypeIcon('Markdown', 16)}
-                      <span>Markdown</span>
-                    </button>
-                  </div>
-                </>
-              )}
             </div>
             )}
           </div>
@@ -1201,7 +1343,7 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                 )}
 
                 {/* Scene filter tabs */}
-                <div className="flex items-center gap-1 mb-4">
+                <div className="flex items-center gap-1 mt-[26px] mb-4">
                   {([
                     { key: 'all', label: lang === 'zh' ? '全部文档' : 'All', icon: <FileText className="w-3.5 h-3.5" /> },
                     { key: 'today', label: lang === 'zh' ? '今日更新' : 'Today', icon: <CalendarDays className="w-3.5 h-3.5" /> },
@@ -1228,11 +1370,11 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                 {/* Document table */}
                 <div>
                     <div className="border border-stone-200/80 rounded-xl bg-white shadow-[0_2px_12px_rgba(0,0,0,0.02)]" style={{ overflow: 'visible' }}>
-                  <table className="w-full text-left text-sm">
+                  <table className="w-full table-fixed text-left text-sm">
                     <thead className="bg-stone-50/50 text-stone-500 border-b border-stone-200/80 rounded-t-xl [&>tr>th:first-child]:rounded-tl-xl [&>tr>th:last-child]:rounded-tr-xl">
                       <tr>
                         {/* Name column with Type filter */}
-                        <th className="px-6 py-3 font-medium bg-stone-50/50">
+                        <th className="px-6 py-3 font-medium bg-stone-50/50 w-[50%]">
                           <div className="relative inline-flex items-center ml-5">
                             <button
                               onClick={() => { setIsTypeFilterOpen(!isTypeFilterOpen); setIsSortMenuOpen(false); setIsOwnerFilterOpen(false); }}
@@ -1269,7 +1411,7 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                         </th>
 
                         {/* Owner column with Owner filter */}
-                        <th className="px-6 py-3 font-medium">
+                        <th className="px-6 py-3 font-medium w-[22%]">
                           <div className="relative inline-flex items-center">
                             <button
                               onClick={() => { setIsOwnerFilterOpen(!isOwnerFilterOpen); setIsTypeFilterOpen(false); setIsSortMenuOpen(false); }}
@@ -1313,7 +1455,7 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
 
 
                         {/* Date column with Sort toggle */}
-                        <th className="px-6 py-3 font-medium whitespace-nowrap">
+                        <th className="px-6 py-3 font-medium whitespace-nowrap w-[20%]">
                           <div className="relative inline-flex items-center">
                             <button
                               onClick={() => { setIsSortMenuOpen(!isSortMenuOpen); setIsTypeFilterOpen(false); setIsOwnerFilterOpen(false); }}
@@ -1349,7 +1491,7 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                           </div>
                         </th>
 
-                        <th className="px-6 py-3 font-medium text-right"></th>
+                        <th className="px-6 py-3 font-medium text-right w-[8%]"></th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-stone-100">
@@ -2022,6 +2164,8 @@ interface AbsenceSummaryCardProps {
 }
 
 function AbsenceSummaryCard({ data, onDocClick, onDismiss, onViewAll }: AbsenceSummaryCardProps) {
+  const { lang } = useLanguage();
+  const isZh = lang === 'zh';
 
   if (data.changes.length === 0) return null;
 
@@ -2038,16 +2182,20 @@ function AbsenceSummaryCard({ data, onDocClick, onDismiss, onViewAll }: AbsenceS
     const mins = Math.floor(ms / (1000 * 60));
     const hrs = Math.floor(ms / (1000 * 60 * 60));
     const days = Math.floor(ms / (1000 * 60 * 60 * 24));
-    if (mins < 1) return '刚刚';
-    if (mins < 60) return `${mins} 分钟前`;
-    if (hrs < 24) return `${hrs} 小时前`;
-    if (days === 1) return '昨天';
-    return `${days} 天前`;
+    if (mins < 1) return isZh ? '刚刚' : 'Just now';
+    if (mins < 60) return isZh ? `${mins} 分钟前` : `${mins}m ago`;
+    if (hrs < 24) return isZh ? `${hrs} 小时前` : `${hrs}h ago`;
+    if (days === 1) return isZh ? '昨天' : 'Yesterday';
+    return isZh ? `${days} 天前` : `${days}d ago`;
   };
 
   const actionText = (action: string, title: string) => {
-    const verb = action === 'created' ? '新建了' : action === 'modified' ? '修改了' : '评论了';
-    return (<>{verb}《<span className="font-medium text-stone-800">{title}</span>》</>);
+    if (isZh) {
+      const verb = action === 'created' ? '新建了' : action === 'modified' ? '修改了' : '评论了';
+      return (<>{verb}《<span className="font-medium text-stone-800">{title}</span>》</>);
+    }
+    const verb = action === 'created' ? 'created' : action === 'modified' ? 'updated' : 'commented on';
+    return (<>{verb} <span className="font-medium text-stone-800">{title}</span></>);
   };
 
   const visibleChanges = data.changes.slice(0, 3);
@@ -2057,17 +2205,35 @@ function AbsenceSummaryCard({ data, onDocClick, onDismiss, onViewAll }: AbsenceS
       {/* Header: numeric summary + view-all + close */}
       <div className="flex items-center px-5 pt-4 pb-3">
         <div className="text-sm ml-[12px]">
-          <span className="text-stone-500">你离开期间，Agents{' '}</span>
-          {[
-            counts.created ? <span key="c">新建 <span className="font-semibold text-stone-800">{counts.created}</span> 篇</span> : null,
-            counts.modified ? <span key="m">更新 <span className="font-semibold text-stone-800">{counts.modified}</span> 篇</span> : null,
-            counts.commented ? <span key="cm">评论 <span className="font-semibold text-stone-800">{counts.commented}</span> 篇</span> : null,
-          ].filter(Boolean).map((item, i, arr) => (
-            <span key={i} className="text-stone-600">
-              {item}{i < arr.length - 1 ? '、' : ''}
-            </span>
-          ))}
-          <span className="text-stone-500">文档</span>
+          {isZh ? (
+            <>
+              <span className="text-stone-500">你离开期间，Agents{' '}</span>
+              {[
+                counts.created ? <span key="c">新建 <span className="font-semibold text-stone-800">{counts.created}</span> 篇</span> : null,
+                counts.modified ? <span key="m">更新 <span className="font-semibold text-stone-800">{counts.modified}</span> 篇</span> : null,
+                counts.commented ? <span key="cm">评论 <span className="font-semibold text-stone-800">{counts.commented}</span> 篇</span> : null,
+              ].filter(Boolean).map((item, i, arr) => (
+                <span key={i} className="text-stone-600">
+                  {item}{i < arr.length - 1 ? '、' : ''}
+                </span>
+              ))}
+              <span className="text-stone-500">文档</span>
+            </>
+          ) : (
+            <>
+              <span className="text-stone-500">While you were away, Agents{' '}</span>
+              {[
+                counts.created ? <span key="c">created <span className="font-semibold text-stone-800">{counts.created}</span></span> : null,
+                counts.modified ? <span key="m">updated <span className="font-semibold text-stone-800">{counts.modified}</span></span> : null,
+                counts.commented ? <span key="cm">commented on <span className="font-semibold text-stone-800">{counts.commented}</span></span> : null,
+              ].filter(Boolean).map((item, i, arr) => (
+                <span key={i} className="text-stone-600">
+                  {item}{i < arr.length - 1 ? ', ' : ''}
+                </span>
+              ))}
+              <span className="text-stone-500"> {counts.created || counts.modified || counts.commented ? (((counts.created || 0) + (counts.modified || 0) + (counts.commented || 0)) === 1 ? 'doc' : 'docs') : 'docs'}</span>
+            </>
+          )}
         </div>
 
         <div className="flex-1" />
@@ -2076,13 +2242,13 @@ function AbsenceSummaryCard({ data, onDocClick, onDismiss, onViewAll }: AbsenceS
           onClick={(e) => { e.stopPropagation(); onViewAll(); }}
           className="shrink-0 text-xs text-stone-500 hover:text-stone-700 font-medium mr-2 transition-colors"
         >
-          查看全部
+          {isZh ? '查看全部' : 'View all'}
         </button>
 
         <button
           onClick={(e) => { e.stopPropagation(); onDismiss(); }}
           className="shrink-0 p-1 rounded-md text-stone-400 hover:text-stone-600 hover:bg-stone-200/50 transition-colors"
-          title="关闭"
+          title={isZh ? '关闭' : 'Dismiss'}
         >
           <X className="w-4 h-4" />
         </button>
@@ -2192,8 +2358,8 @@ function DocRow({ docId, name, type, date, creatorName, creatorType, isNew, onDe
 
   return (
     <tr className={`transition-colors group cursor-pointer ${isNew ? 'bg-blue-50/60 hover:bg-blue-50' : 'hover:bg-stone-50'}`} onClick={() => navigate(`/document?type=${type.toLowerCase().replace(' ', '')}`)}>
-      <td className="px-6 py-3">
-        <div className="flex items-center gap-2">
+      <td className="px-6 py-3 max-w-0">
+        <div className="flex items-center gap-2 min-w-0">
           <span className="flex items-center justify-center w-2 mr-1 shrink-0">
             {isNew && (
               <span className="relative flex h-2 w-2">
@@ -2202,18 +2368,18 @@ function DocRow({ docId, name, type, date, creatorName, creatorType, isNew, onDe
               </span>
             )}
           </span>
-          {getDocIcon()}
-          <span className="font-medium text-stone-800">{name}</span>
+          <span className="shrink-0">{getDocIcon()}</span>
+          <span className="font-medium text-stone-800 truncate">{name}</span>
         </div>
       </td>
-      <td className="px-6 py-3">
+      <td className="px-6 py-3 whitespace-nowrap">
         <div className="flex items-center gap-2 text-stone-500">
           {creatorType === 'agent' ? (
             getAgentAvatar(creatorName, 18)
           ) : (
             getUserAvatar(18)
           )}
-          <span className="text-sm">{creatorName}</span>
+          <span className="text-sm truncate">{creatorName}</span>
         </div>
       </td>
       <td className="px-6 py-3 text-stone-500 text-sm whitespace-nowrap">{formatDate(date)}</td>
@@ -2229,17 +2395,6 @@ function DocRow({ docId, name, type, date, creatorName, creatorType, isNew, onDe
             <>
               <div className="fixed inset-0 z-10" onClick={(e) => { e.stopPropagation(); setIsMenuOpen(false); }} />
               <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-stone-200 rounded-lg shadow-xl z-20 overflow-hidden py-1">
-                <button
-                  onClick={(e) => { 
-                    e.stopPropagation(); 
-                    setIsMenuOpen(false); 
-                    onSetLabel?.(docId); 
-                  }}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
-                >
-                  <Tag className="w-4 h-4 text-stone-400" />
-                  设置标签
-                </button>
                 <button
                   onClick={(e) => { 
                     e.stopPropagation(); 
@@ -2349,44 +2504,77 @@ function ActivityFeed({ activities }: ActivityFeedProps) {
   const { lang } = useLanguage();
   const isZh = lang === 'zh';
 
-  const groupActivitiesByWeek = (activities: Activity[]) => {
+  const groupActivitiesByDate = (activities: Activity[]) => {
     const groups: Record<string, Activity[]> = {};
+    const orderedKeys: string[] = [];
     const sorted = [...activities].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+    const now = new Date();
+    // Use UTC-based date calculations to match the UTC timestamps in the data
+    const todayUTC = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+    const yesterdayUTC = todayUTC - 86400000; // 1 day in ms
+
+    // Calculate start of this week (Monday) in UTC
+    const nowDayOfWeek = now.getUTCDay(); // 0=Sun, 1=Mon, ...
+    const diffToMonday = nowDayOfWeek === 0 ? 6 : nowDayOfWeek - 1;
+    const startOfWeekUTC = todayUTC - diffToMonday * 86400000;
+
+    // Start of last week (Monday) in UTC
+    const startOfLastWeekUTC = startOfWeekUTC - 7 * 86400000;
     
     sorted.forEach(activity => {
       const date = new Date(activity.timestamp);
-      const now = new Date();
-      const diffInDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+      const activityDayUTC = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
       
       let key = '';
-      if (diffInDays < 7) {
-        key = isZh ? '本周' : 'This Week';
-      } else if (diffInDays < 14) {
+      if (activityDayUTC === todayUTC) {
+        key = isZh ? '今天' : 'Today';
+      } else if (activityDayUTC === yesterdayUTC) {
+        key = isZh ? '昨天' : 'Yesterday';
+      } else if (activityDayUTC >= startOfWeekUTC) {
+        // This week but before yesterday — show weekday + date
+        const utcDay = date.getUTCDay();
+        const utcMonth = date.getUTCMonth();
+        const utcDate = date.getUTCDate();
+        if (isZh) {
+          const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+          key = `${weekdays[utcDay]}  ${utcMonth + 1}/${utcDate}`;
+        } else {
+          const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+          const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+          key = `${weekdays[utcDay]}, ${months[utcMonth]} ${utcDate}`;
+        }
+      } else if (activityDayUTC >= startOfLastWeekUTC) {
         key = isZh ? '上周' : 'Last Week';
       } else {
+        const utcYear = date.getUTCFullYear();
+        const utcMonth = date.getUTCMonth();
         if (isZh) {
-          key = `${date.getFullYear()} 年 ${date.getMonth() + 1} 月`;
+          key = `${utcYear} 年 ${utcMonth + 1} 月`;
         } else {
-          const month = date.toLocaleString('en', { month: 'long' });
-          key = `${month} ${date.getFullYear()}`;
+          const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+          key = `${months[utcMonth]} ${utcYear}`;
         }
       }
       
-      if (!groups[key]) groups[key] = [];
+      if (!groups[key]) {
+        groups[key] = [];
+        orderedKeys.push(key);
+      }
       groups[key].push(activity);
     });
-    return groups;
+    return { groups, orderedKeys };
   };
 
-  const grouped = groupActivitiesByWeek(activities);
+  const { groups: grouped, orderedKeys } = groupActivitiesByDate(activities);
 
   return (
     <div className="space-y-8 pb-12">
-      {Object.entries(grouped).map(([week, weekActivities]) => (
-        <div key={week} className="space-y-4">
-          <h3 className="text-[10px] font-bold text-stone-400 uppercase tracking-widest px-2">{week}</h3>
+      {orderedKeys.map(key => (
+        <div key={key} className="space-y-4">
+          <h3 className="text-[10px] font-bold text-stone-400 uppercase tracking-widest px-2">{key}</h3>
           <div className="space-y-1">
-            {weekActivities.map(activity => (
+            {grouped[key].map(activity => (
               <div key={activity.id} className="flex items-start gap-4 p-4 rounded-xl hover:bg-stone-50 transition-all group border border-transparent hover:border-stone-200/60 hover:shadow-sm">
                 <div className="mt-0.5">
                   {activity.userType === 'agent' ? (
@@ -2412,11 +2600,11 @@ function ActivityFeed({ activities }: ActivityFeedProps) {
                   <div className="flex items-center gap-3 mt-1.5">
                     <p className="text-[10px] text-stone-400 flex items-center gap-1 font-medium">
                       <Clock className="w-3 h-3" />
-                      {new Date(activity.timestamp).toLocaleTimeString(isZh ? 'zh-CN' : [], { hour: '2-digit', minute: '2-digit' })}
+                      {new Date(activity.timestamp).toLocaleTimeString(isZh ? 'zh-CN' : [], { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })}
                     </p>
                     <span className="text-[10px] text-stone-300">•</span>
                     <p className="text-[10px] text-stone-400 font-medium">
-                      {new Date(activity.timestamp).toLocaleDateString(isZh ? 'zh-CN' : [], { month: 'short', day: 'numeric' })}
+                      {new Date(activity.timestamp).toLocaleDateString(isZh ? 'zh-CN' : [], { month: 'short', day: 'numeric', timeZone: 'UTC' })}
                     </p>
                   </div>
                 </div>
