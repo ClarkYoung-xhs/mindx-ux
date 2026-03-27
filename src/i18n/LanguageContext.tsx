@@ -106,7 +106,7 @@ const translations: Record<Language, Record<string, string>> = {
 
     // Dashboard - Agent
     'agent.title': 'Agent Accounts',
-    'agent.newAgent': '+ New Agent',
+    'agent.newAgent': 'New Agent',
     'agent.createTitle': 'Create New Agent',
     'agent.namePlaceholder': 'Agent name...',
     'agent.globalAccount': 'Global Agent Account',
@@ -268,7 +268,7 @@ const translations: Record<Language, Record<string, string>> = {
 
     // Dashboard - Agent
     'agent.title': 'Agent',
-    'agent.newAgent': '+ 新建 Agent',
+    'agent.newAgent': '新建 Agent',
     'agent.createTitle': '创建新 Agent',
     'agent.namePlaceholder': 'Agent 名称...',
     'agent.globalAccount': '全局 Agent 账号',
