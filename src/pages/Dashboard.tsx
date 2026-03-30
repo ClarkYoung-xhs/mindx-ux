@@ -791,8 +791,6 @@ export default function Dashboard() {
   const [docFilterType, setDocFilterType] = useState<string>('all');
   const [docFilterOwner, setDocFilterOwner] = useState<string>('all');
   const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
-  const [docFilterLabel, setDocFilterLabel] = useState<string>('all');
-  const [isLabelFilterOpen, setIsLabelFilterOpen] = useState(false);
   const [isTypeFilterOpen, setIsTypeFilterOpen] = useState(false);
   const [isAgentMenuOpen, setIsAgentMenuOpen] = useState(false);
   const [agentListMenuOpen, setAgentListMenuOpen] = useState<string | null>(null);
@@ -802,11 +800,8 @@ export default function Dashboard() {
   const [activityFilterOwner, setActivityFilterOwner] = useState<string>('all');
 
   // Document actions
-  const [labelModalOpen, setLabelModalOpen] = useState(false);
   const [agentPermissionModalOpen, setAgentPermissionModalOpen] = useState(false);
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
-  const [tagInput, setTagInput] = useState('');
-  const [usedTags, setUsedTags] = useState<string[]>(['PRD', 'Data', 'Design', 'Research', 'Marketing', 'Meeting Notes', 'Finance']);
   const [agentPermissions, setAgentPermissions] = useState<AgentPermission[]>([]);
 
   const { t, lang } = useLanguage();
@@ -841,7 +836,6 @@ export default function Dashboard() {
     setActiveWorkspaceId(workspaceId);
     setDocFilterType('all');
     setDocFilterOwner('all');
-    setDocFilterLabel('all');
     setActivityFilterOwner('all');
 
 
@@ -911,11 +905,6 @@ export default function Dashboard() {
       docs = docs.filter(d => d.creatorName === docFilterOwner);
     }
 
-    // 按 label 筛选
-    if (docFilterLabel !== 'all') {
-      docs = docs.filter(d => d.labels.includes(docFilterLabel));
-    }
-
     // 按场景筛选
     if (docSceneFilter === 'today') {
       const todayStr = new Date().toISOString().slice(0, 10);
@@ -938,7 +927,7 @@ export default function Dashboard() {
     });
     
     return docs;
-  }, [workspaceDocs, docSortBy, docFilterType, docFilterOwner, docFilterLabel, docSceneFilter]);
+  }, [workspaceDocs, docSortBy, docFilterType, docFilterOwner, docSceneFilter]);
 
   // 获取当前 workspace 的文档类型列表和 owner 列表（用于筛选选项）
   const docTypes = React.useMemo(() => {
@@ -950,11 +939,7 @@ export default function Dashboard() {
     return owners.sort((a, b) => a === currentUser.name ? -1 : b === currentUser.name ? 1 : 0);
   }, [workspaceDocs]);
 
-  const docLabels = React.useMemo(() => {
-    return Array.from(new Set(workspaceDocs.flatMap(d => d.labels))).sort();
-  }, [workspaceDocs]);
-
-  const activeFilterCount = (docFilterType !== 'all' ? 1 : 0) + (docFilterOwner !== 'all' ? 1 : 0) + (docFilterLabel !== 'all' ? 1 : 0) + (docSceneFilter !== 'all' ? 1 : 0);
+  const activeFilterCount = (docFilterType !== 'all' ? 1 : 0) + (docFilterOwner !== 'all' ? 1 : 0) + (docSceneFilter !== 'all' ? 1 : 0);
   const workspaceActivities = activities.filter(a => a.workspaceId === activeWorkspaceId);
   const activityOwners = React.useMemo(() => {
     return Array.from(new Set(workspaceActivities.map(a => a.userName)));
@@ -1044,111 +1029,6 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
           onComplete={handleOnboardingComplete} 
           onClose={() => setShowOnboarding(false)} 
         />
-      )}
-
-      {/* Label Modal */}
-      {labelModalOpen && selectedDocId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setLabelModalOpen(false)}>
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            onClick={(e) => e.stopPropagation()}
-            className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md"
-          >
-            <h2 className="text-lg font-semibold mb-4">设置标签</h2>
-            
-            {/* Existing labels */}
-            <div className="mb-4">
-              <p className="text-xs font-medium text-stone-600 mb-2">已有标签</p>
-              <div className="flex flex-wrap gap-2">
-                {documents.find(d => d.id === selectedDocId)?.labels.map(label => (
-                  <span
-                    key={label}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-stone-100 text-stone-700 text-sm rounded-full"
-                  >
-                    <Tag className="w-3 h-3" />
-                    {label}
-                    <button
-                      onClick={() => {
-                        setDocuments(prev => prev.map(d => 
-                          d.id === selectedDocId 
-                            ? { ...d, labels: d.labels.filter(l => l !== label) }
-                            : d
-                        ));
-                      }}
-                      className="p-0.5 rounded-full hover:bg-stone-200 transition-colors"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {/* Add new label */}
-            <div className="mb-4">
-              <input
-                type="text"
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && tagInput.trim()) {
-                    const newLabel = tagInput.trim();
-                    setDocuments(prev => prev.map(d => 
-                      d.id === selectedDocId && !d.labels.includes(newLabel)
-                        ? { ...d, labels: [...d.labels, newLabel] }
-                        : d
-                    ));
-                    if (!usedTags.includes(newLabel)) {
-                      setUsedTags(prev => [...prev, newLabel]);
-                    }
-                    setTagInput('');
-                  }
-                }}
-                placeholder="输入标签后按回车添加"
-                className="w-full px-3 py-2 border border-stone-200 rounded-lg focus:outline-none focus:border-stone-400 text-sm"
-              />
-            </div>
-
-            {/* Historical labels */}
-            <div>
-              <p className="text-xs font-medium text-stone-600 mb-2">历史标签</p>
-              <div className="flex flex-wrap gap-2">
-                {usedTags
-                  .filter(tag => !documents.find(d => d.id === selectedDocId)?.labels.includes(tag))
-                  .map(tag => (
-                    <button
-                      key={tag}
-                      onClick={() => {
-                        setDocuments(prev => prev.map(d => 
-                          d.id === selectedDocId
-                            ? { ...d, labels: [...d.labels, tag] }
-                            : d
-                        ));
-                      }}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 bg-stone-50 text-stone-600 text-xs rounded-full hover:bg-stone-100 transition-colors"
-                    >
-                      <Tag className="w-3 h-3" />
-                      {tag}
-                    </button>
-                  ))}
-              </div>
-            </div>
-
-            <div className="flex gap-3 justify-end mt-6">
-              <button
-                onClick={() => {
-                  setLabelModalOpen(false);
-                  setSelectedDocId(null);
-                  setTagInput('');
-                }}
-                className="px-4 py-2 bg-stone-900 text-white rounded-lg text-sm font-medium hover:bg-stone-800 transition-colors"
-              >
-                完成
-              </button>
-            </div>
-          </motion.div>
-        </div>
       )}
 
       {/* Agent Permission Modal */}
@@ -1429,68 +1309,6 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                   ))}
                 </div>
 
-                {/* Owner filter row */}
-                <div className="flex items-center gap-1.5 mb-3 flex-wrap">
-                  <button
-                    onClick={() => setDocFilterOwner('all')}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                      docFilterOwner === 'all' 
-                        ? 'bg-stone-800 text-white' 
-                        : 'bg-stone-100 text-stone-500 hover:bg-stone-200 hover:text-stone-700'
-                    }`}
-                  >
-                    <Users className="w-3 h-3" />
-                    {t('docs.all')}
-                  </button>
-                  {docOwners.map(owner => {
-                    const ownerDoc = workspaceDocs.find(d => d.creatorName === owner);
-                    return (
-                      <button
-                        key={owner}
-                        onClick={() => setDocFilterOwner(docFilterOwner === owner ? 'all' : owner)}
-                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                          docFilterOwner === owner 
-                            ? 'bg-stone-800 text-white' 
-                            : 'bg-stone-100 text-stone-500 hover:bg-stone-200 hover:text-stone-700'
-                        }`}
-                      >
-                        {ownerDoc?.creatorType === 'agent' 
-                          ? getAgentAvatar(owner, 14)
-                          : getUserAvatar(14)}
-                        {owner}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Labels filter row */}
-                <div className="flex items-center gap-1.5 mb-4 flex-wrap">
-                  <button
-                    onClick={() => setDocFilterLabel('all')}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                      docFilterLabel === 'all' 
-                        ? 'bg-stone-800 text-white' 
-                        : 'bg-stone-100 text-stone-500 hover:bg-stone-200 hover:text-stone-700'
-                    }`}
-                  >
-                    <Tag className="w-3 h-3" />
-                    {t('docs.all')}
-                  </button>
-                  {docLabels.map(label => (
-                    <button
-                      key={label}
-                      onClick={() => setDocFilterLabel(docFilterLabel === label ? 'all' : label)}
-                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                        docFilterLabel === label 
-                          ? 'bg-stone-800 text-white' 
-                          : 'bg-stone-100 text-stone-500 hover:bg-stone-200 hover:text-stone-700'
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-
                 {/* Document table */}
                 <div>
                     <div className="border border-stone-200/80 rounded-xl bg-white shadow-[0_2px_12px_rgba(0,0,0,0.02)]" style={{ overflow: 'visible' }}>
@@ -1501,7 +1319,7 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                         <th className="px-6 py-3 font-medium bg-stone-50/50">
                           <div className="relative inline-flex items-center">
                             <button
-                              onClick={() => { setIsTypeFilterOpen(!isTypeFilterOpen); setIsSortMenuOpen(false); setIsLabelFilterOpen(false); }}
+                              onClick={() => { setIsTypeFilterOpen(!isTypeFilterOpen); setIsSortMenuOpen(false); }}
                               className={`flex items-center gap-1.5 hover:text-stone-800 transition-colors ${docFilterType !== 'all' ? 'text-stone-900' : ''}`}
                             >
                               {t('docs.name')}
@@ -1537,48 +1355,11 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                         {/* Owner column (plain label) */}
                         <th className="px-6 py-3 font-medium">{t('docs.owner')}</th>
 
-                        {/* Labels column with Label filter */}
-                        <th className="px-6 py-3 font-medium">
-                          <div className="relative inline-flex items-center">
-                            <button
-                              onClick={() => { setIsLabelFilterOpen(!isLabelFilterOpen); setIsTypeFilterOpen(false); setIsSortMenuOpen(false); }}
-                              className={`flex items-center gap-1.5 hover:text-stone-800 transition-colors ${docFilterLabel !== 'all' ? 'text-stone-900' : ''}`}
-                            >
-                              {t('docs.labels')}
-                              <ChevronDown className={`w-3 h-3 transition-transform ${isLabelFilterOpen ? 'rotate-180' : ''}`} />
-                            </button>
-                            {isLabelFilterOpen && (
-                              <>
-                                <div className="fixed inset-0 z-10" onClick={() => setIsLabelFilterOpen(false)} />
-                                <div className="absolute left-0 top-full mt-1 w-48 bg-white border border-stone-200 rounded-lg shadow-xl z-20 overflow-hidden py-1 max-h-64 overflow-y-auto">
-                                  <div className="px-3 py-1.5 text-[10px] font-bold text-stone-400 uppercase tracking-wider">{t('docs.filterByLabel')}</div>
-                                  <button
-                                    onClick={() => { setDocFilterLabel('all'); setIsLabelFilterOpen(false); }}
-                                    className={`w-full text-left px-3 py-1.5 text-sm transition-colors flex items-center gap-2 ${docFilterLabel === 'all' ? 'bg-stone-50 text-stone-900 font-medium' : 'text-stone-600 hover:bg-stone-50'}`}
-                                  >
-                                    {t('docs.allLabels')}
-                                  </button>
-                                  {docLabels.map(label => (
-                                    <button
-                                      key={label}
-                                      onClick={() => { setDocFilterLabel(label); setIsLabelFilterOpen(false); }}
-                                      className={`w-full text-left px-3 py-1.5 text-sm transition-colors flex items-center gap-2 ${docFilterLabel === label ? 'bg-stone-50 text-stone-900 font-medium' : 'text-stone-600 hover:bg-stone-50'}`}
-                                    >
-                                      <Tag className="w-3.5 h-3.5 text-stone-400" />
-                                      {label}
-                                    </button>
-                                  ))}
-                                </div>
-                              </>
-                            )}
-                          </div>
-                        </th>
-
                         {/* Date column with Sort toggle */}
                         <th className="px-6 py-3 font-medium whitespace-nowrap">
                           <div className="relative inline-flex items-center">
                             <button
-                              onClick={() => { setIsSortMenuOpen(!isSortMenuOpen); setIsTypeFilterOpen(false); setIsLabelFilterOpen(false); }}
+                              onClick={() => { setIsSortMenuOpen(!isSortMenuOpen); setIsTypeFilterOpen(false); }}
                               className="flex items-center gap-1.5 hover:text-stone-800 transition-colors whitespace-nowrap"
                             >
                               {docSortBy === 'lastModified' ? t('docs.lastModified') : t('docs.lastViewed')}
@@ -1617,13 +1398,13 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                     <tbody className="divide-y divide-stone-100">
                       {filteredAndSortedDocs.length === 0 ? (
                         <tr>
-                          <td colSpan={6} className="px-6 py-12 text-center text-stone-500">
+                          <td colSpan={4} className="px-6 py-12 text-center text-stone-500">
                             <FileText className="w-8 h-8 mx-auto mb-3 text-stone-300" />
                             {activeFilterCount > 0 ? (
                               <div>
                                 <p>No documents match the current filters</p>
                                 <button
-                                  onClick={() => { setDocFilterType('all'); setDocFilterOwner('all'); setDocFilterLabel('all'); }}
+                                  onClick={() => { setDocFilterType('all'); setDocFilterOwner('all'); }}
                                   className="mt-2 text-sm text-stone-600 underline hover:text-stone-900 transition-colors"
                                 >
                                   Clear filters
@@ -1642,11 +1423,11 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                             name={doc.name} 
                             type={doc.type} 
                             date={docSortBy === 'lastModified' ? doc.lastModified : doc.lastViewed}
-                            labels={doc.labels}
                             creatorName={doc.creatorName}
                             creatorType={doc.creatorType}
+                            isNew={doc.isNew}
                             onDelete={(id) => setDocuments(prev => prev.filter(d => d.id !== id))}
-                            onLabelClick={(label) => { setDocFilterLabel(label); }}
+                            onMarkRead={(id) => setDocuments(prev => prev.map(d => d.id === id ? { ...d, isNew: false, isRead: true } : d))}
                           />
                         ))
                       )}
@@ -2233,16 +2014,15 @@ interface DocRowProps {
   name: string;
   type: string;
   date: string;
-  labels: string[];
   creatorName: string;
   creatorType: 'human' | 'agent';
+  isNew?: boolean;
   onDelete: (id: string) => void;
-  onLabelClick?: (label: string) => void;
-  onSetLabel?: (id: string) => void;
+  onMarkRead?: (id: string) => void;
   onSetAgentPermission?: (id: string) => void;
 }
 
-function DocRow({ docId, name, type, date, labels, creatorName, creatorType, onDelete, onLabelClick, onSetLabel, onSetAgentPermission }: DocRowProps) {
+function DocRow({ docId, name, type, date, creatorName, creatorType, isNew, onDelete, onMarkRead, onSetAgentPermission }: DocRowProps) {
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
@@ -2294,11 +2074,19 @@ function DocRow({ docId, name, type, date, labels, creatorName, creatorType, onD
   };
 
   return (
-    <tr className="hover:bg-stone-50 transition-colors group cursor-pointer" onClick={() => navigate(`/document?type=${type.toLowerCase().replace(' ', '')}`)}>
-      <td className="px-6 py-3">
-        <div className="flex items-center gap-3">
-          {getDocIcon()}
-          <span className="font-medium text-stone-800">{name}</span>
+    <tr className={`transition-colors group cursor-pointer ${isNew ? 'bg-blue-50/60 hover:bg-blue-50' : 'hover:bg-stone-50'}`} onClick={() => { if (isNew) onMarkRead?.(docId); navigate(`/document?type=${type.toLowerCase().replace(' ', '')}`); }}>
+      <td className="px-6 py-3 max-w-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="flex items-center justify-center w-2 mr-1 shrink-0">
+            {isNew && (
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+              </span>
+            )}
+          </span>
+          <span className="shrink-0">{getDocIcon()}</span>
+          <span className="font-medium text-stone-800 truncate">{name}</span>
         </div>
       </td>
       <td className="px-6 py-3">
@@ -2309,23 +2097,6 @@ function DocRow({ docId, name, type, date, labels, creatorName, creatorType, onD
             getUserAvatar(18)
           )}
           <span className="text-sm">{creatorName}</span>
-        </div>
-      </td>
-      <td className="px-6 py-3">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          {labels.map(label => (
-            <button
-              key={label}
-              onClick={(e) => { e.stopPropagation(); onLabelClick?.(label); }}
-              className="inline-flex items-center gap-1 bg-stone-100 text-stone-600 text-xs font-medium px-2 py-0.5 rounded-full hover:bg-stone-200 hover:text-stone-800 transition-colors cursor-pointer"
-            >
-              <Tag className="w-3 h-3 text-stone-400 shrink-0" />
-              {label}
-            </button>
-          ))}
-          {labels.length === 0 && (
-            <span className="text-stone-300 text-xs">—</span>
-          )}
         </div>
       </td>
       <td className="px-6 py-3 text-stone-500 text-sm whitespace-nowrap">{formatDate(date)}</td>
@@ -2341,17 +2112,6 @@ function DocRow({ docId, name, type, date, labels, creatorName, creatorType, onD
             <>
               <div className="fixed inset-0 z-10" onClick={(e) => { e.stopPropagation(); setIsMenuOpen(false); }} />
               <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-stone-200 rounded-lg shadow-xl z-20 overflow-hidden py-1">
-                <button
-                  onClick={(e) => { 
-                    e.stopPropagation(); 
-                    setIsMenuOpen(false); 
-                    onSetLabel?.(docId); 
-                  }}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
-                >
-                  <Tag className="w-4 h-4 text-stone-400" />
-                  设置标签
-                </button>
                 <button
                   onClick={(e) => { 
                     e.stopPropagation(); 
@@ -2467,17 +2227,8 @@ function ActivityFeed({ activities }: ActivityFeedProps) {
     const sorted = [...activities].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
     const now = new Date();
-    // Use UTC-based date calculations to match the UTC timestamps in the data
     const todayUTC = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
-    const yesterdayUTC = todayUTC - 86400000; // 1 day in ms
-
-    // Calculate start of this week (Monday) in UTC
-    const nowDayOfWeek = now.getUTCDay(); // 0=Sun, 1=Mon, ...
-    const diffToMonday = nowDayOfWeek === 0 ? 6 : nowDayOfWeek - 1;
-    const startOfWeekUTC = todayUTC - diffToMonday * 86400000;
-
-    // Start of last week (Monday) in UTC
-    const startOfLastWeekUTC = startOfWeekUTC - 7 * 86400000;
+    const yesterdayUTC = todayUTC - 86400000;
     
     sorted.forEach(activity => {
       const date = new Date(activity.timestamp);
@@ -2488,8 +2239,8 @@ function ActivityFeed({ activities }: ActivityFeedProps) {
         key = isZh ? '今天' : 'Today';
       } else if (activityDayUTC === yesterdayUTC) {
         key = isZh ? '昨天' : 'Yesterday';
-      } else if (activityDayUTC >= startOfWeekUTC) {
-        // This week but before yesterday — show weekday + date
+      } else {
+        // 所有更早的日期都按天显示：周几 + 月/日
         const utcDay = date.getUTCDay();
         const utcMonth = date.getUTCMonth();
         const utcDate = date.getUTCDate();
@@ -2500,17 +2251,6 @@ function ActivityFeed({ activities }: ActivityFeedProps) {
           const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
           const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
           key = `${weekdays[utcDay]}, ${months[utcMonth]} ${utcDate}`;
-        }
-      } else if (activityDayUTC >= startOfLastWeekUTC) {
-        key = isZh ? '上周' : 'Last Week';
-      } else {
-        const utcYear = date.getUTCFullYear();
-        const utcMonth = date.getUTCMonth();
-        if (isZh) {
-          key = `${utcYear} 年 ${utcMonth + 1} 月`;
-        } else {
-          const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-          key = `${months[utcMonth]} ${utcYear}`;
         }
       }
       
