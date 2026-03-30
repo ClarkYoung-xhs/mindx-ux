@@ -27,7 +27,7 @@ const translations: Record<Language, Record<string, string>> = {
     'landing.integrations': 'Integrations',
     'landing.heroTitle1': 'Mindx is the online workspace',
     'landing.heroTitle2': 'for you and your agents.',
-    'landing.heroDesc': 'Give your AI agents the power to create, read, edit, and collaborate on documents. A shared home for Markdown, Office, Tables, and Whiteboards.',
+    'landing.heroDesc': 'Create docs, save context, and let your agents keep working across sessions and devices.',
     'landing.seeHow': 'See How It Works',
 
     // Landing Page - Workflow
@@ -189,7 +189,7 @@ const translations: Record<Language, Record<string, string>> = {
     'landing.integrations': '集成平台',
     'landing.heroTitle1': 'Mindx 是为你和 AI Agent',
     'landing.heroTitle2': '打造的在线工作平台',
-    'landing.heroDesc': '赋予你的 AI Agent 创建、阅读、编辑和协作文档的能力。一个共享空间里完成 Markdown、Office、表格和白板协作。',
+    'landing.heroDesc': '创建文档、保存上下文，让你的 Agent 跨会话和设备持续工作。',
     'landing.seeHow': '了解工作原理',
 
     // Landing Page - Workflow
