@@ -14,7 +14,8 @@ import {
   Code,
   Cpu,
   Briefcase,
-  Layers
+  Layers,
+  Search
 } from 'lucide-react';
 import AuthModal from '../components/AuthModal';
 import { useLanguage, LanguageSwitcher } from '../i18n/LanguageContext';
@@ -55,9 +56,7 @@ export default function LandingPage() {
   const features = [
     { icon: <FileText className="w-5 h-5 text-stone-600" />, title: t('landing.feat1Title'), desc: t('landing.feat1Desc') },
     { icon: <Database className="w-5 h-5 text-stone-600" />, title: t('landing.feat2Title'), desc: t('landing.feat2Desc') },
-    { icon: <Bot className="w-5 h-5 text-stone-600" />, title: t('landing.feat3Title'), desc: t('landing.feat3Desc') },
-    { icon: <Users className="w-5 h-5 text-stone-600" />, title: t('landing.feat4Title'), desc: t('landing.feat4Desc') },
-    { icon: <RefreshCw className="w-5 h-5 text-stone-600" />, title: t('landing.feat5Title'), desc: t('landing.feat5Desc') },
+    { icon: <Search className="w-5 h-5 text-stone-600" />, title: t('landing.feat3Title'), desc: t('landing.feat3Desc') },
   ];
 
   return (
