@@ -1312,11 +1312,11 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                 {/* Document table */}
                 <div>
                     <div className="border border-stone-200/80 rounded-xl bg-white shadow-[0_2px_12px_rgba(0,0,0,0.02)]" style={{ overflow: 'visible' }}>
-                  <table className="w-full text-left text-sm">
+                  <table className="w-full text-left text-sm table-fixed">
                     <thead className="bg-stone-50/50 text-stone-500 border-b border-stone-200/80 rounded-t-xl [&>tr>th:first-child]:rounded-tl-xl [&>tr>th:last-child]:rounded-tr-xl">
                       <tr>
                         {/* Name column with Type filter */}
-                        <th className="px-6 py-3 font-medium bg-stone-50/50">
+                        <th className="px-6 py-3 font-medium bg-stone-50/50 w-[45%]">
                           <div className="relative inline-flex items-center">
                             <button
                               onClick={() => { setIsTypeFilterOpen(!isTypeFilterOpen); setIsSortMenuOpen(false); }}
@@ -1353,10 +1353,10 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                         </th>
 
                         {/* Owner column (plain label) */}
-                        <th className="px-6 py-3 font-medium">{t('docs.owner')}</th>
+                        <th className="px-4 py-3 font-medium w-[180px]">{t('docs.owner')}</th>
 
                         {/* Date column with Sort toggle */}
-                        <th className="px-6 py-3 font-medium whitespace-nowrap">
+                        <th className="px-4 py-3 font-medium whitespace-nowrap w-[160px]">
                           <div className="relative inline-flex items-center">
                             <button
                               onClick={() => { setIsSortMenuOpen(!isSortMenuOpen); setIsTypeFilterOpen(false); }}
@@ -1392,7 +1392,7 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                           </div>
                         </th>
 
-                        <th className="px-6 py-3 font-medium text-right"></th>
+                        <th className="px-3 py-3 font-medium text-right w-[48px]"></th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-stone-100">
@@ -2089,18 +2089,20 @@ function DocRow({ docId, name, type, date, creatorName, creatorType, isNew, onDe
           <span className="font-medium text-stone-800 truncate">{name}</span>
         </div>
       </td>
-      <td className="px-6 py-3">
-        <div className="flex items-center gap-2 text-stone-500">
-          {creatorType === 'agent' ? (
-            getAgentAvatar(creatorName, 18)
-          ) : (
-            getUserAvatar(18)
-          )}
-          <span className="text-sm">{creatorName}</span>
+      <td className="px-4 py-3">
+        <div className="flex items-center gap-2 text-stone-500 min-w-0">
+          <span className="shrink-0">
+            {creatorType === 'agent' ? (
+              getAgentAvatar(creatorName, 18)
+            ) : (
+              getUserAvatar(18)
+            )}
+          </span>
+          <span className="text-sm truncate">{creatorName}</span>
         </div>
       </td>
-      <td className="px-6 py-3 text-stone-500 text-sm whitespace-nowrap">{formatDate(date)}</td>
-      <td className="px-6 py-3 text-right">
+      <td className="px-4 py-3 text-stone-500 text-sm whitespace-nowrap">{formatDate(date)}</td>
+      <td className="px-3 py-3 text-right">
         <div className="relative inline-block">
           <button 
             className="p-1 rounded hover:bg-stone-200 text-stone-400 opacity-0 group-hover:opacity-100 transition-all" 
