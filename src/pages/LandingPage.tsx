@@ -77,12 +77,6 @@ export default function LandingPage() {
               Skills
             </Link>
             <LanguageSwitcher />
-            <button 
-              onClick={() => setShowAuth(true)}
-              className="text-sm font-medium text-stone-500 hover:text-stone-900 transition-colors"
-            >
-              {t('nav.signIn')}
-            </button>
             <button
               onClick={() => setShowAuth(true)}
               className="text-sm font-medium bg-stone-900 text-white px-4 py-2 rounded-md hover:bg-stone-800 transition-colors"

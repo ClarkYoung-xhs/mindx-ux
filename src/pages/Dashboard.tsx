@@ -770,9 +770,16 @@ export default function Dashboard() {
   const [workspaces, setWorkspaces] = useState(initialWorkspaces);
   const [activeWorkspaceId, setActiveWorkspaceId] = useState(initialWorkspaces[0]?.id ?? 'w1');
   const [agents, setAgents] = useState(initialAgents);
+  const isNewUser = localStorage.getItem('mindx_is_new_user') === 'true';
+  const initLang = localStorage.getItem('mindx_lang') || 'en';
   const [permissions, setPermissions] = useState(initialPermissions);
-  const [documents, setDocuments] = useState(initialDocuments);
-  const [activities, setActivities] = useState(initialActivities);
+  const [documents, setDocuments] = useState(() => {
+    if (isNewUser) {
+      return [{ id: 'welcome', workspaceId: 'w1', name: initLang === 'zh' ? '欢迎使用 MindX' : 'Welcome to MindX', type: 'Smart Doc', date: initLang === 'zh' ? '刚刚' : 'Just now', lastModified: new Date().toISOString(), lastViewed: new Date().toISOString(), labels: ['Getting Started'], creatorName: 'Agent', creatorType: 'agent' as const, size: 8192, isNew: true, isRead: false, source: 'normal' as const }];
+    }
+    return initialDocuments;
+  });
+  const [activities, setActivities] = useState(() => isNewUser ? [] : initialActivities);
   const [activeTab, setActiveTabState] = useState<'documents' | 'activity' | 'agents' | 'members' | 'settings' | 'labels' | 'skills'>(() => {
     const params = new URLSearchParams(window.location.search);
     const tab = params.get('tab');
@@ -796,7 +803,9 @@ export default function Dashboard() {
   const [agentListMenuOpen, setAgentListMenuOpen] = useState<string | null>(null);
   const [selectedSkillId, setSelectedSkillId] = useState<string | null>(null);
   const [docSceneFilter, setDocSceneFilter] = useState<'all' | 'today' | 'unread' | 'scheduled' | 'webclip' | 'memory'>('all');
-  const [absenceSummaryDismissed, setAbsenceSummaryDismissed] = useState(false);
+  const [absenceSummaryDismissed, setAbsenceSummaryDismissed] = useState(() => localStorage.getItem('mindx_absence_dismissed') === 'true');
+  const [guideDismissed, setGuideDismissedState] = useState(() => localStorage.getItem('mindx_guide_dismissed') === 'true');
+  const setGuideDismissed = (v: boolean) => { setGuideDismissedState(v); if (v) localStorage.setItem('mindx_guide_dismissed', 'true'); };
   const [activityFilterOwner, setActivityFilterOwner] = useState<string>('all');
 
   // Document actions
@@ -884,8 +893,32 @@ export default function Dashboard() {
       role: 'Editor'
     };
     setPermissions([...permissions, newPermission]);
+    
+    // Auto-create a welcome document, clear initial demo data for new user
+    const welcomeDoc: WorkspaceDoc = {
+      id: `d${Date.now()}`,
+      workspaceId: activeWorkspaceId,
+      name: lang === 'zh' ? '欢迎使用 MindX' : 'Welcome to MindX',
+      type: 'Smart Doc',
+      date: lang === 'zh' ? '刚刚' : 'Just now',
+      lastModified: new Date().toISOString(),
+      lastViewed: new Date().toISOString(),
+      labels: ['Getting Started'],
+      creatorName: agentName,
+      creatorType: 'agent',
+      size: 8192,
+      isNew: true,
+      isRead: false,
+      source: 'normal'
+    };
+    setDocuments([welcomeDoc]);
+    setActivities([]);
+    setAbsenceSummaryDismissed(true);
+    localStorage.setItem('mindx_absence_dismissed', 'true');
+    localStorage.setItem('mindx_is_new_user', 'true');
+    
     setShowOnboarding(false);
-    setActiveTab('agents');
+    setActiveTab('documents');
   };
 
   const activeWorkspace = workspaces.find(w => w.id === activeWorkspaceId) ?? workspaces[0];
@@ -1285,6 +1318,44 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                 )}
 
                 {/* Scene filter tabs */}
+                {/* Quick Start Guide — shown for new users */}
+                {!guideDismissed && documents.length <= 1 && (
+                  <div className="mt-4 mb-2">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-sm font-semibold text-stone-900">🚀 {lang === 'zh' ? '快速上手' : 'Quick Start'}</h3>
+                      <button onClick={() => setGuideDismissed(true)} className="text-xs text-stone-400 hover:text-stone-600 transition-colors">
+                        {lang === 'zh' ? '关闭' : 'Dismiss'}
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-3 gap-3">
+                      <button
+                        onClick={() => setActiveTab('agents')}
+                        className="group p-5 rounded-xl cursor-pointer border border-stone-200/80 bg-gradient-to-br from-blue-50 to-indigo-50 hover:shadow-md hover:border-blue-200 transition-all text-left"
+                      >
+                        <div className="text-3xl mb-3">🤖</div>
+                        <div className="text-sm font-semibold text-stone-900 mb-1">{lang === 'zh' ? '连接 Agent' : 'Connect Agent'}</div>
+                        <p className="text-[11px] text-stone-500 leading-relaxed">{lang === 'zh' ? '复制提示词，让 AI Agent 接入你的空间' : 'Copy prompt to connect your AI Agent'}</p>
+                      </button>
+                      <button
+                        onClick={() => setActiveTab('skills')}
+                        className="group p-5 rounded-xl cursor-pointer border border-stone-200/80 bg-gradient-to-br from-amber-50 to-orange-50 hover:shadow-md hover:border-amber-200 transition-all text-left"
+                      >
+                        <div className="text-3xl mb-3">⚡</div>
+                        <div className="text-sm font-semibold text-stone-900 mb-1">{lang === 'zh' ? '安装 Skill' : 'Install Skills'}</div>
+                        <p className="text-[11px] text-stone-500 leading-relaxed">{lang === 'zh' ? '为你的 Agent 扩展文档创作等强大能力' : 'Extend your Agent with powerful capabilities'}</p>
+                      </button>
+                      <button
+                        onClick={() => setActiveTab('documents')}
+                        className="group p-5 rounded-xl cursor-pointer border border-stone-200/80 bg-gradient-to-br from-emerald-50 to-teal-50 hover:shadow-md hover:border-emerald-200 transition-all text-left"
+                      >
+                        <div className="text-3xl mb-3">📂</div>
+                        <div className="text-sm font-semibold text-stone-900 mb-1">{lang === 'zh' ? '管理资产' : 'Manage Assets'}</div>
+                        <p className="text-[11px] text-stone-500 leading-relaxed">{lang === 'zh' ? '查看和管理你的文档、表格、白板等' : 'View and manage your docs, tables & more'}</p>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex items-center gap-1 mt-[26px] mb-4">
                   {([
                     { key: 'all', label: lang === 'zh' ? '全部文档' : 'All', icon: <FileText className="w-3.5 h-3.5" /> },
