@@ -32,7 +32,9 @@ import {
   Globe,
   Lock,
   Pencil,
-  UserMinus
+  UserMinus,
+  Home,
+  Image
 } from 'lucide-react';
 
 interface Paragraph {
@@ -118,6 +120,25 @@ export default function DocumentEditor() {
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [showCollaboratorsSidebar, setShowCollaboratorsSidebar] = useState(false);
+  
+  // Home button with doc list popup
+  const [showDocList, setShowDocList] = useState(false);
+  
+  // Export submenu state
+  const [showExportSubmenu, setShowExportSubmenu] = useState(false);
+  
+  // Mock document list (从 Dashboard 获取的文档列表)
+  const currentDocId = 'd1'; // 当前正在查看的文档 ID (实际应该从 URL 参数获取)
+  const allDocs = [
+    { id: 'd1', name: 'Project Alpha Architecture', type: 'Smart Doc' },
+    { id: 'd6', name: 'Claude & Maya: Feature Discussion', type: 'Smart Doc' },
+    { id: 'd4', name: 'Competitor Analysis', type: 'Markdown' },
+    { id: 'd2', name: 'Q3 Financial Projections', type: 'Table' },
+    { id: 'd3', name: 'User Flow Diagram', type: 'Whiteboard' },
+    { id: 'd5', name: 'Marketing Strategy', type: 'Smart Doc' },
+    { id: 'd7', name: 'Industry Digest — Mar 27', type: 'Markdown' },
+    { id: 'd13', name: 'Daily Report — Mar 27', type: 'Markdown' },
+  ];
   
   // Modal states
   const [duplicateModalOpen, setDuplicateModalOpen] = useState(false);
@@ -729,9 +750,86 @@ export default function DocumentEditor() {
       {/* Header */}
       <header className="h-14 flex items-center justify-between px-4 border-b border-stone-200 bg-white/80 backdrop-blur-md sticky top-0 z-10">
         <div className="flex items-center gap-4">
-          <button onClick={() => navigate('/dashboard')} className="p-2 rounded-md hover:bg-stone-100 text-stone-500 transition-colors">
-            <ArrowLeft className="w-4 h-4" />
-          </button>
+          <div className="relative">
+            <button 
+              onClick={() => navigate('/dashboard')} 
+              onMouseEnter={() => setShowDocList(true)}
+              onMouseLeave={() => setShowDocList(false)}
+              className="p-2 rounded-md hover:bg-stone-100 text-stone-500 transition-colors"
+              title="返回主页"
+            >
+              <Home className="w-4 h-4" />
+            </button>
+            
+            {/* Document List Popup */}
+            {showDocList && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+                className="absolute left-0 top-full mt-1 w-80 bg-white border border-stone-200 rounded-xl shadow-2xl z-50 overflow-hidden"
+                onMouseEnter={() => setShowDocList(true)}
+                onMouseLeave={() => setShowDocList(false)}
+              >
+                <div className="px-4 py-3 border-b border-stone-100 bg-stone-50">
+                  <p className="text-xs font-semibold text-stone-600 uppercase tracking-wider">快速切换文档</p>
+                </div>
+                <div className="max-h-96 overflow-y-auto custom-scrollbar">
+                  {allDocs.map((doc) => {
+                    const isCurrentDoc = doc.id === currentDocId;
+                    return (
+                      <button
+                        key={doc.id}
+                        onClick={() => {
+                          if (!isCurrentDoc) {
+                            setShowDocList(false);
+                            // Navigate to the selected document
+                            navigate(`/doc?id=${doc.id}${doc.type === 'Smart Doc' ? '&type=chatlog' : ''}`);
+                          }
+                        }}
+                        disabled={isCurrentDoc}
+                        className={`w-full px-4 py-3 transition-colors text-left flex items-start gap-3 group border-l-2 ${
+                          isCurrentDoc 
+                            ? 'bg-blue-50 border-blue-500 cursor-default' 
+                            : 'border-transparent hover:bg-stone-50 hover:border-stone-300'
+                        }`}
+                      >
+                        <div className="mt-0.5 flex-shrink-0">
+                          <FileText className={`w-4 h-4 ${
+                            isCurrentDoc 
+                              ? 'text-blue-600' 
+                              : 'text-stone-400 group-hover:text-stone-600'
+                          }`} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm truncate font-medium ${
+                            isCurrentDoc 
+                              ? 'text-blue-900' 
+                              : 'text-stone-900'
+                          }`}>
+                            {doc.name}
+                          </p>
+                          <p className={`text-xs truncate mt-0.5 ${
+                            isCurrentDoc 
+                              ? 'text-blue-600' 
+                              : 'text-stone-500'
+                          }`}>
+                            {doc.type}
+                          </p>
+                        </div>
+                        {isCurrentDoc && (
+                          <div className="flex-shrink-0 mt-1">
+                            <div className="w-2 h-2 rounded-full bg-blue-500" />
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             <span className="px-2 py-1 rounded bg-stone-100 text-stone-600 text-xs font-medium border border-stone-200">
               {isChatLog ? 'Chat Log' : 'Markdown'}
@@ -1087,15 +1185,19 @@ export default function DocumentEditor() {
             
             {showMoreMenu && (
               <>
-                <div className="fixed inset-0 z-10" onClick={() => setShowMoreMenu(false)} />
+                <div className="fixed inset-0 z-10" onClick={() => {
+                  setShowMoreMenu(false);
+                  setShowExportSubmenu(false);
+                }} />
                 <motion.div 
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="absolute right-0 top-full mt-1 w-48 bg-white border border-stone-200 rounded-lg shadow-xl z-20 overflow-hidden py-1"
+                  className="absolute right-0 top-full mt-1 w-48 bg-white border border-stone-200 rounded-lg shadow-xl z-20 overflow-visible py-1"
                 >
                   <button
                     onClick={() => {
                       setShowMoreMenu(false);
+                      setShowExportSubmenu(false);
                       setDuplicateName('副本-Project Alpha Architecture');
                       setDuplicateModalOpen(true);
                     }}
@@ -1104,16 +1206,79 @@ export default function DocumentEditor() {
                     <FilePlus2 className="w-4 h-4 text-stone-400" />
                     创建副本
                   </button>
-                  <button
-                    onClick={() => {
-                      setShowMoreMenu(false);
-                      setLabelModalOpen(true);
+                  
+                  {/* Export with submenu */}
+                  <div 
+                    className="relative"
+                    onMouseEnter={() => {
+                      console.log('鼠标进入导出区域');
+                      setShowExportSubmenu(true);
                     }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
+                    onMouseLeave={() => {
+                      console.log('鼠标离开导出区域');
+                      setShowExportSubmenu(false);
+                    }}
                   >
-                    <Tag className="w-4 h-4 text-stone-400" />
-                    设置标签
-                  </button>
+                    <button
+                      className="w-full flex items-center justify-between px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Download className="w-4 h-4 text-stone-400" />
+                        导出为
+                      </div>
+                      <ChevronRight className="w-3.5 h-3.5 text-stone-400" />
+                    </button>
+                    
+                    {/* Export Submenu */}
+                    {showExportSubmenu && (
+                      <>
+                        {console.log('正在渲染二级菜单, showExportSubmenu:', showExportSubmenu)}
+                        <motion.div
+                          initial={{ opacity: 0, x: 10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ duration: 0.15 }}
+                          className="absolute right-full top-0 mr-1 w-40 bg-white border border-stone-200 rounded-lg shadow-xl overflow-hidden py-1 z-50"
+                        >
+                        <button
+                          onClick={() => {
+                            setShowMoreMenu(false);
+                            setShowExportSubmenu(false);
+                            // TODO: 实现导出为 Word 功能
+                            console.log('导出为 Word');
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
+                        >
+                          <FileText className="w-4 h-4 text-blue-500" />
+                          Word
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowMoreMenu(false);
+                            setShowExportSubmenu(false);
+                            // TODO: 实现导出为 PDF 功能
+                            console.log('导出为 PDF');
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
+                        >
+                          <FileText className="w-4 h-4 text-red-500" />
+                          PDF
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowMoreMenu(false);
+                            setShowExportSubmenu(false);
+                            // TODO: 实现导出为图片功能
+                            console.log('导出为图片');
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
+                        >
+                          <Image className="w-4 h-4 text-purple-500" />
+                          图片
+                        </button>
+                      </motion.div>
+                      </>
+                    )}
+                  </div>
                 </motion.div>
               </>
             )}
