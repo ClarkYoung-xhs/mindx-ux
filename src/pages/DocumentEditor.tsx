@@ -34,7 +34,10 @@ import {
   Pencil,
   UserMinus,
   Home,
-  Image
+  Image,
+  Undo2,
+  Redo2,
+  Search
 } from 'lucide-react';
 
 interface Paragraph {
@@ -1389,6 +1392,51 @@ export default function DocumentEditor() {
                       </>
                     )}
                   </div>
+                  
+                  {/* Divider */}
+                  <div className="h-px bg-stone-200 my-1" />
+                  
+                  {/* Undo */}
+                  <button
+                    onClick={() => {
+                      setShowMoreMenu(false);
+                      // TODO: 实现撤销功能
+                      console.log('撤销');
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
+                  >
+                    <Undo2 className="w-4 h-4 text-stone-400" />
+                    撤销
+                  </button>
+                  
+                  {/* Redo */}
+                  <button
+                    onClick={() => {
+                      setShowMoreMenu(false);
+                      // TODO: 实现重做功能
+                      console.log('重做');
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
+                  >
+                    <Redo2 className="w-4 h-4 text-stone-400" />
+                    重做
+                  </button>
+                  
+                  {/* Divider */}
+                  <div className="h-px bg-stone-200 my-1" />
+                  
+                  {/* Find and Replace */}
+                  <button
+                    onClick={() => {
+                      setShowMoreMenu(false);
+                      // TODO: 实现查找替换功能
+                      console.log('查找替换');
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
+                  >
+                    <Search className="w-4 h-4 text-stone-400" />
+                    查找替换
+                  </button>
                 </motion.div>
               </>
             )}
