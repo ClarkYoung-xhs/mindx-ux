@@ -18,6 +18,7 @@ import {
   Sparkles,
   ChevronDown,
   Bot,
+  Target,
   Users,
   User,
   Table,
@@ -44,7 +45,18 @@ import {
   EyeOff,
   Timer,
   Bookmark,
-  Brain
+  Brain,
+  Database,
+  Cloud,
+  ChevronRight,
+  Mail,
+  AppWindow,
+  Loader2,
+  Network,
+  Maximize2,
+  Video,
+  Mic,
+  RefreshCw
 } from 'lucide-react';
 
 const initialWorkspaces = [
@@ -817,11 +829,11 @@ export default function Dashboard() {
     return initialDocuments;
   });
   const [activities, setActivities] = useState(() => isNewUser ? [] : initialActivities);
-  const [activeTab, setActiveTabState] = useState<'documents' | 'activity' | 'agents' | 'members' | 'settings' | 'labels' | 'skills'>(() => {
+  const [activeTab, setActiveTabState] = useState<'documents' | 'activity' | 'agents' | 'members' | 'settings' | 'labels' | 'skills' | 'memory'>(() => {
     const params = new URLSearchParams(window.location.search);
     const tab = params.get('tab');
-    if (tab && ['documents', 'activity', 'agents', 'members', 'settings', 'labels', 'skills'].includes(tab)) {
-      return tab as 'documents' | 'activity' | 'agents' | 'members' | 'settings' | 'labels' | 'skills';
+    if (tab && ['documents', 'activity', 'agents', 'members', 'settings', 'labels', 'skills', 'memory'].includes(tab)) {
+      return tab as 'documents' | 'activity' | 'agents' | 'members' | 'settings' | 'labels' | 'skills' | 'memory';
     }
     return 'documents';
   });
@@ -837,6 +849,8 @@ export default function Dashboard() {
   const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
   const [isTypeFilterOpen, setIsTypeFilterOpen] = useState(false);
   const [isAgentMenuOpen, setIsAgentMenuOpen] = useState(false);
+  const [isIntegrationMenuOpen, setIsIntegrationMenuOpen] = useState(false);
+  const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
   const [agentListMenuOpen, setAgentListMenuOpen] = useState<string | null>(null);
   const [selectedSkillId, setSelectedSkillId] = useState<string | null>(null);
   const [docSceneFilter, setDocSceneFilter] = useState<'all' | 'today' | 'unread' | 'scheduled' | 'webclip' | 'memory'>('all');
@@ -855,7 +869,7 @@ export default function Dashboard() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const setActiveTab = (tab: 'documents' | 'activity' | 'agents' | 'members' | 'settings' | 'labels' | 'skills') => {
+  const setActiveTab = (tab: 'documents' | 'activity' | 'agents' | 'members' | 'settings' | 'labels' | 'skills' | 'memory') => {
     setActiveTabState(tab);
     const params = new URLSearchParams(window.location.search);
     params.set('tab', tab);
@@ -1196,9 +1210,12 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
             <span className="text-sm font-semibold tracking-tight">MindX</span>
           </Link>
         </div>
-        
-        <div className="flex-1 px-3 space-y-0.5 overflow-y-auto">
-          <div className="space-y-0.5">
+        <div className="flex-1 px-3 py-4 space-y-6 overflow-y-auto">
+          {/* Workspace Group */}
+          <div className="space-y-1">
+            <div className="px-3 mb-2">
+              <span className="text-[11px] font-bold text-stone-400 uppercase tracking-widest">Workspace</span>
+            </div>
             <NavItem 
               icon={<FileText className="w-4 h-4" />} 
               label={t('sidebar.documents')} 
@@ -1211,13 +1228,13 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
               active={activeTab === 'activity'} 
               onClick={() => { setActiveTab('activity'); setIsCreatingAgent(false); }}
             />
+          </div>
 
-            <NavItem 
-              icon={<Bot className="w-4 h-4" />} 
-              label={t('sidebar.agentAccounts')} 
-              active={activeTab === 'agents'} 
-              onClick={() => { setActiveTab('agents'); setIsCreatingAgent(false); setSelectedAgentId(null); }}
-            />
+          {/* Skills Group */}
+          <div className="space-y-1">
+            <div className="px-3 mb-2">
+              <span className="text-[11px] font-bold text-stone-400 uppercase tracking-widest">Skills</span>
+            </div>
             <NavItem 
               icon={<Sparkles className="w-4 h-4" />} 
               label="Skills" 
@@ -1225,10 +1242,23 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
               onClick={() => { setActiveTab('skills'); setIsCreatingAgent(false); setSelectedAgentId(null); }}
             />
           </div>
+
+          {/* Memory Group */}
+          <div className="space-y-1">
+            <div className="px-3 mb-2">
+              <span className="text-[11px] font-bold text-stone-400 uppercase tracking-widest">Memory</span>
+            </div>
+            <NavItem 
+              icon={<Brain className="w-4 h-4" />} 
+              label={lang === 'zh' ? '记忆 (Memory)' : 'Memory'} 
+              active={activeTab === 'memory'} 
+              onClick={() => { setActiveTab('memory'); setIsCreatingAgent(false); }}
+            />
+          </div>
         </div>
 
-        <div className="shrink-0 border-t border-stone-200 px-3 py-2 bg-[#F7F7F5]">
-          <div className="flex items-center gap-2 px-2 py-1.5">
+        <div className="shrink-0 border-t border-stone-200 px-3 py-2 bg-[#F7F7F5] space-y-1">
+          <div className="flex items-center gap-2 px-2 py-1.5 pt-2 border-t border-stone-200/50">
             <div className="w-7 h-7 rounded-full bg-stone-200 flex items-center justify-center text-stone-700 text-xs font-semibold">
               {currentUser.name.charAt(0)}
             </div>
@@ -1536,6 +1566,7 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                             isNew={doc.isNew}
                             onDelete={(id) => setDocuments(prev => prev.filter(d => d.id !== id))}
                             onMarkRead={(id) => setDocuments(prev => prev.map(d => d.id === id ? { ...d, isNew: false, isRead: true } : d))}
+                            onUpgradeRequirement={() => setIsPricingModalOpen(true)}
                           />
                         ))
                       )}
@@ -1587,8 +1618,16 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
               </motion.div>
             )}
 
-            {activeTab === 'agents' && (
+            {activeTab === 'settings' && (
               <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="max-w-4xl"
+              >
+                {/* Embedded Agents Settings */}
+                <div className="mb-12 pb-8 border-b border-stone-200/80">
+                  <h3 className="text-xl font-bold text-stone-900 mb-6">Agent Configuration</h3>
+<motion.div 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="space-y-6"
@@ -1932,17 +1971,7 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                     );
                   })
                 )}
-              </motion.div>
-            )}
-
-
-            {activeTab === 'settings' && (
-              <motion.div 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="max-w-2xl"
-              >
-                {/* Storage Capacity Bar */}
+                              {/* Storage Capacity Bar */}
                 <div className="bg-white border border-stone-200/80 rounded-xl shadow-[0_2px_12px_rgba(0,0,0,0.02)] p-6 mb-6">
                   {(() => {
                     const totalCapacityBytes = 2 * 1024 * 1024 * 1024; // 2GB in bytes
@@ -2084,7 +2113,10 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                   {lang === 'zh' ? '退出登录' : 'Sign Out'}
                 </button>
 
-              </motion.div>
+              
+</motion.div>
+                </div>
+</motion.div>
             )}
 
             {activeTab === 'skills' && (
@@ -2179,9 +2211,451 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
               </motion.div>
             )}
 
+            {activeTab === 'memory' && (
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="space-y-8 pb-12 w-full max-w-6xl relative"
+              >
+                {/* Ambient Background Glows */}
+                <div className="absolute top-[10%] left-[-10%] w-[40%] h-[40%] bg-blue-300/10 rounded-full blur-[120px] pointer-events-none -z-10" />
+                <div className="absolute bottom-[20%] right-[-10%] w-[50%] h-[50%] bg-indigo-300/10 rounded-full blur-[140px] pointer-events-none -z-10" />
+                {/* Global Memory Search */}
+                <div className="relative w-full max-w-5xl bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden flex items-center focus-within:ring-2 focus-within:ring-stone-200/50 focus-within:border-stone-400 transition-all">
+                  <div className="pl-5 pr-3 py-4 text-stone-400">
+                    <Search className="w-5 h-5" />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder={lang === 'zh' ? '搜索空间记忆（支持原始文档、节点、决策提炼内容）...' : 'Search memories (docs, nodes, insights, decisions)...'}
+                    className="flex-1 bg-transparent text-sm text-stone-800 placeholder-stone-400 focus:outline-none py-4"
+                  />
+                  <div className="px-5 text-xs font-medium text-stone-400 flex items-center gap-1 border-l border-stone-100 py-4 h-full bg-stone-50/50">
+                    <span className="bg-white rounded px-1.5 py-0.5 border border-stone-200 shadow-sm font-sans">⌘</span>
+                    <span className="bg-white rounded px-1.5 py-0.5 border border-stone-200 shadow-sm font-sans">K</span>
+                  </div>
+                </div>
+
+                <div className="space-y-12">
+                  {/* Top: Mind Config Nodes */}
+                  <div className="grid lg:grid-cols-2 gap-8 items-stretch">
+                    {/* Who am I (Core User Profile) */}
+                    <section className="h-full flex flex-col bg-white/60 backdrop-blur-2xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-2xl p-6 relative overflow-hidden group transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)]">
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50/50 rounded-bl-full -mr-16 -mt-16 transition-transform group-hover:scale-110" />
+                      <div className="flex items-center justify-between mb-5 relative z-10">
+                        <h2 className="text-sm font-bold text-stone-900 flex items-center gap-2">
+                          <User className="w-4 h-4 text-indigo-500" />
+                          {lang === 'zh' ? '关于我 (Who am I)' : 'Who am I'}
+                        </h2>
+                        <div className="flex items-center gap-2">
+                          <button className="text-[10px] font-bold bg-stone-100 text-stone-600 px-2 py-1 rounded hover:bg-stone-200 transition-colors">
+                            {lang === 'zh' ? '编辑画像' : 'Edit Profile'}
+                          </button>
+                          <button className="p-1 rounded-md text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-colors" title={lang === 'zh' ? '作为独立文档打开' : 'Open as Document'}>
+                            <Maximize2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="space-y-3 relative z-10">
+                        <div className="bg-white/70 rounded-xl p-3.5 border border-stone-200/50 hover:bg-white hover:border-stone-300/60 transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-0.5 backdrop-blur-sm cursor-pointer group/card">
+                          <h4 className="text-[11px] font-semibold text-stone-500 uppercase tracking-wider mb-2 flex items-center justify-between">
+                            {lang === 'zh' ? '核心身份 (Identity)' : 'Identity'}
+                            <ExternalLink className="w-3 h-3 opacity-0 group-hover/card:opacity-100 transition-opacity" />
+                          </h4>
+                          <p className="text-xs text-stone-700 leading-relaxed font-medium">前沿科技创业者，独立产品经理。偏好极致体验和极简设计，推崇 Agent-Native 理念。</p>
+                        </div>
+                        <div className="bg-white/70 rounded-xl p-3.5 border border-stone-200/50 hover:bg-white hover:border-stone-300/60 transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-0.5 backdrop-blur-sm cursor-pointer group/card">
+                          <h4 className="text-[11px] font-semibold text-stone-500 uppercase tracking-wider mb-2 flex items-center justify-between">
+                            {lang === 'zh' ? '交互原则 (Directives)' : 'Directives'}
+                            <ExternalLink className="w-3 h-3 opacity-0 group-hover/card:opacity-100 transition-opacity" />
+                          </h4>
+                          <p className="text-xs text-stone-700 leading-relaxed font-medium">1. 沟通直入主题，拒绝废话套话。<br/>2. 代码给出完整可执行的实现。<br/>3. 分析问题遵循第一性原理。</p>
+                        </div>
+                      </div>
+                    </section>
+
+                    {/* Goal (Current Objectives) */}
+                    <section className="bg-white/60 backdrop-blur-2xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-2xl p-6 relative overflow-hidden group transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)]">
+                      <div className="flex items-center justify-between mb-4 relative z-10">
+                        <h2 className="text-sm font-bold text-stone-900 flex items-center gap-2">
+                          <Target className="w-4 h-4 text-orange-500" />
+                          {lang === 'zh' ? '当前目标 (Goal)' : 'Current Goal'}
+                        </h2>
+                        <div className="flex items-center gap-2">
+                          <button className="text-[10px] font-bold bg-stone-100 text-stone-600 px-2 py-1 rounded hover:bg-stone-200 transition-colors">
+                            {lang === 'zh' ? '更新目标' : 'Update'}
+                          </button>
+                          <button className="p-1 rounded-md text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-colors" title={lang === 'zh' ? '作为独立文档打开' : 'Open as Document'}>
+                            <Maximize2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="space-y-3 relative z-10">
+                        <div className="flex items-start gap-3 p-3.5 rounded-xl border border-stone-200/50 bg-white/70 hover:bg-white hover:border-stone-300/60 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 backdrop-blur-sm cursor-pointer group/goal">
+                          <div className="w-7 h-7 rounded-lg bg-orange-50 flex items-center justify-center shrink-0 mt-0.5">
+                            <span className="text-orange-600 font-bold text-[11px]">1</span>
+                          </div>
+                          <div>
+                            <h4 className="text-[13px] font-semibold text-stone-800">构建 Agent-Native 记忆中枢</h4>
+                            <p className="text-[11px] text-stone-500 mt-1 flex items-center gap-2">
+                              <span>Deadline: Q2</span>
+                              <span className="w-1 h-1 rounded-full bg-stone-300"></span>
+                              <span className="text-orange-600 font-medium">Priority: High</span>
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-3 p-3.5 rounded-xl border border-stone-200/50 bg-white/70 hover:bg-white hover:border-stone-300/60 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 backdrop-blur-sm cursor-pointer group/goal">
+                          <div className="w-7 h-7 rounded-lg bg-orange-50 flex items-center justify-center shrink-0 mt-0.5">
+                            <span className="text-orange-600 font-bold text-[11px]">2</span>
+                          </div>
+                          <div>
+                            <h4 className="text-[13px] font-semibold text-stone-800">完善全平台交互与多端适配体验</h4>
+                            <p className="text-[11px] text-stone-500 mt-1 flex items-center gap-2">
+                              <span>Deadline: May</span>
+                              <span className="w-1 h-1 rounded-full bg-stone-300"></span>
+                              <span className="text-stone-500 font-medium">Priority: Medium</span>
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+
+                  {/* Extracted Key Points Library */}
+                  <div className="grid lg:grid-cols-1 gap-8 items-start">
+                    {/* Key Points */}
+                    <section className="bg-white/60 backdrop-blur-2xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-2xl p-6 transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)]">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-sm font-bold text-stone-900 uppercase tracking-wider">{lang === 'zh' ? '已提炼洞察列表 (Key Points)' : 'Extracted Key Points'}</h3>
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs text-stone-400">1,420 {lang === 'zh' ? '条' : 'items'}</span>
+                          <button className="p-1 rounded-md text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-colors" title={lang === 'zh' ? '作为独立文档打开' : 'Open as Document'}>
+                            <Maximize2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="space-y-3">
+                        {[
+                          { title: 'Q2 产品迭代计划', type: '决策', color: 'bg-emerald-50 text-emerald-600', badgeInfo: 'bg-emerald-100 text-emerald-700', text: '5月底前完成核心UI重构，由设计部牵头', icon: <Tag className="w-4 h-4" /> },
+                          { title: '客户 A 反馈汇总', type: '实体', color: 'bg-indigo-50 text-indigo-600', badgeInfo: 'bg-indigo-100 text-indigo-700', text: '客户核心诉求：性能优化、数据安全、多端协同', icon: <Network className="w-4 h-4" /> },
+                          { title: '行业竞品分析报告', type: '观点', color: 'bg-blue-50 text-blue-600', badgeInfo: 'bg-blue-100 text-blue-700', text: '竞品在移动端体验上更流畅，我们的差异化优势在于AI原生协作', icon: <Brain className="w-4 h-4" /> },
+                        ].map((kp, idx) => (
+                          <div key={idx} className="flex items-center justify-between p-4 rounded-xl border border-stone-200/60 bg-white hover:bg-stone-50 hover:border-stone-200 transition-all group cursor-pointer shadow-sm">
+                            <div className="flex items-center gap-3.5">
+                              <div className={`w-9 h-9 rounded-xl ${kp.color} flex items-center justify-center shrink-0`}>
+                                {kp.icon}
+                              </div>
+                              <div>
+                                <h4 className="text-[13px] font-semibold text-stone-800">{kp.text}</h4>
+                                <p className="text-[11px] text-stone-500 mt-1 flex items-center gap-1"><LinkIcon className="w-3.5 h-3.5" /> {lang === 'zh' ? '源自：' : 'From: '}<span className="hover:text-stone-700 hover:underline">{kp.title}</span></p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <button className="w-full mt-4 py-2.5 text-xs font-semibold text-stone-500 hover:text-stone-800 hover:bg-stone-100/80 rounded-xl transition-colors border border-dashed border-stone-200">
+                        {lang === 'zh' ? '加载更多洞察 (Load More)' : 'Load more insights...'}
+                      </button>
+                    </section>
+                  </div>
+
+                  {/* Add Custom Module Button */}
+                  <button className="w-full py-4 flex items-center justify-center gap-2 rounded-2xl border-[1.5px] border-dashed border-stone-300 bg-stone-50/50 hover:bg-stone-100 hover:border-stone-400 transition-colors text-stone-500 hover:text-stone-700 shadow-sm">
+                    <Plus className="w-5 h-5" />
+                    <span className="text-sm font-semibold tracking-wide">{lang === 'zh' ? '添加自定义记忆文档节点 (Add Custom Memory Doc)' : 'Add Custom Memory Doc'}</span>
+                  </button>
+
+                  <div className="relative flex py-2 items-center">
+                    <div className="flex-grow border-t border-stone-200"></div>
+                    <span className="shrink-0 mx-4 text-[10px] font-bold text-stone-400/80 uppercase tracking-[0.2em]">
+                      {lang === 'zh' ? '底层素材流转引擎 (Data Flow & Insight Engine)' : 'Data Flow & Insight Engine'}
+                    </span>
+                    <div className="flex-grow border-t border-stone-200"></div>
+                  </div>
+
+
+                  {/* BOTTOM PIPELINE */}
+                  <div className="space-y-8">
+                    <div className="w-full">
+                  {/* Raw Data */}
+                  <section>
+                    <div className="flex items-start justify-between mb-5">
+                      <div>
+                        <h2 className="text-sm font-bold text-stone-900 mb-2">{lang === 'zh' ? '底层素材源 (Raw Data)' : 'Raw Data Sources'}</h2>
+                        <p className="text-xs text-stone-500">{lang === 'zh' ? '当前工作空间等待 Agent 提取、理解并蒸馏为以上图谱的底层未加工数据。' : 'Raw workspace materials waiting for Agent extraction and distillation into the structured knowledge above.'}</p>
+                      </div>
+                      <div className="relative z-50">
+                        <button 
+                          onClick={() => setIsIntegrationMenuOpen(!isIntegrationMenuOpen)}
+                          className="flex items-center gap-1.5 px-3 py-2 bg-stone-900 text-white rounded-lg text-xs font-semibold hover:bg-stone-800 transition-colors shadow-sm"
+                        >
+                          <Plus className="w-4 h-4" />
+                          {lang === 'zh' ? '新建接入' : 'New Source'}
+                        </button>
+                        
+                        {/* Mega Menu Dropdown MOVED HERE */}
+                        {isIntegrationMenuOpen && (
+                          <>
+                            <div className="fixed inset-0 z-30" onClick={() => setIsIntegrationMenuOpen(false)}></div>
+                            <div className="absolute right-0 top-full mt-2 w-[760px] bg-white border border-stone-200 rounded-xl shadow-2xl z-40 overflow-hidden" onClick={e => e.stopPropagation()}>
+<div className="p-5">
+                                  <h3 className="text-sm font-bold text-stone-900 mb-4">{lang === 'zh' ? '选择你想接入的数据源' : 'Choose Data Source'}</h3>
+                                  <div className="grid grid-cols-3 gap-x-8 gap-y-6 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+                                    {/* Column 1 */}
+                                    <div className="space-y-4">
+                                      <div>
+                                        <h4 className="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-2">{lang === 'zh' ? '通用文档' : 'Documents'}</h4>
+                                        <button className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-stone-50 transition-colors group">
+                                          <div className="w-8 h-8 rounded-md bg-blue-50 flex items-center justify-center shrink-0">
+                                            <FileText className="w-4 h-4 text-blue-600" />
+                                          </div>
+                                          <div className="text-left">
+                                            <div className="text-sm font-medium text-stone-800">{lang === 'zh' ? '本地文件上传' : 'Local File Upload'}</div>
+                                            <div className="text-[10px] text-stone-400 group-hover:text-stone-500 transition-colors">PDF, Word, TXT, Excel</div>
+                                          </div>
+                                        </button>
+                                        <button className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-stone-50 transition-colors group">
+                                          <div className="w-8 h-8 rounded-md bg-stone-100 flex items-center justify-center shrink-0">
+                                            <FileText className="w-4 h-4 text-stone-600" />
+                                          </div>
+                                          <div className="text-left">
+                                            <div className="text-sm font-medium text-stone-800">{lang === 'zh' ? '粘贴文本' : 'Paste Text'}</div>
+                                            <div className="text-[10px] text-stone-400 group-hover:text-stone-500 transition-colors">{lang === 'zh' ? '直接粘贴文本内容' : 'Paste text directly'}</div>
+                                          </div>
+                                        </button>
+                                      </div>
+                                      <div>
+                                        <h4 className="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-2">{lang === 'zh' ? '搜索与收藏' : 'Search & Save'}</h4>
+                                        <button className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-stone-50 transition-colors group">
+                                          <div className="w-8 h-8 rounded-md bg-emerald-50 flex items-center justify-center shrink-0">
+                                            <Globe className="w-4 h-4 text-emerald-600" />
+                                          </div>
+                                          <div className="text-left">
+                                            <div className="text-sm font-medium text-stone-800">{lang === 'zh' ? '网页剪存' : 'Web Clipper'}</div>
+                                            <div className="text-[10px] text-stone-400 group-hover:text-stone-500 transition-colors">{lang === 'zh' ? '保存并在MindX阅读网页' : 'Save and read pages in MindX'}</div>
+                                          </div>
+                                        </button>
+                                        <button className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-stone-50 transition-colors group">
+                                          <div className="w-8 h-8 rounded-md bg-green-50 flex items-center justify-center shrink-0">
+                                            <FileText className="w-4 h-4 text-green-600" />
+                                          </div>
+                                          <div className="text-left">
+                                            <div className="flex items-center gap-1.5"><div className="text-sm font-medium text-stone-800">flomo</div><span className="text-[8px] font-bold bg-stone-200 text-stone-600 px-1 py-0.5 rounded leading-none">Beta</span></div>
+                                            <div className="text-[10px] text-stone-400 group-hover:text-stone-500 transition-colors">{lang === 'zh' ? '浮墨笔记同步' : 'Sync from flomo'}</div>
+                                          </div>
+                                        </button>
+                                      </div>
+                                    </div>
+                                    {/* Column 2 */}
+                                    <div className="space-y-4">
+                                      <div>
+                                        <h4 className="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-2">{lang === 'zh' ? '云端协作' : 'Cloud Apps'}</h4>
+                                        <button className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-stone-50 transition-colors group">
+                                          <div className="w-8 h-8 rounded-md bg-blue-100 flex items-center justify-center shrink-0">
+                                            <Cloud className="w-4 h-4 text-blue-700" />
+                                          </div>
+                                          <div className="text-left w-full flex items-center justify-between pr-1">
+                                            <div>
+                                              <div className="text-sm font-medium text-stone-800">{lang === 'zh' ? '腾讯文档' : 'Tencent Docs'}</div>
+                                              <div className="text-[10px] text-stone-400 group-hover:text-stone-500 transition-colors">{lang === 'zh' ? '自动同步更新的在线文档' : 'Auto sync online docs'}</div>
+                                            </div>
+                                            <ChevronRight className="w-3.5 h-3.5 text-stone-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                          </div>
+                                        </button>
+                                        <button className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-stone-50 transition-colors group">
+                                          <div className="w-8 h-8 rounded-md bg-blue-50 flex items-center justify-center shrink-0">
+                                            <Cloud className="w-4 h-4 text-blue-600" />
+                                          </div>
+                                          <div className="text-left">
+                                            <div className="text-sm font-medium text-stone-800">{lang === 'zh' ? '微云' : 'Weiyun'}</div>
+                                            <div className="text-[10px] text-stone-400 group-hover:text-stone-500 transition-colors">{lang === 'zh' ? '导入微云文件' : 'Import Weiyun files'}</div>
+                                          </div>
+                                        </button>
+                                        <button className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-stone-50 transition-colors group">
+                                          <div className="w-8 h-8 rounded-md bg-green-50 flex items-center justify-center shrink-0">
+                                            <MessageCircle className="w-4 h-4 text-green-600" />
+                                          </div>
+                                          <div className="text-left">
+                                            <div className="text-sm font-medium text-stone-800">{lang === 'zh' ? '微信' : 'WeChat'}</div>
+                                            <div className="text-[10px] text-stone-400 group-hover:text-stone-500 transition-colors">{lang === 'zh' ? '同步微信文件通过小助手' : 'Sync via WeChat helper'}</div>
+                                          </div>
+                                        </button>
+                                        <button className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-stone-50 transition-colors group">
+                                          <div className="w-8 h-8 rounded-md bg-blue-50 flex items-center justify-center shrink-0">
+                                            <Mail className="w-4 h-4 text-blue-600" />
+                                          </div>
+                                          <div className="text-left">
+                                            <div className="text-sm font-medium text-stone-800">{lang === 'zh' ? 'QQ邮箱' : 'QQ Mail'}</div>
+                                            <div className="text-[10px] text-stone-400 group-hover:text-stone-500 transition-colors">{lang === 'zh' ? '解析邮件及其附件' : 'Parse emails and attachments'}</div>
+                                          </div>
+                                        </button>
+                                      </div>
+                                    </div>
+                                    {/* Column 3: 第三方插件同步 */}
+                                    <div className="space-y-4">
+                                      <div>
+                                        <h4 className="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-2">{lang === 'zh' ? '第三方插件同步' : 'Third-Party Sync'}</h4>
+                                        <div className="space-y-1">
+                                          {[
+                                            { name: '腾讯会议', type: 'video' },
+                                            { name: '飞书妙记', type: 'video' },
+                                            { name: '钉钉闪记', type: 'video' },
+                                            { name: 'Plaud', type: 'mic' },
+                                            { name: 'Plaudcn', type: 'mic' },
+                                            { name: 'Get笔记', type: 'mic' },
+                                            { name: '通义听悟', type: 'mic' },
+                                            { name: '千问录音', type: 'mic' },
+                                            { name: '讯飞听见', type: 'mic' },
+                                            { name: 'TicNote', type: 'mic' },
+                                          ].map((item, idx) => (
+                                            <button key={idx} className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-stone-50 transition-colors group cursor-pointer justify-between">
+                                              <div className="flex items-center gap-3">
+                                                <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center shrink-0 shadow-sm shadow-blue-500/20">
+                                                  {item.type === 'video' ? <Video className="w-3.5 h-3.5 text-white" /> : <Mic className="w-3.5 h-3.5 text-white" />}
+                                                </div>
+                                                <span className="text-[13px] font-medium text-stone-800">{item.name}</span>
+                                              </div>
+                                              <RefreshCw className="w-3.5 h-3.5 text-stone-400 group-hover:text-stone-600 transition-colors" />
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    </div>                                  </div>
+                                </div>
+
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 gap-4">
+
+                        <div className="p-4 rounded-xl border border-white/60 bg-white/60 shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 backdrop-blur-xl relative overflow-hidden group flex flex-col">
+                          <div className="absolute top-0 right-0 w-16 h-16 bg-blue-50/50 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-110" />
+                          <Database className="w-6 h-6 text-blue-600 mb-3 relative z-10" />
+                          <h3 className="font-semibold text-stone-900 text-sm mb-1">{lang === 'zh' ? '空间内部源' : 'Workspace Docs'}</h3>
+                          <p className="text-xs text-stone-500 mb-5 relative z-10">{lang === 'zh' ? '当前工作空间内的所有内部文档' : 'All internal docs in workspace'}</p>
+                          <div className="flex flex-col gap-2 relative z-10 mt-auto pt-3 border-t border-stone-100/80">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-stone-500 font-medium">{lang === 'zh' ? '所有文件' : 'All Files'}</span>
+                              <span className="font-bold text-stone-700">128 {lang === 'zh' ? '个' : ''}</span>
+                            </div>
+                            <div className="flex items-center justify-between text-xs group/pro cursor-pointer" onClick={() => setIsPricingModalOpen(true)}>
+                              <div className="flex items-center gap-1.5">
+                                 <span className="text-stone-500 font-medium">{lang === 'zh' ? '大模型提炼队列 (Agent Insight Engine)' : 'Agent Insight Engine'}</span>
+                                 <span className="text-[9px] font-bold bg-stone-900 text-white px-1.5 py-0.5 rounded leading-none shadow-sm tracking-wider">PRO</span>
+                              </div>
+                              <span className="font-bold text-stone-900 animate-pulse text-blue-600">12 {lang === 'zh' ? '待处理' : 'pending'}</span>
+                            </div>
+
+                            {/* Processing Queue directly placed inside the card */}
+                            <div className="pt-2 mt-2 border-t border-stone-100/80 space-y-2">
+                              {/* Removed completed item per user request */}
+                              {/* 2 */}
+                              <div className="border border-blue-200/60 rounded-xl bg-blue-50/40 p-3 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden group">
+                                <div className="absolute inset-y-0 left-0 w-1 bg-blue-400"></div>
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-1.5">
+                                    <Bot className="w-3.5 h-3.5 text-blue-600" />
+                                    <span className="font-medium text-xs text-stone-800">{lang === 'zh' ? '内置 Agent 节点价值提炼扫描' : 'Agent Insight Extraction'}</span>
+                                  </div>
+                                  <span className="flex items-center gap-1 text-[10px] font-medium text-blue-600 bg-blue-100/50 px-1.5 py-0.5 rounded-full">
+                                    <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                                    {lang === 'zh' ? '提炼中...' : 'Processing...'}
+                                  </span>
+                                </div>
+                              </div>
+
+                            </div>
+                          </div>
+                        </div>
+                    </div>
+                  </section>
+                </div>
+
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
           </div>
         </div>
       </main>
+      <PricingModal isOpen={isPricingModalOpen} onClose={() => setIsPricingModalOpen(false)} lang={lang} />
+    </div>
+  );
+}
+
+function PricingModal({ isOpen, onClose, lang }: { isOpen: boolean, onClose: () => void, lang: string }) {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6" style={{ animation: 'fadeIn 0.2s ease-out' }}>
+      <div className="absolute inset-0 bg-stone-900/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white w-full max-w-5xl rounded-3xl shadow-2xl overflow-hidden transform transition-all" style={{ animation: 'slideUp 0.3s ease-out' }}>
+        <div className="px-6 py-5 sm:px-8 sm:py-6 flex items-center justify-between border-b border-stone-100 bg-white relative z-10">
+          <h2 className="text-xl font-bold text-stone-900">{lang === 'zh' ? '升级您的工作空间' : 'Upgrade your workspace'}</h2>
+          <button onClick={onClose} className="p-2 hover:bg-stone-100 rounded-full transition-colors text-stone-500 hover:text-stone-900"><X className="w-5 h-5" /></button>
+        </div>
+        
+        <div className="p-6 sm:p-8 grid md:grid-cols-3 gap-6 bg-stone-50/50">
+          {/* Free */}
+          <div className="bg-white border border-stone-200 rounded-2xl p-6 sm:p-8 shadow-sm flex flex-col">
+            <h3 className="text-xl font-semibold text-stone-800 mb-2">{lang === 'zh' ? '免费版' : 'Free'}</h3>
+            <p className="text-sm text-stone-500 mb-6 flex-none">{lang === 'zh' ? '体验下一代 Agent-Native 第二大脑' : 'Experience the next-gen Agent-Native brain'}</p>
+            <div className="text-4xl font-bold text-stone-900 mb-8">$0<span className="text-base font-normal text-stone-500 ml-1">/ mo</span></div>
+            <button className="w-full py-3 rounded-xl border border-stone-200 text-sm font-medium text-stone-700 bg-stone-50 hover:bg-stone-100 mb-8 transition-colors">
+              {lang === 'zh' ? '当前计划' : 'Current Plan'}
+            </button>
+            <ul className="space-y-4 text-sm text-stone-600 flex-1">
+              <li className="flex items-start gap-3"><Check className="w-5 h-5 text-emerald-500 shrink-0" /> 基础文档检索与问答</li>
+              <li className="flex items-start gap-3"><Check className="w-5 h-5 text-emerald-500 shrink-0" /> 基础通用大模型支持</li>
+              <li className="flex items-start gap-3"><Check className="w-5 h-5 text-emerald-500 shrink-0" /> <span className="font-bold text-stone-900">2个自定义 Agent</span></li>
+              <li className="flex items-start gap-3"><Check className="w-5 h-5 text-stone-300 shrink-0" /> <span className="text-stone-400 line-through">自动信息提炼与洞察</span></li>
+            </ul>
+          </div>
+
+          {/* Pro */}
+          <div className="bg-white border-2 border-stone-900 rounded-2xl p-6 sm:p-8 shadow-xl relative overflow-hidden transform md:scale-105 z-10 flex flex-col ring-4 ring-stone-900/5">
+            <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500"></div>
+            <div className="absolute top-5 right-5 bg-stone-900 text-white text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider">{lang === 'zh' ? '爆款' : 'Popular'}</div>
+            <div className="flex items-center gap-2 mb-2">
+              <h3 className="text-xl font-bold text-stone-900">{lang === 'zh' ? '专业版' : 'Pro'}</h3>
+              <Zap className="w-5 h-5 text-orange-500 fill-current" />
+            </div>
+            <p className="text-sm text-stone-500 mb-6 flex-none">{lang === 'zh' ? '解锁完整的无缝深度洞察能力' : 'Unlock full deep insight capabilities'}</p>
+            <div className="text-4xl font-bold text-stone-900 mb-8">$20<span className="text-base font-normal text-stone-500 ml-1">/ mo</span></div>
+            <button className="w-full py-3 rounded-xl border border-transparent text-sm font-bold text-white bg-stone-900 hover:bg-stone-800 mb-8 transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 relative overflow-hidden group/btn">
+              <div className="absolute inset-0 bg-white/20 translate-y-full group-hover/btn:translate-y-0 transition-transform"></div>
+              {lang === 'zh' ? '立即升级 (Subscribe)' : 'Upgrade to Pro'}
+            </button>
+            <ul className="space-y-4 text-sm text-stone-700 font-medium flex-1">
+              <li className="flex items-start gap-3"><Check className="w-5 h-5 text-emerald-600 shrink-0" /> 无底线使用上下文提炼引擎</li>
+              <li className="flex items-start gap-3"><Check className="w-5 h-5 text-emerald-600 shrink-0" /> 无限制的高级自定义 Agent</li>
+              <li className="flex items-start gap-3"><Check className="w-5 h-5 text-emerald-600 shrink-0" /> 优先解锁第三方应用连接</li>
+              <li className="flex items-start gap-3"><Check className="w-5 h-5 text-emerald-600 shrink-0" /> 允许将 Agent 分享至微信小程序与外部网络群体</li>
+            </ul>
+          </div>
+
+          {/* Team */}
+          <div className="bg-white border border-stone-200 rounded-2xl p-6 sm:p-8 shadow-sm flex flex-col">
+            <h3 className="text-xl font-semibold text-stone-800 mb-2">{lang === 'zh' ? '团队版' : 'Team'}</h3>
+            <p className="text-sm text-stone-500 mb-6 flex-none">{lang === 'zh' ? '为企业组织打造的全能知识引擎' : 'The all-in-one engine for orgs'}</p>
+            <div className="text-4xl font-bold text-stone-900 mb-8">$30<span className="text-base font-normal text-stone-500 ml-1">/ user</span></div>
+            <button className="w-full py-3 rounded-xl border border-stone-200 text-sm font-medium text-stone-700 hover:bg-stone-50 mb-8 transition-colors">
+              {lang === 'zh' ? '联系销售' : 'Contact Sales'}
+            </button>
+            <ul className="space-y-4 text-sm text-stone-600 flex-1">
+              <li className="flex items-start gap-3"><Check className="w-5 h-5 text-emerald-500 shrink-0" /> Pro 版所包含的一切权限</li>
+              <li className="flex items-start gap-3"><Check className="w-5 h-5 text-emerald-500 shrink-0" /> 空间无缝协同共享与严格权限控制</li>
+              <li className="flex items-start gap-3"><Check className="w-5 h-5 text-emerald-500 shrink-0" /> 企业级用量池与保障额度</li>
+              <li className="flex items-start gap-3"><Check className="w-5 h-5 text-emerald-500 shrink-0" /> 企业数据隔离与专属化定制 SSO</li>
+            </ul>
+          </div>
+        </div>
+        <div className="p-4 bg-stone-100/50 text-center text-[11px] text-stone-400 border-t border-stone-100">
+          {lang === 'zh' ? '标价均支持年付 8 折优惠。所有的计划升级支持随时取消。' : 'Prices reflect annual billing. Cancel anytime.'}
+        </div>
+      </div>
     </div>
   );
 }
@@ -2213,9 +2687,10 @@ interface DocRowProps {
   onDelete: (id: string) => void;
   onMarkRead?: (id: string) => void;
   onSetAgentPermission?: (id: string) => void;
+  onUpgradeRequirement?: () => void;
 }
 
-function DocRow({ docId, name, type, date, creatorName, creatorType, isNew, onDelete, onMarkRead, onSetAgentPermission }: DocRowProps) {
+function DocRow({ docId, name, type, date, creatorName, creatorType, isNew, onDelete, onMarkRead, onSetAgentPermission, onUpgradeRequirement }: DocRowProps) {
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
@@ -2320,11 +2795,18 @@ function DocRow({ docId, name, type, date, creatorName, creatorType, isNew, onDe
                 </button>
                 <div className="border-t border-stone-100 my-0.5" />
                 <button
-                  onClick={handleDownload}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
+                  onClick={(e) => { 
+                    e.stopPropagation(); 
+                    setIsMenuOpen(false); 
+                    onUpgradeRequirement?.(); 
+                  }}
+                  className="w-full flex items-center justify-between px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors group"
                 >
-                  <Download className="w-4 h-4 text-stone-400" />
-                  {t('docs.actions.download')}
+                  <div className="flex items-center gap-2.5">
+                    <Download className="w-4 h-4 text-stone-400 group-hover:text-blue-500 transition-colors" />
+                    Convert
+                  </div>
+                  <span className="text-[9px] font-bold bg-stone-900 text-white px-1 py-0.5 rounded leading-none shadow-sm shadow-stone-900/10">PRO</span>
                 </button>
                 <button
                   onClick={(e) => { e.stopPropagation(); setIsMenuOpen(false); setIsShareOpen(true); }}
