@@ -2053,6 +2053,25 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                   </div>
                 </div>
 
+                {/* Shared Document Preview Entry */}
+                <div className="bg-white border border-stone-200/80 rounded-xl shadow-[0_2px_12px_rgba(0,0,0,0.02)] p-6 mb-6">
+                  <h3 className="text-sm font-semibold text-stone-900 mb-1">
+                    {lang === 'zh' ? '分享预览' : 'Share Preview'}
+                  </h3>
+                  <p className="text-xs text-stone-500 mb-4">
+                    {lang === 'zh' 
+                      ? '预览被分享人打开文档链接时看到的只读页面。包含 MindX 品牌推广和用户引导。' 
+                      : 'Preview the read-only page a shared link recipient sees. Includes MindX branding & CTA.'}
+                  </p>
+                  <button
+                    onClick={() => window.open('/shared', '_blank')}
+                    className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-stone-800 to-stone-900 text-white rounded-xl text-sm font-medium hover:from-stone-700 hover:to-stone-800 transition-all shadow-sm"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    {lang === 'zh' ? '打开分享文档预览' : 'Open Shared Document Preview'}
+                  </button>
+                </div>
+
                 {/* Logout */}
                 <button
                   onClick={() => {

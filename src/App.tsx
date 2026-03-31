@@ -8,6 +8,7 @@ import { LanguageProvider } from './i18n/LanguageContext';
 import LandingPage from './pages/LandingPage';
 import Dashboard from './pages/Dashboard';
 import DocumentEditor from './pages/DocumentEditor';
+import SharedDocumentView from './pages/SharedDocumentView';
 import SkillsPage from './pages/SkillsPage';
 
 export default function App() {
@@ -19,6 +20,7 @@ export default function App() {
           <Route path="/skills" element={<SkillsPage />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/document" element={<DocumentEditor />} />
+          <Route path="/shared" element={<SharedDocumentView />} />
         </Routes>
       </Router>
     </LanguageProvider>
