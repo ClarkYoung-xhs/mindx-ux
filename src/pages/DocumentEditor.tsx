@@ -935,9 +935,6 @@ export default function DocumentEditor() {
             )}
           </div>
           <div className="flex items-center gap-2">
-            <span className="px-2 py-1 rounded bg-stone-100 text-stone-600 text-xs font-medium border border-stone-200">
-              {isChatLog ? 'Chat Log' : 'Markdown'}
-            </span>
             <h1 className="text-sm font-medium text-stone-900">
               {isChatLog ? 'Claude & Maya: Feature Discussion' : (
                 (() => {
