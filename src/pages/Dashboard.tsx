@@ -766,13 +766,50 @@ const absenceSummaryData: AbsenceSummaryData = {
     }),
 };
 
+// --- Demo mode: "new" = new user onboarding, "existing" = rich mock data ---
+type DemoMode = 'new' | 'existing';
+const DEMO_MODE_KEY = 'mindx_demo_mode';
+
+function getDemoMode(): DemoMode {
+  const stored = localStorage.getItem(DEMO_MODE_KEY);
+  if (stored === 'existing') return 'existing';
+  if (stored === 'new') return 'new';
+  // If no explicit demo mode set, fall back to isNewUser flag for backward compat
+  return localStorage.getItem('mindx_is_new_user') === 'true' ? 'new' : 'existing';
+}
+
 export default function Dashboard() {
+  const [demoMode, setDemoModeState] = useState<DemoMode>(getDemoMode);
+
+  const setDemoMode = (mode: DemoMode) => {
+    localStorage.setItem(DEMO_MODE_KEY, mode);
+    if (mode === 'new') {
+      // Activate new-user flags so the onboarding / guide logic works
+      localStorage.setItem('mindx_is_new_user', 'true');
+      localStorage.removeItem('mindx_absence_dismissed');
+      localStorage.removeItem('mindx_guide_dismissed');
+    } else {
+      // Clear new-user flags for existing-user mode
+      localStorage.removeItem('mindx_is_new_user');
+      localStorage.setItem('mindx_absence_dismissed', 'false');
+      localStorage.removeItem('mindx_guide_dismissed');
+    }
+    setDemoModeState(mode);
+    // Reload to reinitialize all states with correct data
+    window.location.href = '/dashboard?tab=settings';
+  };
+
+  const isNewUser = demoMode === 'new';
+  const initLang = localStorage.getItem('mindx_lang') || 'en';
   const [workspaces, setWorkspaces] = useState(initialWorkspaces);
   const [activeWorkspaceId, setActiveWorkspaceId] = useState(initialWorkspaces[0]?.id ?? 'w1');
-  const [agents, setAgents] = useState(initialAgents);
-  const isNewUser = localStorage.getItem('mindx_is_new_user') === 'true';
-  const initLang = localStorage.getItem('mindx_lang') || 'en';
-  const [permissions, setPermissions] = useState(initialPermissions);
+  const [agents, setAgents] = useState(isNewUser ? [] : initialAgents);
+  const [permissions, setPermissions] = useState(() => {
+    if (isNewUser) {
+      return [{ id: 'p1', workspaceId: 'w1', memberId: currentUser.id, memberType: 'Human' as const, role: 'Owner' }];
+    }
+    return initialPermissions;
+  });
   const [documents, setDocuments] = useState(() => {
     if (isNewUser) {
       return [{ id: 'welcome', workspaceId: 'w1', name: initLang === 'zh' ? '欢迎使用 MindX' : 'Welcome to MindX', type: 'Smart Doc', date: initLang === 'zh' ? '刚刚' : 'Just now', lastModified: new Date().toISOString(), lastViewed: new Date().toISOString(), labels: ['Getting Started'], creatorName: 'Agent', creatorType: 'agent' as const, size: 8192, isNew: true, isRead: false, source: 'normal' as const }];
@@ -1305,8 +1342,8 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
               >
-                {/* Absence Summary Card */}
-                {!absenceSummaryDismissed && (
+                {/* Absence Summary Card — only in "existing user" mode */}
+                {demoMode === 'existing' && !absenceSummaryDismissed && (
                   <AbsenceSummaryCard
                     data={absenceSummaryData}
                     onDocClick={(docId, docType) => {
@@ -1948,6 +1985,72 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                       </>
                     );
                   })()}
+                </div>
+
+                {/* Demo Mode Switcher */}
+                <div className="bg-white border border-stone-200/80 rounded-xl shadow-[0_2px_12px_rgba(0,0,0,0.02)] p-6 mb-6">
+                  <h3 className="text-sm font-semibold text-stone-900 mb-1">
+                    {lang === 'zh' ? '演示模式' : 'Demo Mode'}
+                  </h3>
+                  <p className="text-xs text-stone-500 mb-4">
+                    {lang === 'zh' 
+                      ? '切换新用户（空数据 + 引导流程）或老用户（丰富数据 + 产品功能）模式。切换后页面将刷新。' 
+                      : 'Switch between new user (empty data + onboarding guide) or existing user (rich data + full features). Page will refresh.'}
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    {/* New User Card */}
+                    <button
+                      onClick={() => { if (demoMode !== 'new') setDemoMode('new'); }}
+                      className={`relative p-4 rounded-xl border-2 text-left transition-all ${
+                        demoMode === 'new' 
+                          ? 'border-stone-900 bg-stone-50 shadow-sm' 
+                          : 'border-stone-200 hover:border-stone-300 hover:bg-stone-50/50'
+                      }`}
+                    >
+                      {demoMode === 'new' && (
+                        <div className="absolute top-3 right-3 w-5 h-5 rounded-full bg-stone-900 flex items-center justify-center">
+                          <Check className="w-3 h-3 text-white" />
+                        </div>
+                      )}
+                      <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center mb-3">
+                        <Sparkles className="w-4 h-4 text-blue-600" />
+                      </div>
+                      <div className="text-sm font-semibold text-stone-900 mb-1">
+                        {lang === 'zh' ? '🆕 新用户' : '🆕 New User'}
+                      </div>
+                      <p className="text-[11px] text-stone-500 leading-relaxed">
+                        {lang === 'zh' 
+                          ? '空白状态 + Quick Start 引导 + Onboarding 向导，展示新用户首次使用体验' 
+                          : 'Clean slate + Quick Start guide + Onboarding wizard for first-use experience'}
+                      </p>
+                    </button>
+                    {/* Existing User Card */}
+                    <button
+                      onClick={() => { if (demoMode !== 'existing') setDemoMode('existing'); }}
+                      className={`relative p-4 rounded-xl border-2 text-left transition-all ${
+                        demoMode === 'existing' 
+                          ? 'border-stone-900 bg-stone-50 shadow-sm' 
+                          : 'border-stone-200 hover:border-stone-300 hover:bg-stone-50/50'
+                      }`}
+                    >
+                      {demoMode === 'existing' && (
+                        <div className="absolute top-3 right-3 w-5 h-5 rounded-full bg-stone-900 flex items-center justify-center">
+                          <Check className="w-3 h-3 text-white" />
+                        </div>
+                      )}
+                      <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center mb-3">
+                        <FileText className="w-4 h-4 text-amber-600" />
+                      </div>
+                      <div className="text-sm font-semibold text-stone-900 mb-1">
+                        {lang === 'zh' ? '👤 老用户' : '👤 Existing User'}
+                      </div>
+                      <p className="text-[11px] text-stone-500 leading-relaxed">
+                        {lang === 'zh' 
+                          ? '丰富数据，包含 25 个文档、30+ 动态、3 个 Agent，展示完整产品功能' 
+                          : 'Rich data — 25 docs, 30+ activities, 3 agents to showcase full product'}
+                      </p>
+                    </button>
+                  </div>
                 </div>
 
                 {/* Logout */}
