@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  body { margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; background: #f5f5f4; }
+  canvas { display: block; }
+</style>
+</head>
+<body>
+<canvas id="canvas" width="512" height="512"></canvas>
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const size = 512;
+const radius = 100;
+
+// Background rounded rectangle
+ctx.beginPath();
+ctx.moveTo(radius, 0);
+ctx.lineTo(size - radius, 0);
+ctx.quadraticCurveTo(size, 0, size, radius);
+ctx.lineTo(size, size - radius);
+ctx.quadraticCurveTo(size, size, size - radius, size);
+ctx.lineTo(radius, size);
+ctx.quadraticCurveTo(0, size, 0, size - radius);
+ctx.lineTo(0, radius);
+ctx.quadraticCurveTo(0, 0, radius, 0);
+ctx.closePath();
+ctx.fillStyle = '#292524';
+ctx.fill();
+
+// Sparkles icon (white) - main 4-point star
+ctx.fillStyle = '#ffffff';
+
+function drawStar(cx, cy, outerR, innerR, points) {
+  ctx.beginPath();
+  for (let i = 0; i < points * 2; i++) {
+    const r = i % 2 === 0 ? outerR : innerR;
+    const angle = (Math.PI / points) * i - Math.PI / 2;
+    const x = cx + r * Math.cos(angle);
+    const y = cy + r * Math.sin(angle);
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+  ctx.fill();
+}
+
+// Main sparkle - 4 pointed star
+drawStar(240, 220, 110, 30, 4);
+
+// Small sparkle top-right
+drawStar(340, 140, 40, 11, 4);
+
+// Tiny sparkle bottom-right  
+drawStar(360, 260, 22, 6, 4);
+
+// Auto download
+canvas.toBlob(function(blob) {
+  const link = document.createElement('a');
+  link.download = 'mindx-icon-512.png';
+  link.href = URL.createObjectURL(blob);
+  link.click();
+}, 'image/png');
+
+// Manual download link
+const link = document.createElement('a');
+link.id = 'dl';
+link.style.cssText = 'display:block;text-align:center;margin-top:20px;font-size:18px;font-family:sans-serif;color:#292524;text-decoration:underline;';
+link.textContent = '💾 Download PNG (512x512)';
+canvas.toBlob(function(blob) {
+  link.href = URL.createObjectURL(blob);
+  link.download = 'mindx-icon-512.png';
+}, 'image/png');
+document.body.appendChild(link);
+</script>
+</body>
+</html>
