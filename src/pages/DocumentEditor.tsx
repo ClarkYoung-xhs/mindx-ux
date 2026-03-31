@@ -206,7 +206,110 @@ export default function DocumentEditor() {
     }
   }, []);
 
-  const [paragraphs, setParagraphs] = useState<Paragraph[]>([
+  const [paragraphs, setParagraphs] = useState<Paragraph[]>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const source = params.get('source');
+    
+    if (source === 'whoami_doc') {
+      return [
+        {
+          id: 'p1',
+          text: '## 核心身份 (Identity)',
+          author: currentUserName,
+          authorType: 'human'
+        },
+        {
+          id: 'p2',
+          text: '前沿科技创业者，独立产品经理。偏好极致体验和极简设计，推崇 Agent-Native 理念。',
+          author: currentUserName,
+          authorType: 'human'
+        },
+        {
+          id: 'p3',
+          text: '## 交互原则 (Directives)',
+          author: currentUserName,
+          authorType: 'human'
+        },
+        {
+          id: 'p4',
+          text: '1. 沟通直入主题，拒绝废话套话。\n2. 代码给出完整可执行的实现。\n3. 分析问题遵循第一性原理。',
+          author: currentUserName,
+          authorType: 'human'
+        }
+      ];
+    }
+    
+    if (source === 'goal_doc') {
+      return [
+        {
+          id: 'p1',
+          text: '## 构建 Agent-Native 记忆中枢',
+          author: currentUserName,
+          authorType: 'human'
+        },
+        {
+          id: 'p2',
+          text: 'Deadline: Q2\nPriority: High',
+          author: currentUserName,
+          authorType: 'human'
+        },
+        {
+          id: 'p3',
+          text: '## 完善全平台交互与多端适配体验',
+          author: currentUserName,
+          authorType: 'human'
+        },
+        {
+          id: 'p4',
+          text: 'Deadline: May\nPriority: Medium',
+          author: currentUserName,
+          authorType: 'human'
+        }
+      ];
+    }
+    
+    if (source === 'keypoints_doc') {
+      return [
+        {
+          id: 'p1',
+          text: '## Q2 产品迭代计划',
+          author: currentUserName,
+          authorType: 'human'
+        },
+        {
+          id: 'p2',
+          text: '5月底前完成核心UI重构，由设计部牵头',
+          author: currentUserName,
+          authorType: 'human'
+        },
+        {
+          id: 'p3',
+          text: '## 客户 A 反馈汇总',
+          author: currentUserName,
+          authorType: 'human'
+        },
+        {
+          id: 'p4',
+          text: '客户核心诉求：性能优化、数据安全、多端协同',
+          author: currentUserName,
+          authorType: 'human'
+        },
+        {
+          id: 'p5',
+          text: '## 行业竞品分析报告',
+          author: currentUserName,
+          authorType: 'human'
+        },
+        {
+          id: 'p6',
+          text: '竞品在移动端体验上更流畅，我们的差异化优势在于AI原生协作',
+          author: currentUserName,
+          authorType: 'human'
+        }
+      ];
+    }
+
+    return [
     {
       id: 'p1',
       text: '## Project Alpha Architecture',
@@ -363,7 +466,8 @@ export default function DocumentEditor() {
       author: 'Claude 3.5 Sonnet',
       authorType: 'agent'
     }
-  ]);
+    ];
+  });
 
   const [comments, setComments] = useState<CommentThread[]>(() => [
     {
@@ -835,7 +939,16 @@ export default function DocumentEditor() {
               {isChatLog ? 'Chat Log' : 'Markdown'}
             </span>
             <h1 className="text-sm font-medium text-stone-900">
-              {isChatLog ? 'Claude & Maya: Feature Discussion' : 'Project Alpha Architecture'}
+              {isChatLog ? 'Claude & Maya: Feature Discussion' : (
+                (() => {
+                  const params = new URLSearchParams(window.location.search);
+                  const source = params.get('source');
+                  if (source === 'whoami_doc') return '关于我 (Who am I)';
+                  if (source === 'goal_doc') return '当前目标 (Goal)';
+                  if (source === 'keypoints_doc') return '已提炼洞察列表 (Key Points)';
+                  return 'Project Alpha Architecture';
+                })()
+              )}
             </h1>
           </div>
         </div>

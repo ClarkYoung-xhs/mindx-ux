@@ -64,7 +64,7 @@ const initialWorkspaces = [
 ];
 
 const initialAgents = [
-  { id: 'a1', name: 'Claude Assistant', token: 'mx_agt_9f8e7d6c5b4a3', connected: true, createdAt: '2026-03-10T10:00:00Z', installedSkills: ['MindX Docs', 'Data Analysis', 'Search Engine'] },
+  { id: 'a1', name: 'Claude Assistant', token: 'mx_agt_9f8e7d6c5b4a3', connected: true, createdAt: '2026-03-10T10:00:00Z', installedSkills: ['MindX Docs', 'Memory System', 'Daily Activity'] },
   { id: 'a2', name: 'Data Analyzer', token: 'mx_agt_1a2b3c4d5e6f7', connected: true, createdAt: '2026-03-15T14:30:00Z', installedSkills: ['MindX Docs'] },
   { id: 'a3', name: 'Research Bot', token: 'mx_agt_8x7y6z5w4v3u2', connected: false, createdAt: '2026-03-20T09:00:00Z', installedSkills: [] }
 ];
@@ -1837,8 +1837,8 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                         <div className="border border-stone-200/80 rounded-xl bg-white overflow-hidden">
                           {[
                             { name: 'MindX Docs', tag: 'Core', icon: <FileText className="w-4 h-4" />, provider: 'MindX' },
-                            { name: 'Data Analysis', tag: 'Pro', icon: <Table className="w-4 h-4" />, provider: 'MindX' },
-                            { name: 'Search Engine', tag: 'New', icon: <Search className="w-4 h-4" />, provider: 'MindX' },
+                            { name: 'Memory System', tag: 'Core', icon: <Database className="w-4 h-4" />, provider: 'MindX' },
+                            { name: 'Daily Activity', tag: 'Pro', icon: <CalendarDays className="w-4 h-4" />, provider: 'MindX' },
                           ].filter(s => (agent.installedSkills || []).includes(s.name)).map((skill, i, arr) => (
                             <div key={i} className={`flex items-center gap-3 px-4 py-3 ${i < arr.length - 1 ? 'border-b border-stone-100' : ''}`}>
                               <div className="w-8 h-8 rounded-lg bg-stone-900 flex items-center justify-center text-white shrink-0">
@@ -2129,8 +2129,8 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                 <div className="border border-stone-200/80 rounded-xl bg-white shadow-[0_2px_12px_rgba(0,0,0,0.02)] overflow-hidden divide-y divide-stone-200/50">
                   {[
                     { id: 'mindx-docs', name: 'MindX Docs', tag: 'Core', icon: <FileText className="w-4 h-4" />, provider: 'MindX', desc: lang === 'zh' ? '文档创作能力' : 'Document creation' },
-                    { id: 'data-analysis', name: 'Data Analysis', tag: 'Pro', icon: <Table className="w-4 h-4" />, provider: 'MindX', desc: lang === 'zh' ? '数据分析能力' : 'Data analysis' },
-                    { id: 'search-engine', name: 'Search Engine', tag: 'New', icon: <Search className="w-4 h-4" />, provider: 'MindX', desc: lang === 'zh' ? '搜索引擎能力' : 'Search engine' },
+                    { id: 'memory-io', name: 'Memory System', tag: 'Core', icon: <Database className="w-4 h-4" />, provider: 'MindX', desc: lang === 'zh' ? '读写记忆的 Skill' : 'Read/write memory engine' },
+                    { id: 'daily-log', name: 'Daily Activity', tag: 'Pro', icon: <CalendarDays className="w-4 h-4" />, provider: 'MindX', desc: lang === 'zh' ? '上传今天做了啥的 Skill' : 'Daily upload skill' },
                   ].map((skill, i, arr) => (
                     <div key={skill.id}>
                       <div
@@ -2248,23 +2248,23 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                           {lang === 'zh' ? '关于我 (Who am I)' : 'Who am I'}
                         </h2>
                         <div className="flex items-center gap-2">
-                          <button className="text-[10px] font-bold bg-stone-100 text-stone-600 px-2 py-1 rounded hover:bg-stone-200 transition-colors">
+                          <button onClick={() => navigate('/document?type=text&backTab=memory&source=whoami_doc')} className="text-[10px] font-bold bg-stone-100 text-stone-600 px-2 py-1 rounded hover:bg-stone-200 transition-colors">
                             {lang === 'zh' ? '编辑画像' : 'Edit Profile'}
                           </button>
-                          <button className="p-1 rounded-md text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-colors" title={lang === 'zh' ? '作为独立文档打开' : 'Open as Document'}>
+                          <button onClick={() => navigate('/document?type=text&backTab=memory&source=whoami_doc')} className="p-1 rounded-md text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-colors" title={lang === 'zh' ? '作为独立文档打开' : 'Open as Document'}>
                             <Maximize2 className="w-4 h-4" />
                           </button>
                         </div>
                       </div>
                       <div className="space-y-3 relative z-10">
-                        <div className="bg-white/70 rounded-xl p-3.5 border border-stone-200/50 hover:bg-white hover:border-stone-300/60 transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-0.5 backdrop-blur-sm cursor-pointer group/card">
+                        <div onClick={() => navigate('/document?type=text&backTab=memory&source=whoami_doc')} className="bg-white/70 rounded-xl p-3.5 border border-stone-200/50 hover:bg-white hover:border-stone-300/60 transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-0.5 backdrop-blur-sm cursor-pointer group/card">
                           <h4 className="text-[11px] font-semibold text-stone-500 uppercase tracking-wider mb-2 flex items-center justify-between">
                             {lang === 'zh' ? '核心身份 (Identity)' : 'Identity'}
                             <ExternalLink className="w-3 h-3 opacity-0 group-hover/card:opacity-100 transition-opacity" />
                           </h4>
                           <p className="text-xs text-stone-700 leading-relaxed font-medium">前沿科技创业者，独立产品经理。偏好极致体验和极简设计，推崇 Agent-Native 理念。</p>
                         </div>
-                        <div className="bg-white/70 rounded-xl p-3.5 border border-stone-200/50 hover:bg-white hover:border-stone-300/60 transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-0.5 backdrop-blur-sm cursor-pointer group/card">
+                        <div onClick={() => navigate('/document?type=text&backTab=memory&source=whoami_doc')} className="bg-white/70 rounded-xl p-3.5 border border-stone-200/50 hover:bg-white hover:border-stone-300/60 transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-0.5 backdrop-blur-sm cursor-pointer group/card">
                           <h4 className="text-[11px] font-semibold text-stone-500 uppercase tracking-wider mb-2 flex items-center justify-between">
                             {lang === 'zh' ? '交互原则 (Directives)' : 'Directives'}
                             <ExternalLink className="w-3 h-3 opacity-0 group-hover/card:opacity-100 transition-opacity" />
@@ -2282,16 +2282,16 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                           {lang === 'zh' ? '当前目标 (Goal)' : 'Current Goal'}
                         </h2>
                         <div className="flex items-center gap-2">
-                          <button className="text-[10px] font-bold bg-stone-100 text-stone-600 px-2 py-1 rounded hover:bg-stone-200 transition-colors">
+                          <button onClick={() => navigate('/document?type=text&backTab=memory&source=goal_doc')} className="text-[10px] font-bold bg-stone-100 text-stone-600 px-2 py-1 rounded hover:bg-stone-200 transition-colors">
                             {lang === 'zh' ? '更新目标' : 'Update'}
                           </button>
-                          <button className="p-1 rounded-md text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-colors" title={lang === 'zh' ? '作为独立文档打开' : 'Open as Document'}>
+                          <button onClick={() => navigate('/document?type=text&backTab=memory&source=goal_doc')} className="p-1 rounded-md text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-colors" title={lang === 'zh' ? '作为独立文档打开' : 'Open as Document'}>
                             <Maximize2 className="w-4 h-4" />
                           </button>
                         </div>
                       </div>
                       <div className="space-y-3 relative z-10">
-                        <div className="flex items-start gap-3 p-3.5 rounded-xl border border-stone-200/50 bg-white/70 hover:bg-white hover:border-stone-300/60 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 backdrop-blur-sm cursor-pointer group/goal">
+                        <div onClick={() => navigate('/document?type=text&backTab=memory&source=goal_doc')} className="flex items-start gap-3 p-3.5 rounded-xl border border-stone-200/50 bg-white/70 hover:bg-white hover:border-stone-300/60 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 backdrop-blur-sm cursor-pointer group/goal">
                           <div className="w-7 h-7 rounded-lg bg-orange-50 flex items-center justify-center shrink-0 mt-0.5">
                             <span className="text-orange-600 font-bold text-[11px]">1</span>
                           </div>
@@ -2304,7 +2304,7 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-start gap-3 p-3.5 rounded-xl border border-stone-200/50 bg-white/70 hover:bg-white hover:border-stone-300/60 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 backdrop-blur-sm cursor-pointer group/goal">
+                        <div onClick={() => navigate('/document?type=text&backTab=memory&source=goal_doc')} className="flex items-start gap-3 p-3.5 rounded-xl border border-stone-200/50 bg-white/70 hover:bg-white hover:border-stone-300/60 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 backdrop-blur-sm cursor-pointer group/goal">
                           <div className="w-7 h-7 rounded-lg bg-orange-50 flex items-center justify-center shrink-0 mt-0.5">
                             <span className="text-orange-600 font-bold text-[11px]">2</span>
                           </div>
@@ -2329,7 +2329,7 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                         <h3 className="text-sm font-bold text-stone-900 uppercase tracking-wider">{lang === 'zh' ? '已提炼洞察列表 (Key Points)' : 'Extracted Key Points'}</h3>
                         <div className="flex items-center gap-3">
                           <span className="text-xs text-stone-400">1,420 {lang === 'zh' ? '条' : 'items'}</span>
-                          <button className="p-1 rounded-md text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-colors" title={lang === 'zh' ? '作为独立文档打开' : 'Open as Document'}>
+                          <button onClick={() => navigate('/document?type=text&backTab=memory&source=keypoints_doc')} className="p-1 rounded-md text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-colors" title={lang === 'zh' ? '作为独立文档打开' : 'Open as Document'}>
                             <Maximize2 className="w-4 h-4" />
                           </button>
                         </div>
@@ -2340,7 +2340,7 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                           { title: '客户 A 反馈汇总', type: '实体', color: 'bg-indigo-50 text-indigo-600', badgeInfo: 'bg-indigo-100 text-indigo-700', text: '客户核心诉求：性能优化、数据安全、多端协同', icon: <Network className="w-4 h-4" /> },
                           { title: '行业竞品分析报告', type: '观点', color: 'bg-blue-50 text-blue-600', badgeInfo: 'bg-blue-100 text-blue-700', text: '竞品在移动端体验上更流畅，我们的差异化优势在于AI原生协作', icon: <Brain className="w-4 h-4" /> },
                         ].map((kp, idx) => (
-                          <div key={idx} className="flex items-center justify-between p-4 rounded-xl border border-stone-200/60 bg-white hover:bg-stone-50 hover:border-stone-200 transition-all group cursor-pointer shadow-sm">
+                          <div key={idx} onClick={() => navigate('/document?type=text&backTab=memory&source=keypoints_doc')} className="flex items-center justify-between p-4 rounded-xl border border-stone-200/60 bg-white hover:bg-stone-50 hover:border-stone-200 transition-all group cursor-pointer shadow-sm">
                             <div className="flex items-center gap-3.5">
                               <div className={`w-9 h-9 rounded-xl ${kp.color} flex items-center justify-center shrink-0`}>
                                 {kp.icon}

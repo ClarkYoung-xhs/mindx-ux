@@ -12,4 +12,8 @@
 
 ## 涉及修改的文件 (File Changes)
 - `src/pages/Dashboard.tsx` 
+- `src/pages/DocumentEditor.tsx`
 - `.gitignore` (预留)
+
+## 更新 2026-04-01
+1. **聚合文档视图与沉浸式路由闭环**：在 Dashboard 的 Memory 板块中，修复了原先点击独立卡片展示单一信息碎片的孤岛体验。现在，同一大类卡片（例如所有的“关于我”子分类、“当前目标”子目标池）点击后，均会携带聚合参数跳转至 DocumentEditor 以“全览文档”形态合并渲染。同时给后退按钮注入了穿透跳转逻辑，完美实现点哪里进便退回哪里的原生丝滑感。
