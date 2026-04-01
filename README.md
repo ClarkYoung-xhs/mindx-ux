@@ -139,7 +139,6 @@ npm run build
 ## 相关文档
 
 - [MindX 2.0 Memory 模块 PRD](./docs/PRD-mindx-v2-memory-module.md)
-- [2026-04-01 上午迭代记录](./docs/2026-04-01-mindx-v2-morning-update.md)
 
 ## License
 
