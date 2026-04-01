@@ -25,9 +25,9 @@ const translations: Record<Language, Record<string, string>> = {
 
     // Landing Page - Hero
     'landing.integrations': 'Integrations',
-    'landing.heroTitle1': 'Mindx is the online workspace',
-    'landing.heroTitle2': 'for you and your agents.',
-    'landing.heroDesc': 'Create docs, save context, and let your agents keep working across sessions and devices.',
+    'landing.heroTitle1': 'Make your agent',
+    'landing.heroTitle2': 'powerful.',
+    'landing.heroDesc': 'Give your agents persistent memory, structured knowledge, and the context they need to truly understand you.',
     'landing.seeHow': 'See How It Works',
 
     // Landing Page - Workflow
@@ -187,9 +187,9 @@ const translations: Record<Language, Record<string, string>> = {
 
     // Landing Page - Hero
     'landing.integrations': '集成平台',
-    'landing.heroTitle1': 'Mindx 是为你和 AI Agent',
-    'landing.heroTitle2': '打造的在线工作平台',
-    'landing.heroDesc': '创建文档、保存上下文，让你的 Agent 跨会话和设备持续工作。',
+    'landing.heroTitle1': '让你的 Agent',
+    'landing.heroTitle2': '更加强大',
+    'landing.heroDesc': '赋予你的 Agent 持久记忆、结构化知识与深度上下文，让它真正理解你。',
     'landing.seeHow': '了解工作原理',
 
     // Landing Page - Workflow
