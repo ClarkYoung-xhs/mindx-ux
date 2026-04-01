@@ -5,12 +5,12 @@ interface AvatarProps {
   className?: string;
 }
 
-/** Claude — 橙色螃蟹标志 */
+/** Claude — 深色简约标志 */
 export function ClaudeAvatar({ size = 24, className }: AvatarProps) {
   return (
     <div className={className} style={{ width: size, height: size }}>
       <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" width={size} height={size}>
-        <circle cx="24" cy="24" r="24" fill="#D97706" />
+        <circle cx="24" cy="24" r="24" fill="#18181B" />
         {/* Simplified Claude crab/asterisk mark */}
         <g transform="translate(24,24)">
           {/* 6 rounded petals radiating from center */}
@@ -32,12 +32,12 @@ export function ClaudeAvatar({ size = 24, className }: AvatarProps) {
   );
 }
 
-/** Data Analyzer — 绿色数据图表 */
+/** Data Analyzer — 深灰数据图表 */
 export function DataAnalyzerAvatar({ size = 24, className }: AvatarProps) {
   return (
     <div className={className} style={{ width: size, height: size }}>
       <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" width={size} height={size}>
-        <circle cx="24" cy="24" r="24" fill="#059669" />
+        <circle cx="24" cy="24" r="24" fill="#27272A" />
         {/* Bar chart */}
         <rect x="12" y="26" width="5" height="10" rx="1.5" fill="white" opacity="0.7" />
         <rect x="21.5" y="18" width="5" height="18" rx="1.5" fill="white" opacity="0.85" />
@@ -47,12 +47,12 @@ export function DataAnalyzerAvatar({ size = 24, className }: AvatarProps) {
   );
 }
 
-/** Research Bot — 紫色搜索/放大镜 */
+/** Research Bot — 深灰搜索/放大镜 */
 export function ResearchBotAvatar({ size = 24, className }: AvatarProps) {
   return (
     <div className={className} style={{ width: size, height: size }}>
       <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" width={size} height={size}>
-        <circle cx="24" cy="24" r="24" fill="#7C3AED" />
+        <circle cx="24" cy="24" r="24" fill="#3F3F46" />
         {/* Magnifying glass */}
         <circle cx="21" cy="21" r="7" stroke="white" strokeWidth="3" fill="none" />
         <line x1="26" y1="26" x2="34" y2="34" stroke="white" strokeWidth="3" strokeLinecap="round" />
@@ -61,12 +61,12 @@ export function ResearchBotAvatar({ size = 24, className }: AvatarProps) {
   );
 }
 
-/** 通用 Agent — 蓝色机器人 */
+/** 通用 Agent — 深灰机器人 */
 export function DefaultAgentAvatar({ size = 24, className }: AvatarProps) {
   return (
     <div className={className} style={{ width: size, height: size }}>
       <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" width={size} height={size}>
-        <circle cx="24" cy="24" r="24" fill="#2563EB" />
+        <circle cx="24" cy="24" r="24" fill="#52525B" />
         {/* Simple bot face */}
         <rect x="15" y="16" width="18" height="16" rx="4" stroke="white" strokeWidth="2.5" fill="none" />
         <circle cx="20" cy="24" r="2" fill="white" />

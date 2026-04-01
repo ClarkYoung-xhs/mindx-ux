@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { useProfile } from '../hooks/useProfile';
+import { useMindXDemo } from '../data/mindxDemoContext';
 import { 
   ArrowLeft, 
   MessageSquare, 
@@ -15,7 +16,6 @@ import {
   Check,
   X,
   Reply,
-  Send,
   History,
   Link2,
   ChevronDown,
@@ -114,6 +114,7 @@ function buildAgentReply(type: CommentThreadType, highlight: string, userText: s
 
 export default function DocumentEditor() {
   const navigate = useNavigate();
+  const { documents, memoryAssets, memoryDataSources, memorySourceLinks } = useMindXDemo();
   const currentUserName = 'You';
   const externalCollaboratorName = 'Maya Chen';
   const [isChatLog, setIsChatLog] = useState(false);
@@ -131,18 +132,89 @@ export default function DocumentEditor() {
   // Export submenu state
   const [showExportSubmenu, setShowExportSubmenu] = useState(false);
   
-  // Mock document list (从 Dashboard 获取的文档列表)
-  const currentDocId = 'd1'; // 当前正在查看的文档 ID (实际应该从 URL 参数获取)
-  const allDocs = [
-    { id: 'd1', name: 'Project Alpha Architecture', type: 'Smart Doc' },
-    { id: 'd6', name: 'Claude & Maya: Feature Discussion', type: 'Smart Doc' },
-    { id: 'd4', name: 'Competitor Analysis', type: 'Markdown' },
-    { id: 'd2', name: 'Q3 Financial Projections', type: 'Table' },
-    { id: 'd3', name: 'User Flow Diagram', type: 'Whiteboard' },
-    { id: 'd5', name: 'Marketing Strategy', type: 'Smart Doc' },
-    { id: 'd7', name: 'Industry Digest — Mar 27', type: 'Markdown' },
-    { id: 'd13', name: 'Daily Report — Mar 27', type: 'Markdown' },
-  ];
+  const queryString = window.location.search;
+  const queryParams = new URLSearchParams(queryString);
+  const requestedDocId = queryParams.get('id');
+  const currentDocId = requestedDocId ?? 'd1';
+  const source = queryParams.get('source');
+  const assetId = queryParams.get('assetId');
+  const dataSourceId = queryParams.get('dataSourceId');
+  const allDocs = documents.map(doc => ({ id: doc.id, name: doc.name, type: doc.type }));
+  const currentDoc = requestedDocId ? allDocs.find(doc => doc.id === requestedDocId) ?? null : null;
+  const memoryAssetDoc = useMemo(() => {
+    if (source !== 'memory_asset' || !assetId) return null;
+
+    const asset = memoryAssets.find(item => item.id === assetId);
+    if (!asset) return null;
+
+    const relatedSources = asset.sourceIds
+      .map(sourceId => memorySourceLinks.find(item => item.id === sourceId))
+      .filter((item): item is (typeof memorySourceLinks)[number] => Boolean(item));
+
+    return {
+      title: asset.title,
+      paragraphs: [
+        { id: 'p1', text: `## ${asset.title}`, author: currentUserName, authorType: 'human' as const },
+        { id: 'p2', text: asset.summary, author: currentUserName, authorType: 'human' as const },
+        { id: 'p3', text: '### Evidence', author: 'Research Bot', authorType: 'agent' as const },
+        {
+          id: 'p4',
+          text: asset.evidence.map((line, index) => `${index + 1}. ${line}`).join('\n'),
+          author: 'Research Bot',
+          authorType: 'agent' as const,
+        },
+        { id: 'p5', text: '### Next Step', author: 'Claude Assistant', authorType: 'agent' as const },
+        { id: 'p6', text: asset.nextStep, author: 'Claude Assistant', authorType: 'agent' as const },
+        { id: 'p7', text: '### Related Tags', author: currentUserName, authorType: 'human' as const },
+        { id: 'p8', text: asset.tags.map(tag => `#${tag}`).join('  '), author: currentUserName, authorType: 'human' as const },
+        { id: 'p9', text: '### Source Trail', author: 'Research Bot', authorType: 'agent' as const },
+        {
+          id: 'p10',
+          text:
+            relatedSources.length > 0
+              ? relatedSources.map(item => `- ${item.docName}: ${item.quote}`).join('\n')
+              : 'No linked sources yet.',
+          author: 'Research Bot',
+          authorType: 'agent' as const,
+        },
+      ],
+    };
+  }, [assetId, currentUserName, memoryAssets, memorySourceLinks, source]);
+  const memoryDataSourceDoc = useMemo(() => {
+    if (source !== 'data_source' || !dataSourceId) return null;
+
+    const dataSource = memoryDataSources.find(item => item.id === dataSourceId);
+    if (!dataSource) return null;
+
+    return {
+      title: dataSource.name,
+      paragraphs: [
+        { id: 'ds1', text: `## ${dataSource.name}`, author: currentUserName, authorType: 'human' as const },
+        { id: 'ds2', text: dataSource.summary, author: currentUserName, authorType: 'human' as const },
+        { id: 'ds3', text: '### Source Profile', author: 'memo agent', authorType: 'agent' as const },
+        {
+          id: 'ds4',
+          text: `Type: ${dataSource.typeLabel}\nStatus: ${dataSource.status}\nUpdated: ${dataSource.freshness}`,
+          author: 'memo agent',
+          authorType: 'agent' as const,
+        },
+        { id: 'ds5', text: '### Content Preview', author: 'memo agent', authorType: 'agent' as const },
+        {
+          id: 'ds6',
+          text: dataSource.contentPreview.map((line, index) => `${index + 1}. ${line}`).join('\n'),
+          author: 'memo agent',
+          authorType: 'agent' as const,
+        },
+        { id: 'ds7', text: '### Tags', author: currentUserName, authorType: 'human' as const },
+        {
+          id: 'ds8',
+          text: dataSource.tags.map(tag => `#${tag}`).join('  '),
+          author: currentUserName,
+          authorType: 'human' as const,
+        },
+      ],
+    };
+  }, [currentUserName, dataSourceId, memoryDataSources, source]);
   
   // Modal states
   const [duplicateModalOpen, setDuplicateModalOpen] = useState(false);
@@ -180,13 +252,12 @@ export default function DocumentEditor() {
   const [versionFilterDate, setVersionFilterDate] = useState<string>('all');
   const [versionFilterAuthor, setVersionFilterAuthor] = useState<string>('all');
   
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
+  const [chatMessages] = useState<ChatMessage[]>([
     { id: 'm1', sender: externalCollaboratorName, senderType: 'human', text: 'Hey Claude, can you help me draft the architecture for Project Alpha?', time: '10:00 AM' },
     { id: 'm2', sender: 'Claude 3.5 Sonnet', senderType: 'agent', text: 'Of course! I\'d be happy to help. What are the main requirements for the system?', time: '10:01 AM' },
     { id: 'm3', sender: externalCollaboratorName, senderType: 'human', text: 'It needs to be a microservices-based system with an Auth Service, Data Service, and Notification Service.', time: '10:05 AM' },
     { id: 'm4', sender: 'Claude 3.5 Sonnet', senderType: 'agent', text: 'Got it. For the Auth Service, I recommend using OAuth 2.0. The Data Service should probably use PostgreSQL for relational data.', time: '10:07 AM' },
   ]);
-  const [newMessage, setNewMessage] = useState('');
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [sharePublishToWeb, setSharePublishToWeb] = useState(false);
   const [shareLinkCopied, setShareLinkCopied] = useState(false);
@@ -247,28 +318,8 @@ export default function DocumentEditor() {
   useEffect(() => {
     // Simple check to simulate different document types
     const params = new URLSearchParams(window.location.search);
-    if (params.get('type') === 'chatlog') {
-      setIsChatLog(true);
-    }
-    // Fetch profile data from database for whoami_doc / goal_doc
-    const source = params.get('source');
-    if (source === 'whoami_doc' || source === 'goal_doc') {
-      const profileKey = source === 'whoami_doc' ? 'whoami' : 'goal';
-      fetch(`/api/profile?workspace_id=w1`)
-        .then(r => r.json())
-        .then(data => {
-          const content = data[profileKey];
-          if (content) {
-            localStorage.setItem(`mindx_raw_${source}`, content);
-            const lines = content.split('\n').filter((l: string) => l.trim());
-            setParagraphs(lines.map((text: string, i: number) => ({
-              id: `p${i + 1}`, text, author: currentUserName, authorType: 'human' as const
-            })));
-          }
-        })
-        .catch(() => {});
-    }
-  }, []);
+    setIsChatLog(params.get('type') === 'chatlog');
+  }, [queryString]);
 
   // Profile hook for whoami_doc / goal_doc persistence
   const urlSource = new URLSearchParams(window.location.search).get('source');
@@ -293,6 +344,14 @@ export default function DocumentEditor() {
   const [paragraphs, setParagraphs] = useState<Paragraph[]>(() => {
     const params = new URLSearchParams(window.location.search);
     const source = params.get('source');
+
+    if (source === 'memory_asset' && memoryAssetDoc) {
+      return memoryAssetDoc.paragraphs;
+    }
+
+    if (source === 'data_source' && memoryDataSourceDoc) {
+      return memoryDataSourceDoc.paragraphs;
+    }
     
     if (source === 'whoami_doc' || source === 'goal_doc') {
       // Start with localStorage fallback; useEffect will fetch from DB and update
@@ -571,7 +630,16 @@ export default function DocumentEditor() {
         updateProfile(profileKey, content);
       }, 1000);
     }
-  }, [paragraphs]);
+  }, [paragraphs, isProfileSource, profileLoading, profileKey, updateProfile]);
+
+  useEffect(() => {
+    if (source === 'memory_asset' && memoryAssetDoc) {
+      setParagraphs(memoryAssetDoc.paragraphs);
+    }
+    if (source === 'data_source' && memoryDataSourceDoc) {
+      setParagraphs(memoryDataSourceDoc.paragraphs);
+    }
+  }, [memoryAssetDoc, memoryDataSourceDoc, source]);
 
   const [comments, setComments] = useState<CommentThread[]>(() => [
     {
@@ -669,21 +737,6 @@ export default function DocumentEditor() {
   const commentRefs = useRef<Map<number, HTMLDivElement>>(new Map());
   const replyTimeoutsRef = useRef<Array<ReturnType<typeof window.setTimeout>>>([]);
   const editorRef = useRef<HTMLDivElement>(null);
-
-  const handleSendMessage = () => {
-    if (!newMessage.trim()) return;
-    
-    const newMsg: ChatMessage = {
-      id: `m${Date.now()}`,
-      sender: currentUserName,
-      senderType: 'human',
-      text: newMessage,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
-    
-    setChatMessages([...chatMessages, newMsg]);
-    setNewMessage('');
-  };
 
   const createTimeLabel = () =>
     new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -977,10 +1030,13 @@ export default function DocumentEditor() {
           </div>
           <div className="flex items-center gap-2">
             <h1 className="text-sm font-medium text-stone-900">
-              {isChatLog ? 'Claude & Maya: Feature Discussion' : (
+              {isChatLog ? currentDoc?.name ?? 'Claude & Maya: Feature Discussion' : (
                 (() => {
                   const params = new URLSearchParams(window.location.search);
                   const source = params.get('source');
+                  if (source === 'memory_asset') return memoryAssetDoc?.title ?? 'Memory Asset';
+                  if (source === 'data_source') return memoryDataSourceDoc?.title ?? 'Data Source';
+                  if (currentDoc?.name) return currentDoc.name;
                   if (source === 'whoami_doc') return '关于我 (Who am I)';
                   if (source === 'goal_doc') return '当前目标 (Goal)';
                   if (source === 'keypoints_doc') return '已提炼洞察列表 (Key Points)';
@@ -1735,28 +1791,6 @@ export default function DocumentEditor() {
                     </div>
                   </div>
                 ))}
-                <div className="pt-12 border-t border-stone-100">
-                  <div className="relative">
-                    <textarea 
-                      placeholder="Type a message to continue the conversation..."
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          handleSendMessage();
-                        }
-                      }}
-                      className="w-full bg-stone-50 border border-stone-200 rounded-2xl p-4 pr-14 text-sm focus:outline-none focus:border-stone-400 focus:bg-white transition-all shadow-sm resize-none h-32"
-                    />
-                    <button 
-                      onClick={handleSendMessage}
-                      className="absolute right-4 bottom-4 p-2.5 bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors shadow-lg shadow-stone-900/10"
-                    >
-                      <Send className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
               </div>
             ) : (
               displayedParagraphs.map((p, index) => {
