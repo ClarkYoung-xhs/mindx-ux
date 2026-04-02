@@ -312,6 +312,35 @@ export default function DocumentEditor() {
       ];
     }
 
+    if (source === 'rawdata') {
+      const rawId = params.get('rawId');
+      const title = params.get('title') || (rawId ? 'Raw Data' : 'Untitled');
+      const storedContent = rawId ? localStorage.getItem(`mindx_raw_${rawId}`) : null;
+      const contentLines = storedContent ? storedContent.split('\n').filter((l: string) => l.trim()) : [];
+      return [
+        {
+          id: 'p1',
+          text: `## ${title}`,
+          author: currentUserName,
+          authorType: 'human'
+        },
+        ...(contentLines.length > 0
+          ? contentLines.map((line: string, i: number) => ({
+              id: `p${i + 2}`,
+              text: line,
+              author: currentUserName,
+              authorType: 'human' as const
+            }))
+          : [{
+              id: 'p2',
+              text: storedContent || '',
+              author: currentUserName,
+              authorType: 'human' as const
+            }]
+        )
+      ];
+    }
+
     return [
     {
       id: 'p1',
@@ -946,6 +975,7 @@ export default function DocumentEditor() {
                   if (source === 'whoami_doc') return '关于我 (Who am I)';
                   if (source === 'goal_doc') return '当前目标 (Goal)';
                   if (source === 'keypoints_doc') return '已提炼洞察列表 (Key Points)';
+                  if (source === 'rawdata') return params.get('title') || '原始资料';
                   return 'Project Alpha Architecture';
                 })()
               )}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import OnboardingWizard from '../components/OnboardingWizard';
@@ -858,6 +858,57 @@ export default function Dashboard() {
   const [guideDismissed, setGuideDismissedState] = useState(() => localStorage.getItem('mindx_guide_dismissed') === 'true');
   const setGuideDismissed = (v: boolean) => { setGuideDismissedState(v); if (v) localStorage.setItem('mindx_guide_dismissed', 'true'); };
   const [activityFilterOwner, setActivityFilterOwner] = useState<string>('all');
+
+  // Memory upload states
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [rawDataItems, setRawDataItems] = useState<{id: string; name: string; type: string; size: number; uploadedAt: string; source: 'file' | 'paste'; content?: string}[]>([]);
+  const [isPasteModalOpen, setIsPasteModalOpen] = useState(false);
+  const [pasteTitle, setPasteTitle] = useState('');
+  const [pasteContent, setPasteContent] = useState('');
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    const newItems = Array.from(files).map((file: File, i: number) => ({
+      id: `raw-${Date.now()}-${i}`,
+      name: file.name,
+      type: file.name.split('.').pop()?.toUpperCase() || 'FILE',
+      size: file.size,
+      uploadedAt: new Date().toISOString(),
+      source: 'file' as const,
+    }));
+    setRawDataItems(prev => [...newItems, ...prev]);
+    setIsIntegrationMenuOpen(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handlePasteSubmit = () => {
+    if (!pasteContent.trim()) return;
+    const title = pasteTitle.trim() || (lang === 'zh' ? '粘贴的文本' : 'Pasted Text') + ` — ${new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`;
+    const itemId = `raw-${Date.now()}`;
+    // Store content in localStorage for editor to read
+    localStorage.setItem(`mindx_raw_${itemId}`, pasteContent);
+    setRawDataItems(prev => [{
+      id: itemId,
+      name: title,
+      type: 'TXT',
+      size: new Blob([pasteContent]).size,
+      uploadedAt: new Date().toISOString(),
+      source: 'paste' as const,
+      content: pasteContent,
+    }, ...prev]);
+    setPasteTitle('');
+    setPasteContent('');
+    setIsPasteModalOpen(false);
+    setIsIntegrationMenuOpen(false);
+  };
+
+  const openRawDataInEditor = (item: typeof rawDataItems[0]) => {
+    if (item.content) {
+      localStorage.setItem(`mindx_raw_${item.id}`, item.content);
+    }
+    navigate(`/document?type=text&backTab=memory&source=rawdata&rawId=${item.id}&title=${encodeURIComponent(item.name)}`);
+  };
 
   // Document actions
   const [agentPermissionModalOpen, setAgentPermissionModalOpen] = useState(false);
@@ -2405,7 +2456,7 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                                     <div className="space-y-4">
                                       <div>
                                         <h4 className="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-2">{lang === 'zh' ? '通用文档' : 'Documents'}</h4>
-                                        <button className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-stone-50 transition-colors group">
+                                        <button onClick={() => fileInputRef.current?.click()} className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-stone-50 transition-colors group">
                                           <div className="w-8 h-8 rounded-md bg-blue-50 flex items-center justify-center shrink-0">
                                             <FileText className="w-4 h-4 text-blue-600" />
                                           </div>
@@ -2414,7 +2465,7 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                                             <div className="text-[10px] text-stone-400 group-hover:text-stone-500 transition-colors">PDF, Word, TXT, Excel</div>
                                           </div>
                                         </button>
-                                        <button className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-stone-50 transition-colors group">
+                                        <button onClick={() => { setIsPasteModalOpen(true); setIsIntegrationMenuOpen(false); }} className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-stone-50 transition-colors group">
                                           <div className="w-8 h-8 rounded-md bg-stone-100 flex items-center justify-center shrink-0">
                                             <FileText className="w-4 h-4 text-stone-600" />
                                           </div>
@@ -2538,7 +2589,7 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                           <div className="flex flex-col gap-2 relative z-10 mt-auto pt-3 border-t border-stone-100/80">
                             <div className="flex items-center justify-between text-xs">
                               <span className="text-stone-500 font-medium">{lang === 'zh' ? '所有文件' : 'All Files'}</span>
-                              <span className="font-bold text-stone-700">128 {lang === 'zh' ? '个' : ''}</span>
+                              <span className="font-bold text-stone-700">{128 + rawDataItems.length} {lang === 'zh' ? '个' : ''}</span>
                             </div>
                             <div className="flex items-center justify-between text-xs group/pro cursor-pointer" onClick={() => setIsPricingModalOpen(true)}>
                               <div className="flex items-center gap-1.5">
@@ -2571,6 +2622,46 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                         </div>
                     </div>
                   </section>
+
+                  {/* Uploaded Raw Data List */}
+                  {rawDataItems.length > 0 && (
+                    <section className="mt-6">
+                      <h3 className="text-sm font-bold text-stone-900 mb-3 flex items-center gap-2">
+                        <FileText className="w-4 h-4 text-stone-500" />
+                        {lang === 'zh' ? '已上传的原始资料' : 'Uploaded Raw Data'}
+                        <span className="text-xs font-normal text-stone-400">({rawDataItems.length})</span>
+                      </h3>
+                      <div className="space-y-2">
+                        {rawDataItems.map(item => (
+                          <div key={item.id} onClick={() => openRawDataInEditor(item)} className="flex items-center justify-between p-3.5 rounded-xl border border-stone-200/60 bg-white hover:bg-stone-50 transition-all shadow-sm group cursor-pointer">
+                            <div className="flex items-center gap-3">
+                              <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${item.source === 'paste' ? 'bg-amber-50' : 'bg-blue-50'}`}>
+                                <FileText className={`w-4 h-4 ${item.source === 'paste' ? 'text-amber-600' : 'text-blue-600'}`} />
+                              </div>
+                              <div>
+                                <h4 className="text-[13px] font-semibold text-stone-800 truncate max-w-[320px]">{item.name}</h4>
+                                <p className="text-[11px] text-stone-400 flex items-center gap-2 mt-0.5">
+                                  <span className="font-medium text-stone-500">{item.type}</span>
+                                  <span className="w-1 h-1 rounded-full bg-stone-300"></span>
+                                  <span>{(item.size / 1024).toFixed(1)} KB</span>
+                                  <span className="w-1 h-1 rounded-full bg-stone-300"></span>
+                                  <span>{new Date(item.uploadedAt).toLocaleString(lang === 'zh' ? 'zh-CN' : 'en-US', {month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'})}</span>
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] font-medium px-2 py-1 rounded-full bg-blue-50 text-blue-600">
+                                {lang === 'zh' ? '等待提炼' : 'Pending'}
+                              </span>
+                              <button onClick={(e) => { e.stopPropagation(); setRawDataItems(prev => prev.filter(i => i.id !== item.id)); localStorage.removeItem(`mindx_raw_${item.id}`); }} className="p-1 rounded-md text-stone-300 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100">
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  )}
                 </div>
 
                   </div>
@@ -2581,6 +2672,97 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
           </div>
         </div>
       </main>
+
+      {/* Hidden file input for Memory upload */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        accept=".pdf,.doc,.docx,.txt,.md,.xlsx,.xls,.csv,.pptx,.ppt,.json"
+        className="hidden"
+        onChange={handleFileUpload}
+      />
+
+      {/* Paste Text Modal */}
+      {isPasteModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ animation: 'fadeIn 0.2s ease-out' }}>
+          <div className="absolute inset-0 bg-stone-900/40 backdrop-blur-sm" onClick={() => setIsPasteModalOpen(false)} />
+          <div className="relative bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden" style={{ animation: 'slideUp 0.3s ease-out' }}>
+            <div className="px-6 py-4 flex items-center justify-between border-b border-stone-100">
+              <h2 className="text-base font-bold text-stone-900">{lang === 'zh' ? '粘贴文本内容' : 'Paste Text Content'}</h2>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-medium text-stone-400 uppercase tracking-wider">Markdown</span>
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-600 text-[9px] font-bold">✓</span>
+                <button onClick={() => setIsPasteModalOpen(false)} className="p-1.5 hover:bg-stone-100 rounded-full transition-colors text-stone-500 hover:text-stone-900 ml-2">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-stone-600 mb-1.5 block">{lang === 'zh' ? '标题（可选）' : 'Title (Optional)'}</label>
+                <input
+                  type="text"
+                  value={pasteTitle}
+                  onChange={e => setPasteTitle(e.target.value)}
+                  placeholder={lang === 'zh' ? '为这份资料命名...' : 'Name this content...'}
+                  className="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:outline-none focus:border-stone-400 focus:ring-1 focus:ring-stone-200 transition-colors"
+                />
+              </div>
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-semibold text-stone-600">{lang === 'zh' ? '内容' : 'Content'}</label>
+                  <span className="text-[10px] text-stone-400">{lang === 'zh' ? '支持 Markdown 语法：# 标题、**粗体**、- 列表、> 引用、```代码块' : 'Supports Markdown: # headings, **bold**, - lists, > quotes, ```code'}</span>
+                </div>
+                <textarea
+                  value={pasteContent}
+                  onChange={e => setPasteContent(e.target.value)}
+                  placeholder={lang === 'zh' ? '在此粘贴你的 Markdown 或纯文本内容...\n\n例如：\n# 我的笔记\n\n这是一段 **重要** 的内容。\n\n- 要点一\n- 要点二' : 'Paste your Markdown or plain text here...\n\ne.g.:\n# My Notes\n\nThis is **important** content.\n\n- Point one\n- Point two'}
+                  rows={10}
+                  className="w-full px-4 py-3 border border-stone-200 rounded-lg text-sm font-mono leading-relaxed focus:outline-none focus:border-stone-400 focus:ring-1 focus:ring-stone-200 transition-colors resize-none bg-stone-50/50"
+                  autoFocus
+                />
+              </div>
+              {/* Live Markdown Preview */}
+              {pasteContent.trim() && (
+                <div>
+                  <label className="text-xs font-semibold text-stone-400 mb-1.5 block uppercase tracking-wider">{lang === 'zh' ? '预览' : 'Preview'}</label>
+                  <div className="border border-stone-200 rounded-lg p-4 bg-white max-h-48 overflow-y-auto prose-sm">
+                    {pasteContent.split('\n').map((line, i) => {
+                      const trimmed = line.trim();
+                      if (!trimmed) return <div key={i} className="h-2" />;
+                      if (trimmed.startsWith('### ')) return <h4 key={i} className="text-sm font-bold text-stone-800 mt-2 mb-1">{trimmed.slice(4)}</h4>;
+                      if (trimmed.startsWith('## ')) return <h3 key={i} className="text-base font-bold text-stone-900 mt-3 mb-1">{trimmed.slice(3)}</h3>;
+                      if (trimmed.startsWith('# ')) return <h2 key={i} className="text-lg font-bold text-stone-900 mt-3 mb-1">{trimmed.slice(2)}</h2>;
+                      if (trimmed.startsWith('> ')) return <blockquote key={i} className="border-l-2 border-stone-300 pl-3 text-stone-600 text-sm italic my-1">{trimmed.slice(2)}</blockquote>;
+                      if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) return <div key={i} className="flex items-start gap-2 text-sm text-stone-700 my-0.5"><span className="text-stone-400 mt-0.5">•</span><span dangerouslySetInnerHTML={{ __html: trimmed.slice(2).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/`(.+?)`/g, '<code class="bg-stone-100 px-1 rounded text-xs font-mono">$1</code>') }} /></div>;
+                      if (/^\d+\.\s/.test(trimmed)) return <div key={i} className="flex items-start gap-2 text-sm text-stone-700 my-0.5"><span className="text-stone-500 font-medium">{trimmed.match(/^(\d+)\./)?.[1]}.</span><span dangerouslySetInnerHTML={{ __html: trimmed.replace(/^\d+\.\s*/, '').replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/`(.+?)`/g, '<code class="bg-stone-100 px-1 rounded text-xs font-mono">$1</code>') }} /></div>;
+                      if (trimmed.startsWith('```')) return <div key={i} className="bg-stone-100 rounded px-2 py-0.5 text-[10px] font-mono text-stone-500">{trimmed.slice(3) || 'code'}</div>;
+                      return <p key={i} className="text-sm text-stone-700 my-0.5" dangerouslySetInnerHTML={{ __html: trimmed.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/`(.+?)`/g, '<code class="bg-stone-100 px-1 rounded text-xs font-mono">$1</code>') }} />;
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="px-6 py-4 border-t border-stone-100 flex items-center justify-between">
+              <span className="text-[11px] text-stone-400">{pasteContent.trim() ? `${pasteContent.split('\n').filter(l => l.trim()).length} ${lang === 'zh' ? '行' : 'lines'}` : ''}</span>
+              <div className="flex items-center gap-3">
+              <button onClick={() => setIsPasteModalOpen(false)} className="px-4 py-2 text-sm font-medium text-stone-600 hover:text-stone-800 hover:bg-stone-100 rounded-lg transition-colors">
+                {lang === 'zh' ? '取消' : 'Cancel'}
+              </button>
+              <button
+                onClick={handlePasteSubmit}
+                disabled={!pasteContent.trim()}
+                className="px-5 py-2 text-sm font-semibold text-white bg-stone-900 rounded-lg hover:bg-stone-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {lang === 'zh' ? '添加到原始资料' : 'Add to Raw Data'}
+              </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <PricingModal isOpen={isPricingModalOpen} onClose={() => setIsPricingModalOpen(false)} lang={lang} />
     </div>
   );
