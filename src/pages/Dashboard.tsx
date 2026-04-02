@@ -3006,70 +3006,69 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                         )}
                       </div>
                     </div>
-                    <div className="grid grid-cols-1 gap-4">
-
-                        <div className="p-4 rounded-xl border border-white/60 bg-white/60 shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5 backdrop-blur-xl relative overflow-hidden group flex flex-col">
-                          <div className="absolute top-0 right-0 w-16 h-16 bg-blue-50/50 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-110" />
-                          <Database className="w-6 h-6 text-blue-600 mb-3 relative z-10" />
-                          <h3 className="font-semibold text-stone-900 text-sm mb-1">{lang === 'zh' ? '空间内部源' : 'Workspace Docs'}</h3>
-                          <p className="text-xs text-stone-500 mb-5 relative z-10">{lang === 'zh' ? '当前工作空间内的所有内部文档' : 'All internal docs in workspace'}</p>
-                          <div className="flex flex-col gap-2 relative z-10 mt-auto pt-3 border-t border-stone-100/80">
-                            <div 
-                              className="flex items-center justify-between text-xs cursor-pointer bg-blue-50/50 border border-blue-100 hover:border-blue-300 hover:bg-blue-100/50 p-2.5 rounded-xl transition-all duration-300 group shadow-sm hover:shadow"
-                              onClick={() => setIsRawDataModalOpen(true)}
-                            >
-                              <span className="text-blue-700 font-semibold flex items-center gap-2">
-                                <FileText className="w-4 h-4 text-blue-500" />
-                                {lang === 'zh' ? '管理所有空间内部文档' : 'Manage All Internal Docs'}
-                              </span>
-                              <div className="flex items-center gap-2">
-                                <span className="font-bold text-stone-900 bg-white border border-stone-200 group-hover:border-blue-200 px-2 py-0.5 rounded-md transition-colors shadow-sm">
-                                  {rawDataItems.length} {lang === 'zh' ? '份资料' : 'Files'}
-                                </span>
-                                <ChevronRight className="w-4 h-4 text-blue-400 group-hover:text-blue-600 transition-colors group-hover:translate-x-0.5" />
-                              </div>
+                    <div className="space-y-3">
+                        {/* 文档管理入口 — 横条式 */}
+                        <div 
+                          className="flex items-center justify-between p-3.5 bg-white/60 border border-stone-100 rounded-xl cursor-pointer hover:shadow-md hover:border-blue-200 transition-all duration-200 group"
+                          onClick={() => setIsRawDataModalOpen(true)}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
+                              <Database className="w-4 h-4 text-blue-600" />
                             </div>
-                            <div className="flex items-center justify-between text-xs group/pro cursor-pointer hover:bg-stone-50 p-1.5 -mx-1.5 rounded-md transition-colors" onClick={() => setIsPricingModalOpen(true)}>
-                              <div className="flex items-center gap-1.5">
-                                 <span className="text-stone-500 font-medium">{lang === 'zh' ? '大模型提炼队列 (Agent Insight Engine)' : 'Agent Insight Engine'}</span>
-                                 <span className="text-[9px] font-bold bg-stone-900 text-white px-1.5 py-0.5 rounded leading-none shadow-sm tracking-wider">PRO</span>
-                              </div>
-                              <span className="font-bold text-stone-900 animate-pulse text-blue-600">
-                                {rawDataItems.length} {lang === 'zh' ? '待处理' : 'pending'}
-                              </span>
+                            <div>
+                              <div className="text-sm font-semibold text-stone-900">{lang === 'zh' ? '空间内部源' : 'Workspace Docs'}</div>
+                              <div className="text-[11px] text-stone-400">{lang === 'zh' ? '当前工作空间内的所有内部文档' : 'All internal docs in workspace'}</div>
                             </div>
-
-                            {/* Extract Insights Button */}
-                            <div className="pt-2 mt-2 border-t border-stone-100/80">
-                              <button 
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleStartExtraction();
-                                }}
-                                disabled={extractionRunning || rawDataItems.length === 0}
-                                className={`w-full flex items-center justify-center gap-2 text-white text-sm font-semibold p-3.5 rounded-xl transition-all duration-300 shadow-md ${
-                                  extractionRunning || rawDataItems.length === 0
-                                    ? 'bg-stone-300 cursor-not-allowed shadow-none'
-                                    : 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.98]'
-                                }`}
-                              >
-                                {extractionRunning ? (
-                                  <>
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                    {lang === 'zh' ? '正在提取全量资料...' : 'Extracting Insights...'}
-                                  </>
-                                ) : (
-                                  <>
-                                    <Sparkles className="w-4 h-4" />
-                                    {lang === 'zh' ? `开始洞察 (${rawDataItems.length} 个未处理)` : `Start Insight (${rawDataItems.length} Pending)`}
-                                  </>
-                                )}
-                              </button>
-                            </div>
-
-
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-stone-700 bg-stone-100 group-hover:bg-blue-50 group-hover:text-blue-700 px-2.5 py-1 rounded-lg transition-colors">
+                              {rawDataItems.length} {lang === 'zh' ? '份资料' : 'Files'}
+                            </span>
+                            <ChevronRight className="w-4 h-4 text-stone-300 group-hover:text-blue-500 group-hover:translate-x-0.5 transition-all" />
                           </div>
                         </div>
+
+                        {/* 提炼引擎状态条 */}
+                        <div 
+                          className="flex items-center justify-between p-3 bg-white/40 border border-stone-100 rounded-xl cursor-pointer hover:bg-stone-50/50 transition-colors"
+                          onClick={() => setIsPricingModalOpen(true)}
+                        >
+                          <div className="flex items-center gap-2">
+                            <Sparkles className="w-4 h-4 text-stone-400" />
+                            <span className="text-xs font-medium text-stone-500">{lang === 'zh' ? '大模型提炼队列' : 'Agent Insight Engine'}</span>
+                            <span className="text-[9px] font-bold bg-stone-900 text-white px-1.5 py-0.5 rounded leading-none tracking-wider">PRO</span>
+                          </div>
+                          <span className="text-xs font-bold text-blue-600 animate-pulse">
+                            {rawDataItems.length} {lang === 'zh' ? '待处理' : 'pending'}
+                          </span>
+                        </div>
+
+                        {/* 操作按钮 */}
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleStartExtraction();
+                          }}
+                          disabled={extractionRunning || rawDataItems.length === 0}
+                          className={`w-full flex items-center justify-center gap-2 text-white text-sm font-semibold p-3.5 rounded-xl transition-all duration-300 shadow-md ${
+                            extractionRunning || rawDataItems.length === 0
+                              ? 'bg-stone-300 cursor-not-allowed shadow-none'
+                              : 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.98]'
+                          }`}
+                        >
+                          {extractionRunning ? (
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                              {lang === 'zh' ? '正在提取全量资料...' : 'Extracting Insights...'}
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="w-4 h-4" />
+                              {lang === 'zh' ? `开始洞察 (${rawDataItems.length} 个未处理)` : `Start Insight (${rawDataItems.length} Pending)`}
+                            </>
+                          )}
+                        </button>
                     </div>
                   </section>
 
