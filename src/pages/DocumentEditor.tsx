@@ -501,6 +501,32 @@ export default function DocumentEditor() {
     ];
   });
 
+  // Auto-save mechanism for rawdata / custom memory nodes
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const source = params.get('source');
+    const rawId = params.get('rawId');
+
+    if (source === 'rawdata' && rawId && paragraphs.length > 0) {
+      // Exclude title (p1), store the rest
+      const content = paragraphs.slice(1).map(p => p.text).join('\n');
+      localStorage.setItem(`mindx_raw_${rawId}`, content);
+
+      try {
+        const nodesStr = localStorage.getItem('mindx_memory_nodes');
+        if (nodesStr) {
+          const nodes = JSON.parse(nodesStr);
+          const nodeIndex = nodes.findIndex((n: any) => n.id === rawId);
+          if (nodeIndex !== -1) {
+            nodes[nodeIndex].content = content; 
+            nodes[nodeIndex].updatedAt = new Date().toISOString();
+            localStorage.setItem('mindx_memory_nodes', JSON.stringify(nodes));
+          }
+        }
+      } catch(e) {}
+    }
+  }, [paragraphs]);
+
   const [comments, setComments] = useState<CommentThread[]>(() => [
     {
       id: 1,
@@ -888,83 +914,20 @@ export default function DocumentEditor() {
         <div className="flex items-center gap-4">
           <div className="relative">
             <button 
-              onClick={() => navigate('/dashboard')} 
-              onMouseEnter={() => setShowDocList(true)}
-              onMouseLeave={() => setShowDocList(false)}
+              onClick={() => {
+                const params = new URLSearchParams(window.location.search);
+                const backTab = params.get('backTab');
+                if (backTab) {
+                  navigate(`/dashboard?tab=${backTab}`);
+                } else {
+                  navigate('/dashboard');
+                }
+              }} 
               className="p-2 rounded-md hover:bg-stone-100 text-stone-500 transition-colors"
-              title="返回主页"
+              title="返回"
             >
-              <Home className="w-4 h-4" />
+              <ArrowLeft className="w-5 h-5" />
             </button>
-            
-            {/* Document List Popup */}
-            {showDocList && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
-                className="absolute left-0 top-full mt-1 w-80 bg-white border border-stone-200 rounded-xl shadow-2xl z-50 overflow-hidden"
-                onMouseEnter={() => setShowDocList(true)}
-                onMouseLeave={() => setShowDocList(false)}
-              >
-                <div className="px-4 py-3 border-b border-stone-100 bg-stone-50">
-                  <p className="text-xs font-semibold text-stone-600 uppercase tracking-wider">快速切换文档</p>
-                </div>
-                <div className="max-h-96 overflow-y-auto custom-scrollbar">
-                  {allDocs.map((doc) => {
-                    const isCurrentDoc = doc.id === currentDocId;
-                    return (
-                      <button
-                        key={doc.id}
-                        onClick={() => {
-                          if (!isCurrentDoc) {
-                            setShowDocList(false);
-                            // Navigate to the selected document
-                            navigate(`/doc?id=${doc.id}${doc.type === 'Smart Doc' ? '&type=chatlog' : ''}`);
-                          }
-                        }}
-                        disabled={isCurrentDoc}
-                        className={`w-full px-4 py-3 transition-colors text-left flex items-start gap-3 group border-l-2 ${
-                          isCurrentDoc 
-                            ? 'bg-blue-50 border-blue-500 cursor-default' 
-                            : 'border-transparent hover:bg-stone-50 hover:border-stone-300'
-                        }`}
-                      >
-                        <div className="mt-0.5 flex-shrink-0">
-                          <FileText className={`w-4 h-4 ${
-                            isCurrentDoc 
-                              ? 'text-blue-600' 
-                              : 'text-stone-400 group-hover:text-stone-600'
-                          }`} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className={`text-sm truncate font-medium ${
-                            isCurrentDoc 
-                              ? 'text-blue-900' 
-                              : 'text-stone-900'
-                          }`}>
-                            {doc.name}
-                          </p>
-                          <p className={`text-xs truncate mt-0.5 ${
-                            isCurrentDoc 
-                              ? 'text-blue-600' 
-                              : 'text-stone-500'
-                          }`}>
-                            {doc.type}
-                          </p>
-                        </div>
-                        {isCurrentDoc && (
-                          <div className="flex-shrink-0 mt-1">
-                            <div className="w-2 h-2 rounded-full bg-blue-500" />
-                          </div>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </motion.div>
-            )}
           </div>
           <div className="flex items-center gap-2">
             <h1 className="text-sm font-medium text-stone-900">

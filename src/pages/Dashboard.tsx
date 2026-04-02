@@ -56,7 +56,8 @@ import {
   Maximize2,
   Video,
   Mic,
-  RefreshCw
+  RefreshCw,
+  CheckCircle2
 } from 'lucide-react';
 
 const initialWorkspaces = [
@@ -815,7 +816,11 @@ export default function Dashboard() {
   const initLang = localStorage.getItem('mindx_lang') || 'en';
   const [workspaces, setWorkspaces] = useState(initialWorkspaces);
   const [activeWorkspaceId, setActiveWorkspaceId] = useState(initialWorkspaces[0]?.id ?? 'w1');
-  const [agents, setAgents] = useState(isNewUser ? [] : initialAgents);
+  const [agents, setAgents] = useState(() => {
+    try { const saved = localStorage.getItem('mindx_agents'); if (saved) return JSON.parse(saved); } catch {}
+    return isNewUser ? [] : initialAgents;
+  });
+  useEffect(() => { localStorage.setItem('mindx_agents', JSON.stringify(agents)); }, [agents]);
   const [permissions, setPermissions] = useState(() => {
     if (isNewUser) {
       return [{ id: 'p1', workspaceId: 'w1', memberId: currentUser.id, memberType: 'Human' as const, role: 'Owner' }];
@@ -859,10 +864,137 @@ export default function Dashboard() {
   const setGuideDismissed = (v: boolean) => { setGuideDismissedState(v); if (v) localStorage.setItem('mindx_guide_dismissed', 'true'); };
   const [activityFilterOwner, setActivityFilterOwner] = useState<string>('all');
 
+  // Extraction Agent states
+  const [isModelConfigOpen, setIsModelConfigOpen] = useState(false);
+  const [extractionModel, setExtractionModel] = useState(() => localStorage.getItem('mindx_extraction_model') || 'gpt-5.4');
+  const [extractionApiKey, setExtractionApiKey] = useState(() => localStorage.getItem('mindx_extraction_apikey') || '');
+  const [extractionBaseUrl, setExtractionBaseUrl] = useState(() => localStorage.getItem('mindx_extraction_baseurl') || 'https://right.codes/codex');
+  const [extractionRunning, setExtractionRunning] = useState(false);
+  const [extractionLogs, setExtractionLogs] = useState<{id: string; text: string; time: string; status: 'done' | 'running' | 'pending'}[]>([]);
+
+  // Extracted key points (output of extraction agent)
+  const [extractedKeyPoints, setExtractedKeyPoints] = useState<{id: string; title: string; type: string; text: string; source: string; createdAt: string}[]>(() => {
+    try { const saved = localStorage.getItem('mindx_extracted_keypoints'); return saved ? JSON.parse(saved) : []; } catch { return []; }
+  });
+  useEffect(() => {
+    localStorage.setItem('mindx_extracted_keypoints', JSON.stringify(extractedKeyPoints));
+  }, [extractedKeyPoints]);
+
+  const handleStartExtraction = async () => {
+    if (!extractionApiKey.trim()) { setIsModelConfigOpen(true); return; }
+    if (rawDataItems.length === 0) return;
+    setExtractionRunning(true);
+
+    const newLog = {
+      id: `log-${Date.now()}`,
+      text: lang === 'zh' ? `正在使用 ${extractionModel} 提炼全局 ${rawDataItems.length} 个未处理文件...` : `Extracting ${rawDataItems.length} documents with ${extractionModel}...`,
+      time: 'now',
+      status: 'running' as const,
+    };
+    setExtractionLogs(prev => [newLog, ...prev]);
+
+    try {
+      const allKPs: any[] = [];
+      
+      for (const item of rawDataItems) {
+        // Find content either from item properties, or read from localStorage if it's been edited
+        const rawContent = item.content || localStorage.getItem(`mindx_raw_${item.id}`) || '';
+        if (!rawContent.trim()) continue;
+
+        const prompt = `You MUST return ONLY a valid JSON object with a single property "insights" containing an array. Each object in the array should have two string properties: "type" (choose one of: '${lang === 'zh' ? '决策' : 'Decision'}', '${lang === 'zh' ? '实体' : 'Entity'}', '${lang === 'zh' ? '洞察' : 'Insight'}') and "text" (a one-sentence description of the insight, respond in ${lang === 'zh' ? 'Chinese' : 'English'}). \n\nText:\n${rawContent}`;
+
+        let baseUrl = extractionBaseUrl.endsWith('/') ? extractionBaseUrl.slice(0, -1) : extractionBaseUrl;
+        const apiUrl = baseUrl.includes('/v1') || baseUrl.includes('/chat') ? baseUrl : `${baseUrl}/v1/chat/completions`;
+
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${extractionApiKey}`
+          },
+          body: JSON.stringify({
+            model: extractionModel,
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0.1,
+            response_format: { type: "json_object" }
+          })
+        });
+
+        if (!response.ok) throw new Error(`API returned status: ${response.status}`);
+        const data = await response.json();
+        let answer = data.choices[0]?.message?.content || '{"insights":[]}';
+        
+        try {
+          if(answer.includes('```json')) {
+             answer = answer.split('```json')[1].split('```')[0].trim();
+          }
+          const parsed = JSON.parse(answer);
+          const insightsArray = parsed.insights || (Array.isArray(parsed) ? parsed : []);
+          
+          if (Array.isArray(insightsArray)) {
+            insightsArray.forEach((insight: any, index: number) => {
+              allKPs.push({
+                id: `kp-${Date.now()}-${item.id}-${index}`,
+                title: item.name,
+                type: insight.type || (lang === 'zh' ? '洞察' : 'Insight'),
+                text: insight.text || 'Unknown insight',
+                source: item.name,
+                createdAt: new Date().toISOString()
+              });
+            });
+          }
+        } catch (e) {
+          console.error('Failed to parse model output for', item.id, e, answer);
+        }
+      }
+
+      setExtractionRunning(false);
+      setExtractionLogs(prev => prev.map(l => l.id === newLog.id ? { ...l, text: lang === 'zh' ? `已完成全量 ${rawDataItems.length} 个文档的提炼，共发现 ${allKPs.length} 条有效洞察并入库` : `Completed extraction of ${rawDataItems.length} docs, found ${allKPs.length} insights`, status: 'done' as const, time: 'just now' } : l));
+      
+      if (allKPs.length > 0) {
+        setExtractedKeyPoints(prev => [...allKPs, ...prev]);
+      }
+    } catch (err: any) {
+      setExtractionRunning(false);
+      setExtractionLogs(prev => prev.map(l => l.id === newLog.id ? { ...l, text: lang === 'zh' ? `资料引擎提炼中断抛错: ${err.message}` : `Extraction failed: ${err.message}`, status: 'done' as const, time: 'just now' } : l));
+    }
+  };
+
   // Memory upload states
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [rawDataItems, setRawDataItems] = useState<{id: string; name: string; type: string; size: number; uploadedAt: string; source: 'file' | 'paste'; content?: string}[]>([]);
+  const [rawDataItems, setRawDataItems] = useState<{id: string; name: string; type: string; size: number; uploadedAt: string; source: 'file' | 'paste'; content?: string}[]>(() => {
+    try { const saved = localStorage.getItem('mindx_raw_data_items'); return saved ? JSON.parse(saved) : []; } catch { return []; }
+  });
+
+  // Clean up legacy mock data
+  useEffect(() => {
+    setRawDataItems(prev => prev.filter(item => item.name !== '自定义记忆文档' && item.name !== 'Mindx 的核心产品设定'));
+    setExtractedKeyPoints(prev => prev.filter(item => 
+      !item.text.includes('核心决策要点') && 
+      !item.text.includes('人物关系') && 
+      !item.text.includes('模式与洞察') &&
+      !item.text.includes('Core decision extracted') &&
+      !item.text.includes('Identified key entities') &&
+      !item.text.includes('Discovered actionable patterns')
+    ));
+  }, []);
+
+  // Persist rawDataItems to localStorage on change
+  useEffect(() => {
+    localStorage.setItem('mindx_raw_data_items', JSON.stringify(rawDataItems.map(({ content, ...rest }) => rest)));
+  }, [rawDataItems]);
   const [isPasteModalOpen, setIsPasteModalOpen] = useState(false);
+  const [isRawDataModalOpen, setIsRawDataModalOpen] = useState(false);
+
+  // Custom memory nodes
+  const [isMemoryNodesExpanded, setIsMemoryNodesExpanded] = useState(false);
+  const [memoryNodeInput, setMemoryNodeInput] = useState('');
+  const [memoryNodes, setMemoryNodes] = useState<{id: string; title: string; content: string; createdAt: string; updatedAt: string}[]>(() => {
+    try { const saved = localStorage.getItem('mindx_memory_nodes'); return saved ? JSON.parse(saved) : []; } catch { return []; }
+  });
+  useEffect(() => {
+    localStorage.setItem('mindx_memory_nodes', JSON.stringify(memoryNodes));
+  }, [memoryNodes]);
   const [pasteTitle, setPasteTitle] = useState('');
   const [pasteContent, setPasteContent] = useState('');
 
@@ -2152,6 +2284,100 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                   </button>
                 </div>
 
+                {/* Extraction Agent Model Config */}
+                <div className="bg-white border border-stone-200/80 rounded-xl shadow-[0_2px_12px_rgba(0,0,0,0.02)] p-6 mb-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-9 h-9 rounded-xl bg-violet-600 flex items-center justify-center shadow-sm shadow-violet-500/20">
+                      <Bot className="w-4 h-4 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-semibold text-stone-900 flex items-center gap-2">
+                        {lang === 'zh' ? '萃取 Agent 模型配置' : 'Extraction Agent Config'}
+                        <span className={`inline-flex items-center gap-1 text-[9px] font-medium px-1.5 py-0.5 rounded-full ${extractionApiKey ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${extractionApiKey ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                          {extractionApiKey ? (lang === 'zh' ? '已配置' : 'Ready') : (lang === 'zh' ? '待配置' : 'Not set')}
+                        </span>
+                      </h3>
+                      <p className="text-[11px] text-stone-500">{lang === 'zh' ? '配置用于萃取原始文档信息的大模型' : 'Configure the LLM used for raw data extraction'}</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    {/* Model */}
+                    <div>
+                      <label className="text-xs font-semibold text-stone-600 mb-1.5 block">{lang === 'zh' ? '模型' : 'Model'}</label>
+                      <select
+                        value={extractionModel}
+                        onChange={e => setExtractionModel(e.target.value)}
+                        className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm focus:outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-200 transition-colors bg-white cursor-pointer"
+                      >
+                        <optgroup label="OpenAI">
+                          <option value="gpt-5.4">GPT-5.4</option>
+                          <option value="gpt-4o">GPT-4o</option>
+                          <option value="gpt-4o-mini">GPT-4o Mini</option>
+                          <option value="o3-mini">o3-mini</option>
+                        </optgroup>
+                        <optgroup label="Anthropic">
+                          <option value="claude-sonnet-4-20250514">Claude Sonnet 4</option>
+                          <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
+                          <option value="claude-3-5-haiku-20241022">Claude 3.5 Haiku</option>
+                        </optgroup>
+                        <optgroup label="DeepSeek">
+                          <option value="deepseek-chat">DeepSeek V3</option>
+                          <option value="deepseek-reasoner">DeepSeek R1</option>
+                        </optgroup>
+                        <optgroup label={lang === 'zh' ? '国产模型' : 'Chinese Models'}>
+                          <option value="qwen-max">Qwen Max</option>
+                          <option value="glm-4-plus">GLM-4 Plus</option>
+                          <option value="moonshot-v1-128k">Moonshot 128K</option>
+                        </optgroup>
+                      </select>
+                    </div>
+
+                    {/* API Key */}
+                    <div>
+                      <label className="text-xs font-semibold text-stone-600 mb-1.5 block">API Key</label>
+                      <input
+                        type="password"
+                        value={extractionApiKey}
+                        onChange={e => setExtractionApiKey(e.target.value)}
+                        placeholder={lang === 'zh' ? '输入模型对应的 API Key...' : 'Enter API key for selected model...'}
+                        className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm font-mono focus:outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-200 transition-colors"
+                      />
+                      <p className="text-[10px] text-stone-400 mt-1">{lang === 'zh' ? 'API Key 仅存储在浏览器本地，不会上传到服务器' : 'Stored locally in your browser only, never sent to our servers'}</p>
+                    </div>
+
+                    {/* Base URL */}
+                    <div>
+                      <label className="text-xs font-semibold text-stone-600 mb-1.5 block">Base URL <span className="text-stone-400 font-normal">({lang === 'zh' ? '可选' : 'Optional'})</span></label>
+                      <input
+                        type="text"
+                        value={extractionBaseUrl}
+                        onChange={e => setExtractionBaseUrl(e.target.value)}
+                        placeholder={lang === 'zh' ? '自定义 API 端点，留空则使用官方默认' : 'Custom endpoint, leave empty for official default'}
+                        className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm font-mono focus:outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-200 transition-colors"
+                      />
+                    </div>
+
+                    {/* Save */}
+                    <div className="flex items-center justify-between pt-2">
+                      <div className="bg-violet-50/60 rounded-lg px-3 py-2 border border-violet-100 flex-1 mr-4">
+                        <p className="text-[10px] text-violet-600">{lang === 'zh' ? '💡 萃取 Agent 会从原始文档中提取关键事实、识别洞察模式、生成结构化知识条目并更新记忆库。' : '💡 Extracts key facts, identifies patterns, generates knowledge entries & updates memory.'}</p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          localStorage.setItem('mindx_extraction_model', extractionModel);
+                          localStorage.setItem('mindx_extraction_apikey', extractionApiKey);
+                          localStorage.setItem('mindx_extraction_baseurl', extractionBaseUrl);
+                        }}
+                        className="px-5 py-2 text-sm font-semibold text-white bg-violet-600 rounded-lg hover:bg-violet-700 transition-colors shrink-0"
+                      >
+                        {lang === 'zh' ? '保存' : 'Save'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Logout */}
                 <button
                   onClick={() => {
@@ -2289,7 +2515,7 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
 
                 <div className="space-y-12">
                   {/* Top: Mind Config Nodes */}
-                  <div className="grid lg:grid-cols-2 gap-8 items-stretch">
+                  <div className="grid md:grid-cols-2 gap-6 items-stretch mb-10">
                     {/* Who am I (Core User Profile) */}
                     <section className="h-full flex flex-col bg-white/60 backdrop-blur-2xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-2xl p-6 relative overflow-hidden group transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)]">
                       <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50/50 rounded-bl-full -mr-16 -mt-16 transition-transform group-hover:scale-110" />
@@ -2372,6 +2598,115 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                     </section>
                   </div>
 
+                  {/* Custom Memory Nodes Block */}
+                  <div className="mb-4 flex items-center justify-between">
+                    <h3 className="font-bold text-stone-900 text-[13px] flex items-center gap-2">
+                      <Brain className="w-4 h-4 text-violet-500" />
+                      {lang === 'zh' ? '自定义记忆节点 (Custom Nodes)' : 'Custom Memory Nodes'}
+                    </h3>
+                  </div>
+                  <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-stretch">
+                    {/* Custom Memory Nodes mapped as cards */}
+                    {memoryNodes.map(node => (
+                      <section key={node.id} className="h-full flex flex-col bg-white/60 backdrop-blur-2xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-2xl p-6 relative overflow-hidden group transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)]">
+                        <div className="flex items-center justify-between mb-5 relative z-10">
+                          <h2 className="text-sm font-bold text-stone-900 flex items-center gap-2 truncate pr-2">
+                            <Brain className="w-4 h-4 text-violet-500 shrink-0" />
+                            <span className="truncate">{node.title}</span>
+                          </h2>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button onClick={() => navigate(`/document?type=text&backTab=memory&source=rawdata&rawId=${node.id}&title=${encodeURIComponent(node.title)}`)} className="p-1 rounded-md text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-colors" title={lang === 'zh' ? '作为独立文档打开' : 'Open as Document'}>
+                              <Maximize2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button onClick={() => {
+                              setMemoryNodes(prev => prev.filter(n => n.id !== node.id));
+                              localStorage.removeItem(`mindx_raw_${node.id}`);
+                            }} className="p-1 rounded-md text-stone-400 hover:text-red-500 hover:bg-red-50 transition-colors">
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="space-y-3 relative z-10 mt-auto">
+                          <div onClick={() => navigate(`/document?type=text&backTab=memory&source=rawdata&rawId=${node.id}&title=${encodeURIComponent(node.title)}`)} className="bg-white/70 rounded-xl p-3.5 border border-stone-200/50 hover:bg-white hover:border-stone-300/60 transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-0.5 backdrop-blur-sm cursor-pointer min-h-[80px] group/card">
+                             <div className="flex items-center justify-between mb-2">
+                               <span className="text-[10px] font-medium text-stone-400">
+                                 {new Date(node.updatedAt).toLocaleString(lang === 'zh' ? 'zh-CN' : 'en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                               </span>
+                               <ExternalLink className="w-3 h-3 text-stone-400 opacity-0 group-hover/card:opacity-100 transition-opacity" />
+                             </div>
+                             <p className="text-xs text-stone-600 line-clamp-3 font-medium">
+                               {node.content ? node.content : (lang === 'zh' ? '自定义记忆节点。点击进入完整文档进行读写。' : 'Custom memory node. Click to edit in full document view.')}
+                             </p>
+                          </div>
+                        </div>
+                      </section>
+                    ))}
+
+                    {/* Add New Custom Node Card */}
+                    <section className="h-full flex flex-col justify-center bg-stone-50/40 backdrop-blur-sm border-[1.5px] border-dashed border-stone-300 rounded-2xl p-6 transition-all duration-300 hover:bg-stone-100/50 hover:border-stone-400 group relative min-h-[200px]">
+                      {isMemoryNodesExpanded ? (
+                        <div className="w-full flex justify-center">
+                          <div className="w-full space-y-3">
+                            <div className="flex items-center gap-2">
+                              <Brain className="w-4 h-4 text-violet-500" />
+                              <span className="text-xs font-semibold text-stone-700">{lang === 'zh' ? '添加自定义节点' : 'Add Custom Node'}</span>
+                            </div>
+                            <input
+                              type="text"
+                              value={memoryNodeInput}
+                              onChange={e => setMemoryNodeInput(e.target.value)}
+                              onKeyDown={e => {
+                                if (e.key === 'Enter' && memoryNodeInput.trim()) {
+                                  const newNode = { id: `mnode-${Date.now()}`, title: memoryNodeInput.trim(), content: '', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+                                  setMemoryNodes(prev => [...prev, newNode]); // append
+                                  localStorage.setItem(`mindx_raw_${newNode.id}`, '');
+                                  setMemoryNodeInput('');
+                                  setIsMemoryNodesExpanded(false);
+                                } else if (e.key === 'Escape') {
+                                  setIsMemoryNodesExpanded(false);
+                                }
+                              }}
+                              placeholder={lang === 'zh' ? '输入名称后回车...' : 'Type name and hit Enter...'}
+                              className="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-200 bg-white shadow-sm"
+                              autoFocus
+                            />
+                            <div className="flex items-center gap-2 shrink-0">
+                               <button 
+                                 onClick={() => {
+                                  if (!memoryNodeInput.trim()) return;
+                                  const newNode = { id: `mnode-${Date.now()}`, title: memoryNodeInput.trim(), content: '', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+                                  setMemoryNodes(prev => [...prev, newNode]);
+                                  localStorage.setItem(`mindx_raw_${newNode.id}`, '');
+                                  setMemoryNodeInput('');
+                                  setIsMemoryNodesExpanded(false);
+                                 }}
+                                 className="flex-1 py-1.5 bg-stone-900 text-white rounded-lg text-xs font-medium hover:bg-stone-800 transition-colors"
+                               >
+                                 {lang === 'zh' ? '确认' : 'Confirm'}
+                               </button>
+                               <button
+                                 onClick={() => setIsMemoryNodesExpanded(false)}
+                                 className="flex-1 py-1.5 bg-white border border-stone-200 text-stone-600 rounded-lg text-xs font-medium hover:bg-stone-50 transition-colors"
+                               >
+                                 {lang === 'zh' ? '取消' : 'Cancel'}
+                               </button>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <button 
+                          onClick={() => setIsMemoryNodesExpanded(true)}
+                          className="w-full h-full flex flex-col items-center justify-center gap-2 cursor-pointer outline-none"
+                        >
+                          <div className="w-10 h-10 rounded-full bg-stone-100 flex items-center justify-center transition-transform group-hover:scale-110 group-hover:bg-stone-200">
+                            <Plus className="w-5 h-5 text-stone-500" />
+                          </div>
+                          <span className="text-sm font-semibold text-stone-500 group-hover:text-stone-700">{lang === 'zh' ? '新建记忆节点' : 'New Memory Node'}</span>
+                        </button>
+                      )}
+                    </section>
+                  </div>
+
                   {/* Extracted Key Points Library */}
                   <div className="grid lg:grid-cols-1 gap-8 items-start">
                     {/* Key Points */}
@@ -2379,42 +2714,53 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                       <div className="flex items-center justify-between mb-4">
                         <h3 className="text-sm font-bold text-stone-900 uppercase tracking-wider">{lang === 'zh' ? '已提炼洞察列表 (Key Points)' : 'Extracted Key Points'}</h3>
                         <div className="flex items-center gap-3">
-                          <span className="text-xs text-stone-400">1,420 {lang === 'zh' ? '条' : 'items'}</span>
+                          <span className="text-xs text-stone-400">{extractedKeyPoints.length} {lang === 'zh' ? '条' : 'items'}</span>
                           <button onClick={() => navigate('/document?type=text&backTab=memory&source=keypoints_doc')} className="p-1 rounded-md text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-colors" title={lang === 'zh' ? '作为独立文档打开' : 'Open as Document'}>
                             <Maximize2 className="w-4 h-4" />
                           </button>
                         </div>
                       </div>
-                      <div className="space-y-3">
-                        {[
-                          { title: 'Q2 产品迭代计划', type: '决策', color: 'bg-emerald-50 text-emerald-600', badgeInfo: 'bg-emerald-100 text-emerald-700', text: '5月底前完成核心UI重构，由设计部牵头', icon: <Tag className="w-4 h-4" /> },
-                          { title: '客户 A 反馈汇总', type: '实体', color: 'bg-indigo-50 text-indigo-600', badgeInfo: 'bg-indigo-100 text-indigo-700', text: '客户核心诉求：性能优化、数据安全、多端协同', icon: <Network className="w-4 h-4" /> },
-                          { title: '行业竞品分析报告', type: '观点', color: 'bg-blue-50 text-blue-600', badgeInfo: 'bg-blue-100 text-blue-700', text: '竞品在移动端体验上更流畅，我们的差异化优势在于AI原生协作', icon: <Brain className="w-4 h-4" /> },
-                        ].map((kp, idx) => (
-                          <div key={idx} onClick={() => navigate('/document?type=text&backTab=memory&source=keypoints_doc')} className="flex items-center justify-between p-4 rounded-xl border border-stone-200/60 bg-white hover:bg-stone-50 hover:border-stone-200 transition-all group cursor-pointer shadow-sm">
-                            <div className="flex items-center gap-3.5">
-                              <div className={`w-9 h-9 rounded-xl ${kp.color} flex items-center justify-center shrink-0`}>
-                                {kp.icon}
+                      {extractedKeyPoints.length === 0 ? (
+                        <div className="text-center py-8">
+                          <Sparkles className="w-8 h-8 text-stone-300 mx-auto mb-2" />
+                          <p className="text-sm text-stone-400 font-medium">{lang === 'zh' ? '暂无洞察' : 'No insights yet'}</p>
+                          <p className="text-[11px] text-stone-400 mt-1">{lang === 'zh' ? '上传原始资料后点击「开始萃取」，洞察会出现在这里' : 'Upload raw data and run extraction to see insights here'}</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {extractedKeyPoints.map(kp => {
+                            const typeConfig = kp.type === '决策' || kp.type === 'Decision' ? { color: 'bg-emerald-50 text-emerald-600', icon: <Tag className="w-4 h-4" /> }
+                              : kp.type === '实体' || kp.type === 'Entity' ? { color: 'bg-indigo-50 text-indigo-600', icon: <Network className="w-4 h-4" /> }
+                              : { color: 'bg-blue-50 text-blue-600', icon: <Brain className="w-4 h-4" /> };
+                            return (
+                              <div key={kp.id} className="flex items-center justify-between p-4 rounded-xl border border-stone-200/60 bg-white hover:bg-stone-50 hover:border-stone-200 transition-all group cursor-pointer shadow-sm">
+                                <div className="flex items-center gap-3.5 flex-1 min-w-0">
+                                  <div className={`w-9 h-9 rounded-xl ${typeConfig.color} flex items-center justify-center shrink-0`}>
+                                    {typeConfig.icon}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <h4 className="text-[13px] font-semibold text-stone-800 truncate">{kp.text}</h4>
+                                    <p className="text-[11px] text-stone-500 mt-1 flex items-center gap-1">
+                                      <LinkIcon className="w-3.5 h-3.5 shrink-0" />
+                                      {lang === 'zh' ? '源自：' : 'From: '}
+                                      <span className="hover:text-stone-700 hover:underline truncate">{kp.source}</span>
+                                      <span className="mx-1 w-1 h-1 rounded-full bg-stone-300 shrink-0" />
+                                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${typeConfig.color}`}>{kp.type}</span>
+                                    </p>
+                                  </div>
+                                </div>
+                                <button onClick={e => { e.stopPropagation(); setExtractedKeyPoints(prev => prev.filter(p => p.id !== kp.id)); }} className="p-1 rounded-md text-stone-300 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100 shrink-0">
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
                               </div>
-                              <div>
-                                <h4 className="text-[13px] font-semibold text-stone-800">{kp.text}</h4>
-                                <p className="text-[11px] text-stone-500 mt-1 flex items-center gap-1"><LinkIcon className="w-3.5 h-3.5" /> {lang === 'zh' ? '源自：' : 'From: '}<span className="hover:text-stone-700 hover:underline">{kp.title}</span></p>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      <button className="w-full mt-4 py-2.5 text-xs font-semibold text-stone-500 hover:text-stone-800 hover:bg-stone-100/80 rounded-xl transition-colors border border-dashed border-stone-200">
-                        {lang === 'zh' ? '加载更多洞察 (Load More)' : 'Load more insights...'}
-                      </button>
+                            );
+                          })}
+                        </div>
+                      )}
                     </section>
                   </div>
 
-                  {/* Add Custom Module Button */}
-                  <button className="w-full py-4 flex items-center justify-center gap-2 rounded-2xl border-[1.5px] border-dashed border-stone-300 bg-stone-50/50 hover:bg-stone-100 hover:border-stone-400 transition-colors text-stone-500 hover:text-stone-700 shadow-sm">
-                    <Plus className="w-5 h-5" />
-                    <span className="text-sm font-semibold tracking-wide">{lang === 'zh' ? '添加自定义记忆文档节点 (Add Custom Memory Doc)' : 'Add Custom Memory Doc'}</span>
-                  </button>
+
 
                   <div className="relative flex py-2 items-center">
                     <div className="flex-grow border-t border-stone-200"></div>
@@ -2587,81 +2933,68 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                           <h3 className="font-semibold text-stone-900 text-sm mb-1">{lang === 'zh' ? '空间内部源' : 'Workspace Docs'}</h3>
                           <p className="text-xs text-stone-500 mb-5 relative z-10">{lang === 'zh' ? '当前工作空间内的所有内部文档' : 'All internal docs in workspace'}</p>
                           <div className="flex flex-col gap-2 relative z-10 mt-auto pt-3 border-t border-stone-100/80">
-                            <div className="flex items-center justify-between text-xs">
-                              <span className="text-stone-500 font-medium">{lang === 'zh' ? '所有文件' : 'All Files'}</span>
-                              <span className="font-bold text-stone-700">{128 + rawDataItems.length} {lang === 'zh' ? '个' : ''}</span>
+                            <div 
+                              className="flex items-center justify-between text-xs cursor-pointer bg-blue-50/50 border border-blue-100 hover:border-blue-300 hover:bg-blue-100/50 p-2.5 rounded-xl transition-all duration-300 group shadow-sm hover:shadow"
+                              onClick={() => setIsRawDataModalOpen(true)}
+                            >
+                              <span className="text-blue-700 font-semibold flex items-center gap-2">
+                                <FileText className="w-4 h-4 text-blue-500" />
+                                {lang === 'zh' ? '管理所有空间内部文档' : 'Manage All Internal Docs'}
+                              </span>
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-stone-900 bg-white border border-stone-200 group-hover:border-blue-200 px-2 py-0.5 rounded-md transition-colors shadow-sm">
+                                  {rawDataItems.length} {lang === 'zh' ? '份资料' : 'Files'}
+                                </span>
+                                <ChevronRight className="w-4 h-4 text-blue-400 group-hover:text-blue-600 transition-colors group-hover:translate-x-0.5" />
+                              </div>
                             </div>
-                            <div className="flex items-center justify-between text-xs group/pro cursor-pointer" onClick={() => setIsPricingModalOpen(true)}>
+                            <div className="flex items-center justify-between text-xs group/pro cursor-pointer hover:bg-stone-50 p-1.5 -mx-1.5 rounded-md transition-colors" onClick={() => setIsPricingModalOpen(true)}>
                               <div className="flex items-center gap-1.5">
                                  <span className="text-stone-500 font-medium">{lang === 'zh' ? '大模型提炼队列 (Agent Insight Engine)' : 'Agent Insight Engine'}</span>
                                  <span className="text-[9px] font-bold bg-stone-900 text-white px-1.5 py-0.5 rounded leading-none shadow-sm tracking-wider">PRO</span>
                               </div>
-                              <span className="font-bold text-stone-900 animate-pulse text-blue-600">12 {lang === 'zh' ? '待处理' : 'pending'}</span>
+                              <span className="font-bold text-stone-900 animate-pulse text-blue-600">
+                                {rawDataItems.length} {lang === 'zh' ? '待处理' : 'pending'}
+                              </span>
                             </div>
 
-                            {/* Processing Queue directly placed inside the card */}
-                            <div className="pt-2 mt-2 border-t border-stone-100/80 space-y-2">
-                              {/* Removed completed item per user request */}
-                              {/* 2 */}
-                              <div className="border border-blue-200/60 rounded-xl bg-blue-50/40 p-3 shadow-sm hover:shadow-md transition-all duration-300 relative overflow-hidden group">
-                                <div className="absolute inset-y-0 left-0 w-1 bg-blue-400"></div>
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-1.5">
-                                    <Bot className="w-3.5 h-3.5 text-blue-600" />
-                                    <span className="font-medium text-xs text-stone-800">{lang === 'zh' ? '内置 Agent 节点价值提炼扫描' : 'Agent Insight Extraction'}</span>
-                                  </div>
-                                  <span className="flex items-center gap-1 text-[10px] font-medium text-blue-600 bg-blue-100/50 px-1.5 py-0.5 rounded-full">
-                                    <Loader2 className="w-2.5 h-2.5 animate-spin" />
-                                    {lang === 'zh' ? '提炼中...' : 'Processing...'}
-                                  </span>
-                                </div>
-                              </div>
-
+                            {/* Extract Insights Button */}
+                            <div className="pt-2 mt-2 border-t border-stone-100/80">
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleStartExtraction();
+                                }}
+                                disabled={extractionRunning || rawDataItems.length === 0}
+                                className={`w-full flex items-center justify-center gap-2 text-white text-sm font-semibold p-3.5 rounded-xl transition-all duration-300 shadow-md ${
+                                  extractionRunning || rawDataItems.length === 0
+                                    ? 'bg-stone-300 cursor-not-allowed shadow-none'
+                                    : 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.98]'
+                                }`}
+                              >
+                                {extractionRunning ? (
+                                  <>
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    {lang === 'zh' ? '正在提取全量资料...' : 'Extracting Insights...'}
+                                  </>
+                                ) : (
+                                  <>
+                                    <Sparkles className="w-4 h-4" />
+                                    {lang === 'zh' ? `开始洞察 (${rawDataItems.length} 个未处理)` : `Start Insight (${rawDataItems.length} Pending)`}
+                                  </>
+                                )}
+                              </button>
                             </div>
+
+
                           </div>
                         </div>
                     </div>
                   </section>
 
-                  {/* Uploaded Raw Data List */}
-                  {rawDataItems.length > 0 && (
-                    <section className="mt-6">
-                      <h3 className="text-sm font-bold text-stone-900 mb-3 flex items-center gap-2">
-                        <FileText className="w-4 h-4 text-stone-500" />
-                        {lang === 'zh' ? '已上传的原始资料' : 'Uploaded Raw Data'}
-                        <span className="text-xs font-normal text-stone-400">({rawDataItems.length})</span>
-                      </h3>
-                      <div className="space-y-2">
-                        {rawDataItems.map(item => (
-                          <div key={item.id} onClick={() => openRawDataInEditor(item)} className="flex items-center justify-between p-3.5 rounded-xl border border-stone-200/60 bg-white hover:bg-stone-50 transition-all shadow-sm group cursor-pointer">
-                            <div className="flex items-center gap-3">
-                              <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${item.source === 'paste' ? 'bg-amber-50' : 'bg-blue-50'}`}>
-                                <FileText className={`w-4 h-4 ${item.source === 'paste' ? 'text-amber-600' : 'text-blue-600'}`} />
-                              </div>
-                              <div>
-                                <h4 className="text-[13px] font-semibold text-stone-800 truncate max-w-[320px]">{item.name}</h4>
-                                <p className="text-[11px] text-stone-400 flex items-center gap-2 mt-0.5">
-                                  <span className="font-medium text-stone-500">{item.type}</span>
-                                  <span className="w-1 h-1 rounded-full bg-stone-300"></span>
-                                  <span>{(item.size / 1024).toFixed(1)} KB</span>
-                                  <span className="w-1 h-1 rounded-full bg-stone-300"></span>
-                                  <span>{new Date(item.uploadedAt).toLocaleString(lang === 'zh' ? 'zh-CN' : 'en-US', {month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'})}</span>
-                                </p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-[10px] font-medium px-2 py-1 rounded-full bg-blue-50 text-blue-600">
-                                {lang === 'zh' ? '等待提炼' : 'Pending'}
-                              </span>
-                              <button onClick={(e) => { e.stopPropagation(); setRawDataItems(prev => prev.filter(i => i.id !== item.id)); localStorage.removeItem(`mindx_raw_${item.id}`); }} className="p-1 rounded-md text-stone-300 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100">
-                                <X className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </section>
-                  )}
+
+
+
                 </div>
 
                   </div>
@@ -2763,7 +3096,175 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
         </div>
       )}
 
+      {/* Raw Data List Modal */}
+      {isRawDataModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ animation: 'fadeIn 0.2s ease-out' }}>
+          <div className="absolute inset-0 bg-stone-900/40 backdrop-blur-sm" onClick={() => setIsRawDataModalOpen(false)} />
+          <div className="relative bg-white w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]" style={{ animation: 'slideUp 0.3s ease-out' }}>
+            <div className="px-6 py-4 flex items-center justify-between border-b border-stone-100 shrink-0">
+              <h2 className="text-base font-bold text-stone-900 flex items-center gap-2">
+                <FileText className="w-5 h-5 text-stone-500" />
+                {lang === 'zh' ? '已上传的原始资料' : 'Uploaded Raw Data'}
+                <span className="text-sm font-normal text-stone-400">({rawDataItems.length})</span>
+              </h2>
+              <button onClick={() => setIsRawDataModalOpen(false)} className="p-1.5 hover:bg-stone-100 rounded-full transition-colors text-stone-500 hover:text-stone-900">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto bg-stone-50/30 flex-1">
+              {rawDataItems.length === 0 ? (
+                <div className="text-center py-12">
+                  <FileText className="w-12 h-12 text-stone-300 mx-auto mb-3" />
+                  <p className="text-sm text-stone-500 font-medium">{lang === 'zh' ? '暂无上传的文件' : 'No files uploaded yet'}</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {rawDataItems.map(item => (
+                    <div key={item.id} onClick={() => { setIsRawDataModalOpen(false); openRawDataInEditor(item); }} className="flex items-center justify-between p-4 rounded-xl border border-stone-200/60 bg-white hover:bg-stone-50 hover:border-stone-300 transition-all shadow-sm group cursor-pointer">
+                      <div className="flex items-center gap-4">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${item.source === 'paste' ? 'bg-amber-50' : 'bg-blue-50'}`}>
+                          <FileText className={`w-5 h-5 ${item.source === 'paste' ? 'text-amber-600' : 'text-blue-600'}`} />
+                        </div>
+                        <div>
+                          <h4 className="text-[14px] font-semibold text-stone-800 truncate max-w-[400px]">{item.name}</h4>
+                          <p className="text-xs text-stone-400 flex items-center gap-2 mt-1">
+                            <span className="font-medium text-stone-500">{item.type}</span>
+                            <span className="w-1 h-1 rounded-full bg-stone-300"></span>
+                            <span>{(item.size / 1024).toFixed(1)} KB</span>
+                            <span className="w-1 h-1 rounded-full bg-stone-300"></span>
+                            <span>{new Date(item.uploadedAt).toLocaleString(lang === 'zh' ? 'zh-CN' : 'en-US', {month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'})}</span>
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <button 
+                          onClick={(e) => { 
+                            e.stopPropagation(); 
+                            setIsRawDataModalOpen(false); 
+                            handleStartExtraction();
+                          }}
+                          className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-colors shadow-sm cursor-pointer"
+                        >
+                          {lang === 'zh' ? '开始提炼' : 'Extract'}
+                        </button>
+                        <button onClick={(e) => { e.stopPropagation(); setRawDataItems(prev => prev.filter(i => i.id !== item.id)); localStorage.removeItem(`mindx_raw_${item.id}`); }} className="p-1.5 rounded-md text-stone-300 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100">
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <PricingModal isOpen={isPricingModalOpen} onClose={() => setIsPricingModalOpen(false)} lang={lang} />
+
+      {/* Model Configuration Modal */}
+      {isModelConfigOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ animation: 'fadeIn 0.2s ease-out' }}>
+          <div className="absolute inset-0 bg-stone-900/40 backdrop-blur-sm" onClick={() => setIsModelConfigOpen(false)} />
+          <div className="relative bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden" style={{ animation: 'slideUp 0.3s ease-out' }}>
+            <div className="px-6 py-4 flex items-center justify-between border-b border-stone-100">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-violet-600 flex items-center justify-center">
+                  <Bot className="w-4 h-4 text-white" />
+                </div>
+                <h2 className="text-base font-bold text-stone-900">{lang === 'zh' ? '萃取 Agent 模型配置' : 'Extraction Agent Config'}</h2>
+              </div>
+              <button onClick={() => setIsModelConfigOpen(false)} className="p-1.5 hover:bg-stone-100 rounded-full transition-colors text-stone-500 hover:text-stone-900">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-6 space-y-5">
+              {/* Model Selection */}
+              <div>
+                <label className="text-xs font-semibold text-stone-600 mb-1.5 block">{lang === 'zh' ? '模型' : 'Model'}</label>
+                <select
+                  value={extractionModel}
+                  onChange={e => setExtractionModel(e.target.value)}
+                  className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm focus:outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-200 transition-colors bg-white appearance-none cursor-pointer"
+                >
+                  <optgroup label="Anthropic">
+                    <option value="claude-sonnet-4-20250514">Claude Sonnet 4</option>
+                    <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
+                    <option value="claude-3-5-haiku-20241022">Claude 3.5 Haiku</option>
+                  </optgroup>
+                  <optgroup label="OpenAI">
+                    <option value="gpt-5.4">GPT-5.4</option>
+                    <option value="gpt-4o">GPT-4o</option>
+                    <option value="gpt-4o-mini">GPT-4o Mini</option>
+                    <option value="o3-mini">o3-mini</option>
+                  </optgroup>
+                  <optgroup label="DeepSeek">
+                    <option value="deepseek-chat">DeepSeek V3</option>
+                    <option value="deepseek-reasoner">DeepSeek R1</option>
+                  </optgroup>
+                  <optgroup label={lang === 'zh' ? '国产模型' : 'Chinese Models'}>
+                    <option value="qwen-max">Qwen Max</option>
+                    <option value="glm-4-plus">GLM-4 Plus</option>
+                    <option value="moonshot-v1-128k">Moonshot 128K</option>
+                  </optgroup>
+                </select>
+              </div>
+
+              {/* API Key */}
+              <div>
+                <label className="text-xs font-semibold text-stone-600 mb-1.5 block">API Key</label>
+                <input
+                  type="password"
+                  value={extractionApiKey}
+                  onChange={e => setExtractionApiKey(e.target.value)}
+                  placeholder={lang === 'zh' ? '输入模型对应的 API Key...' : 'Enter API key for the selected model...'}
+                  className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm font-mono focus:outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-200 transition-colors"
+                />
+                <p className="text-[10px] text-stone-400 mt-1">{lang === 'zh' ? 'API Key 仅存储在浏览器本地，不会上传到服务器' : 'API Key is stored locally in your browser only'}</p>
+              </div>
+
+              {/* Base URL (optional) */}
+              <div>
+                <label className="text-xs font-semibold text-stone-600 mb-1.5 block">Base URL <span className="text-stone-400 font-normal">({lang === 'zh' ? '可选' : 'Optional'})</span></label>
+                <input
+                  type="text"
+                  value={extractionBaseUrl}
+                  onChange={e => setExtractionBaseUrl(e.target.value)}
+                  placeholder={lang === 'zh' ? '自定义 API 端点，留空则使用官方默认' : 'Custom API endpoint, leave empty for official default'}
+                  className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-sm font-mono focus:outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-200 transition-colors"
+                />
+              </div>
+
+              {/* Quick Tips */}
+              <div className="bg-violet-50/60 rounded-lg p-3 border border-violet-100">
+                <p className="text-[11px] text-violet-700 font-medium mb-1">{lang === 'zh' ? '💡 萃取 Agent 会执行以下任务：' : '💡 The Extraction Agent will:'}</p>
+                <ul className="text-[11px] text-violet-600 space-y-0.5 list-disc pl-4">
+                  <li>{lang === 'zh' ? '从原始文档中提取关键事实和实体' : 'Extract key facts and entities from raw docs'}</li>
+                  <li>{lang === 'zh' ? '识别可操作的洞察和模式' : 'Identify actionable insights and patterns'}</li>
+                  <li>{lang === 'zh' ? '生成结构化的知识图谱条目' : 'Generate structured knowledge graph entries'}</li>
+                  <li>{lang === 'zh' ? '更新你的 Agent 记忆库' : 'Update your Agent\'s memory store'}</li>
+                </ul>
+              </div>
+            </div>
+            <div className="px-6 py-4 border-t border-stone-100 flex items-center justify-end gap-3">
+              <button onClick={() => setIsModelConfigOpen(false)} className="px-4 py-2 text-sm font-medium text-stone-600 hover:text-stone-800 hover:bg-stone-100 rounded-lg transition-colors">
+                {lang === 'zh' ? '取消' : 'Cancel'}
+              </button>
+              <button
+                onClick={() => {
+                  localStorage.setItem('mindx_extraction_model', extractionModel);
+                  localStorage.setItem('mindx_extraction_apikey', extractionApiKey);
+                  localStorage.setItem('mindx_extraction_baseurl', extractionBaseUrl);
+                  setIsModelConfigOpen(false);
+                }}
+                className="px-5 py-2 text-sm font-semibold text-white bg-violet-600 rounded-lg hover:bg-violet-700 transition-colors"
+              >
+                {lang === 'zh' ? '保存配置' : 'Save Config'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
