@@ -194,12 +194,53 @@ export default function DocumentEditor() {
   const [openMemberDropdown, setOpenMemberDropdown] = useState<string | null>(null);
   const [invitePermission, setInvitePermission] = useState<'可编辑' | '可查看'>('可编辑');
   const [showInvitePermDropdown, setShowInvitePermDropdown] = useState(false);
+  const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set(['owner'])); // owner 默认展开
+  const [removeConfirm, setRemoveConfirm] = useState<{ userId: string; name: string; agentCount: number } | null>(null);
+  const [agentPermTooltip, setAgentPermTooltip] = useState<string | null>(null);
+
+  // 权限级别顺序 (高→低)
+  const roleLevels: Record<string, number> = { '创建者': 3, '可编辑': 2, '可查看': 1 };
+
   const [shareMembers, setShareMembers] = useState([
-    { id: 'clark', name: 'Clark', email: 'clark@example.com', type: 'human' as const, color: 'bg-blue-600', initials: 'C', permission: '可编辑' },
-    { id: 'maya', name: 'Maya Chen', email: 'maya@example.com', type: 'human' as const, color: 'bg-violet-600', initials: 'M', permission: '可编辑' },
-    { id: 'claude', name: 'Claude 3.5 Sonnet', owner: '我', type: 'agent' as const, color: 'bg-amber-600', permission: '可编辑' },
-    { id: 'research', name: 'Research Bot', owner: 'Clark', type: 'agent' as const, color: 'bg-emerald-600', permission: '可查看' },
-    { id: 'data', name: 'Data Analyzer', owner: 'Maya Chen', type: 'agent' as const, color: 'bg-rose-600', permission: '可编辑' },
+    {
+      id: 'owner',
+      type: 'human' as const,
+      name: '我',
+      email: 'you@example.com',
+      color: 'bg-stone-600',
+      initials: '我',
+      role: '创建者' as string,
+      agents: [
+        { id: 'claude', name: 'Claude Assistant', role: '可编辑', inheritedFromUser: true },
+        { id: 'data_analyzer', name: 'Data Analyzer', role: '可编辑', inheritedFromUser: true },
+        { id: 'research_bot', name: 'Research Bot', role: '可查看', inheritedFromUser: true },
+      ]
+    },
+    {
+      id: 'clark',
+      type: 'human' as const,
+      name: 'Clark',
+      email: 'clark@example.com',
+      color: 'bg-blue-600',
+      initials: 'C',
+      role: '可编辑' as string,
+      agents: [
+        { id: 'agent_c1', name: 'Claude 3.5 Sonnet', role: '可编辑', inheritedFromUser: true },
+        { id: 'agent_c2', name: 'Research Bot', role: '可查看', inheritedFromUser: false },
+      ]
+    },
+    {
+      id: 'maya',
+      type: 'human' as const,
+      name: 'Maya Chen',
+      email: 'maya@example.com',
+      color: 'bg-violet-600',
+      initials: 'M',
+      role: '可编辑' as string,
+      agents: [
+        { id: 'agent_m1', name: 'Data Analyzer', role: '可编辑', inheritedFromUser: true },
+      ]
+    },
   ]);
   useEffect(() => {
     // Simple check to simulate different document types
@@ -996,7 +1037,7 @@ export default function DocumentEditor() {
 
             {isShareOpen && (
               <>
-                <div className="fixed inset-0 z-30" onClick={() => { setIsShareOpen(false); setShareInviteMode(false); setOpenMemberDropdown(null); setShowInvitePermDropdown(false); }} />
+                <div className="fixed inset-0 z-30" onClick={() => { setIsShareOpen(false); setShareInviteMode(false); setOpenMemberDropdown(null); setShowInvitePermDropdown(false); setRemoveConfirm(null); setAgentPermTooltip(null); }} />
                 <div className="absolute right-0 top-full mt-2 w-[420px] bg-white border border-stone-200 rounded-xl shadow-2xl z-40 overflow-hidden" onClick={(e) => e.stopPropagation()}>
                   
                   {shareInviteMode ? (
@@ -1098,8 +1139,8 @@ export default function DocumentEditor() {
                     </>
                   ) : (
                     <>
-                  {/* Invite input */}
-                  <div className="p-4 border-b border-stone-100">
+                  {/* [MVP] 邀请功能暂时屏蔽，后续版本恢复 */}
+                  {/* <div className="p-4 border-b border-stone-100">
                     <div className="flex items-center gap-2">
                       <input 
                         type="text" 
@@ -1111,96 +1152,287 @@ export default function DocumentEditor() {
                         邀请
                       </button>
                     </div>
-                  </div>
+                  </div> */}
 
-                  {/* Members list */}
-                  <div className="p-2 max-h-60 overflow-y-auto">
+                  {/* Members list — hierarchical: Human → Agents */}
+                  <div className="p-2 max-h-72 overflow-y-auto">
                     <div className="px-2 py-1 text-xs font-bold text-stone-400 uppercase tracking-wider">协作成员</div>
-                    
-                    {/* Owner - 我 */}
-                    <div className="flex items-center justify-between px-2 py-2 rounded-lg hover:bg-stone-50 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <div className="w-7 h-7 rounded-full bg-stone-600 flex items-center justify-center text-white text-xs font-medium">我</div>
-                        <div>
-                          <p className="text-sm font-medium text-stone-900">我</p>
-                          <p className="text-[11px] text-stone-400">you@example.com</p>
-                        </div>
-                      </div>
-                      <span className="text-xs text-stone-400 font-medium">创建者</span>
-                    </div>
 
-                    {shareMembers.map((member) => (
-                      <div key={member.id} className="flex items-center justify-between px-2 py-2 rounded-lg hover:bg-stone-50 transition-colors">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-7 h-7 rounded-full ${member.color} flex items-center justify-center text-white text-xs ${member.type === 'human' ? 'font-medium' : ''}`}>
-                            {member.type === 'agent' ? <Bot className="w-3.5 h-3.5" /> : member.initials}
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-stone-900">{member.name}</p>
-                            <p className="text-[11px] text-stone-400">
-                              {member.type === 'agent' ? `Agent｜${member.owner}` : member.email}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="relative">
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setOpenMemberDropdown(openMemberDropdown === member.id ? null : member.id); }}
-                            className="text-xs text-stone-600 font-medium bg-transparent border border-stone-200 rounded-md px-2 py-1 cursor-pointer hover:bg-stone-50 flex items-center gap-1 transition-colors"
-                          >
-                            {member.permission}
-                            <ChevronDown className="w-3 h-3 text-stone-400" />
-                          </button>
-                          {openMemberDropdown === member.id && (
-                            <>
-                              <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); setOpenMemberDropdown(null); }} />
-                              <div className="absolute right-0 top-full mt-1 w-36 bg-white rounded-lg shadow-lg border border-stone-200 py-1 z-50">
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setShareMembers(prev => prev.map(m => m.id === member.id ? { ...m, permission: '可编辑' } : m));
-                                    setOpenMemberDropdown(null);
-                                  }}
-                                  className="w-full flex items-center justify-between px-3 py-1.5 text-xs text-stone-700 hover:bg-stone-50 transition-colors"
-                                >
-                                  <div className="flex items-center gap-2">
-                                    <Pencil className="w-3 h-3 text-stone-400" />
-                                    可编辑
-                                  </div>
-                                  {member.permission === '可编辑' && <Check className="w-3 h-3 text-stone-900" />}
-                                </button>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setShareMembers(prev => prev.map(m => m.id === member.id ? { ...m, permission: '可查看' } : m));
-                                    setOpenMemberDropdown(null);
-                                  }}
-                                  className="w-full flex items-center justify-between px-3 py-1.5 text-xs text-stone-700 hover:bg-stone-50 transition-colors"
-                                >
-                                  <div className="flex items-center gap-2">
-                                    <Eye className="w-3 h-3 text-stone-400" />
-                                    可查看
-                                  </div>
-                                  {member.permission === '可查看' && <Check className="w-3 h-3 text-stone-900" />}
-                                </button>
-                                <div className="border-t border-stone-200 my-1" />
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setShareMembers(prev => prev.filter(m => m.id !== member.id));
-                                    setOpenMemberDropdown(null);
-                                  }}
-                                  className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-red-600 hover:bg-red-50 transition-colors"
-                                >
-                                  <UserMinus className="w-3 h-3" />
-                                  移除
-                                </button>
+                    {shareMembers.map((user) => {
+                      const isOwner = user.role === '创建者';
+                      const isExpanded = expandedUsers.has(user.id);
+                      const agentCount = user.agents.length;
+                      const userRoleLevel = roleLevels[user.role] || 0;
+
+                      return (
+                        <div key={user.id}>
+                          {/* Human user row */}
+                          <div className="flex items-center justify-between px-2 py-2 rounded-lg hover:bg-stone-50 transition-colors group/user">
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                              <div className={`w-7 h-7 rounded-full ${user.color} flex items-center justify-center text-white text-xs font-medium shrink-0`}>
+                                {user.initials}
                               </div>
-                            </>
-                          )}
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium text-stone-900 truncate">{user.name}</p>
+                                <p className="text-[11px] text-stone-400 truncate">{user.email}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              {/* Agent 折叠触发器 */}
+                              {agentCount > 0 && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setExpandedUsers(prev => {
+                                      const next = new Set(prev);
+                                      if (next.has(user.id)) next.delete(user.id);
+                                      else next.add(user.id);
+                                      return next;
+                                    });
+                                  }}
+                                  className="flex items-center gap-1 px-1.5 py-0.5 text-[11px] text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded transition-colors"
+                                >
+                                  <Bot className="w-3 h-3" />
+                                  <span>{agentCount}</span>
+                                  <ChevronRight className={`w-3 h-3 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`} />
+                                </button>
+                              )}
+                              {/* 权限 / 角色 */}
+                              {isOwner ? (
+                                <span className="text-xs text-stone-400 font-medium ml-1">创建者</span>
+                              ) : (
+                                <div className="relative">
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); setOpenMemberDropdown(openMemberDropdown === user.id ? null : user.id); }}
+                                    className="text-xs text-stone-600 font-medium bg-transparent border border-stone-200 rounded-md px-2 py-1 cursor-pointer hover:bg-stone-50 flex items-center gap-1 transition-colors"
+                                  >
+                                    {user.role}
+                                    <ChevronDown className="w-3 h-3 text-stone-400" />
+                                  </button>
+                                  {openMemberDropdown === user.id && (
+                                    <>
+                                      <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); setOpenMemberDropdown(null); }} />
+                                      <div className="absolute right-0 top-full mt-1 w-36 bg-white rounded-lg shadow-lg border border-stone-200 py-1 z-50">
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setShareMembers(prev => prev.map(m => m.id === user.id ? {
+                                              ...m,
+                                              role: '可编辑',
+                                              agents: m.agents.map(a => {
+                                                // 如果 agent 权限高于新的用户权限，自动降级
+                                                if ((roleLevels[a.role] || 0) > roleLevels['可编辑']) {
+                                                  return { ...a, role: '可编辑', inheritedFromUser: true };
+                                                }
+                                                return a;
+                                              })
+                                            } : m));
+                                            setOpenMemberDropdown(null);
+                                          }}
+                                          className="w-full flex items-center justify-between px-3 py-1.5 text-xs text-stone-700 hover:bg-stone-50 transition-colors"
+                                        >
+                                          <div className="flex items-center gap-2">
+                                            <Pencil className="w-3 h-3 text-stone-400" />
+                                            可编辑
+                                          </div>
+                                          {user.role === '可编辑' && <Check className="w-3 h-3 text-stone-900" />}
+                                        </button>
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setShareMembers(prev => prev.map(m => m.id === user.id ? {
+                                              ...m,
+                                              role: '可查看',
+                                              agents: m.agents.map(a => {
+                                                if ((roleLevels[a.role] || 0) > roleLevels['可查看']) {
+                                                  return { ...a, role: '可查看', inheritedFromUser: true };
+                                                }
+                                                return a;
+                                              })
+                                            } : m));
+                                            setOpenMemberDropdown(null);
+                                          }}
+                                          className="w-full flex items-center justify-between px-3 py-1.5 text-xs text-stone-700 hover:bg-stone-50 transition-colors"
+                                        >
+                                          <div className="flex items-center gap-2">
+                                            <Eye className="w-3 h-3 text-stone-400" />
+                                            可查看
+                                          </div>
+                                          {user.role === '可查看' && <Check className="w-3 h-3 text-stone-900" />}
+                                        </button>
+                                        <div className="border-t border-stone-200 my-1" />
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setOpenMemberDropdown(null);
+                                            if (agentCount > 0) {
+                                              setRemoveConfirm({ userId: user.id, name: user.name, agentCount });
+                                            } else {
+                                              setShareMembers(prev => prev.filter(m => m.id !== user.id));
+                                            }
+                                          }}
+                                          className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-red-600 hover:bg-red-50 transition-colors"
+                                        >
+                                          <UserMinus className="w-3 h-3" />
+                                          移除
+                                        </button>
+                                      </div>
+                                    </>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Agent sub-rows (collapsible) */}
+                          {isExpanded && user.agents.map((agent) => {
+                            const agentRoleLevel = roleLevels[agent.role] || 0;
+                            return (
+                              <div key={agent.id} className="flex items-center justify-between pl-8 pr-2 py-1.5 rounded-lg hover:bg-stone-50/70 transition-colors">
+                                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                  <div className="flex items-center gap-1.5 text-stone-300 shrink-0">
+                                    <span className="text-[10px]">└</span>
+                                    <div className="w-5 h-5 rounded-full bg-stone-100 flex items-center justify-center">
+                                      <Bot className="w-3 h-3 text-stone-500" />
+                                    </div>
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="text-xs font-medium text-stone-700 truncate">{agent.name}</p>
+                                  </div>
+                                </div>
+                                <div className="relative shrink-0">
+                                  {isOwner ? (
+                                    /* Owner 的 agent 也可调整权限 */
+                                    <div className="relative">
+                                      <button
+                                        onClick={(e) => { e.stopPropagation(); setOpenMemberDropdown(openMemberDropdown === agent.id ? null : agent.id); }}
+                                        className="text-[11px] text-stone-500 font-medium bg-stone-50 border border-stone-200 rounded-md px-2 py-0.5 cursor-pointer hover:bg-stone-100 flex items-center gap-1 transition-colors"
+                                      >
+                                        {agent.role}
+                                        <ChevronDown className="w-2.5 h-2.5 text-stone-400" />
+                                      </button>
+                                      {openMemberDropdown === agent.id && (
+                                        <>
+                                          <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); setOpenMemberDropdown(null); }} />
+                                          <div className="absolute right-0 top-full mt-1 w-40 bg-white rounded-lg shadow-lg border border-stone-200 py-1 z-50">
+                                            {['可编辑', '可查看'].map((opt) => (
+                                              <button
+                                                key={opt}
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  setShareMembers(prev => prev.map(m => m.id === user.id ? {
+                                                    ...m,
+                                                    agents: m.agents.map(a => a.id === agent.id ? { ...a, role: opt, inheritedFromUser: false } : a)
+                                                  } : m));
+                                                  setOpenMemberDropdown(null);
+                                                }}
+                                                className="w-full flex items-center justify-between px-3 py-1.5 text-xs text-stone-700 hover:bg-stone-50 transition-colors"
+                                              >
+                                                <div className="flex items-center gap-2">
+                                                  {opt === '可编辑' ? <Pencil className="w-3 h-3 text-stone-400" /> : <Eye className="w-3 h-3 text-stone-400" />}
+                                                  {opt}
+                                                </div>
+                                                {agent.role === opt && <Check className="w-3 h-3 text-stone-900" />}
+                                              </button>
+                                            ))}
+                                          </div>
+                                        </>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    /* 非 owner 用户下的 agent：权限下拉，超出上限的选项置灰 */
+                                    <div className="relative">
+                                      <button
+                                        onClick={(e) => { e.stopPropagation(); setOpenMemberDropdown(openMemberDropdown === agent.id ? null : agent.id); }}
+                                        className="text-[11px] text-stone-500 font-medium bg-stone-50 border border-stone-200 rounded-md px-2 py-0.5 cursor-pointer hover:bg-stone-100 flex items-center gap-1 transition-colors"
+                                      >
+                                        {agent.role}
+                                        <ChevronDown className="w-2.5 h-2.5 text-stone-400" />
+                                      </button>
+                                      {openMemberDropdown === agent.id && (
+                                        <>
+                                          <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); setOpenMemberDropdown(null); }} />
+                                          <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-stone-200 py-1 z-50">
+                                            {['可编辑', '可查看'].map((opt) => {
+                                              const optLevel = roleLevels[opt] || 0;
+                                              const isDisabled = optLevel > userRoleLevel;
+                                              return (
+                                                <div key={opt} className="relative">
+                                                  <button
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      if (isDisabled) return;
+                                                      setShareMembers(prev => prev.map(m => m.id === user.id ? {
+                                                        ...m,
+                                                        agents: m.agents.map(a => a.id === agent.id ? { ...a, role: opt, inheritedFromUser: false } : a)
+                                                      } : m));
+                                                      setOpenMemberDropdown(null);
+                                                    }}
+                                                    onMouseEnter={() => { if (isDisabled) setAgentPermTooltip(agent.id + opt); }}
+                                                    onMouseLeave={() => setAgentPermTooltip(null)}
+                                                    className={`w-full flex items-center justify-between px-3 py-1.5 text-xs transition-colors ${
+                                                      isDisabled 
+                                                        ? 'text-stone-300 cursor-not-allowed' 
+                                                        : 'text-stone-700 hover:bg-stone-50 cursor-pointer'
+                                                    }`}
+                                                    disabled={isDisabled}
+                                                  >
+                                                    <div className="flex items-center gap-2">
+                                                      {opt === '可编辑' ? <Pencil className={`w-3 h-3 ${isDisabled ? 'text-stone-300' : 'text-stone-400'}`} /> : <Eye className={`w-3 h-3 ${isDisabled ? 'text-stone-300' : 'text-stone-400'}`} />}
+                                                      {opt}
+                                                      {isDisabled && <Lock className="w-2.5 h-2.5 text-stone-300 ml-0.5" />}
+                                                    </div>
+                                                    {agent.role === opt && !isDisabled && <Check className="w-3 h-3 text-stone-900" />}
+                                                  </button>
+                                                  {/* Tooltip: 超出上限提示 */}
+                                                  {isDisabled && agentPermTooltip === agent.id + opt && (
+                                                    <div className="absolute right-full top-1/2 -translate-y-1/2 mr-2 px-2.5 py-1.5 bg-stone-800 text-white text-[10px] rounded-md whitespace-nowrap shadow-lg z-[60]">
+                                                      不能超过所属用户（{user.name}）的权限
+                                                      <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-full w-0 h-0 border-t-4 border-b-4 border-l-4 border-transparent border-l-stone-800" />
+                                                    </div>
+                                                  )}
+                                                </div>
+                                              );
+                                            })}
+                                          </div>
+                                        </>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
+
+                  {/* Remove confirmation dialog */}
+                  {removeConfirm && (
+                    <div className="border-t border-stone-100 px-4 py-3 bg-red-50/50">
+                      <p className="text-xs text-stone-700 mb-2.5">
+                        移除 <span className="font-semibold">{removeConfirm.name}</span> 后，其名下 <span className="font-semibold">{removeConfirm.agentCount}</span> 个 Agent 也将同时失去访问权限，确认移除？
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            setShareMembers(prev => prev.filter(m => m.id !== removeConfirm.userId));
+                            setRemoveConfirm(null);
+                          }}
+                          className="px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded-lg hover:bg-red-700 transition-colors"
+                        >
+                          确认移除
+                        </button>
+                        <button
+                          onClick={() => setRemoveConfirm(null)}
+                          className="px-3 py-1.5 border border-stone-200 text-xs font-medium text-stone-600 rounded-lg hover:bg-white transition-colors"
+                        >
+                          取消
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Access permission & Copy link */}
                   <div className="border-t border-stone-100 p-3">
@@ -1238,14 +1470,7 @@ export default function DocumentEditor() {
                               <span className="text-sm text-stone-700">获得链接的任何人都可查看</span>
                               {shareAccessLevel === 'view' && <Check className="w-4 h-4 text-stone-900 ml-auto" />}
                             </button>
-                            <button
-                              onClick={() => { setShareAccessLevel('edit'); setShowAccessDropdown(false); }}
-                              className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-stone-50 transition-colors text-left"
-                            >
-                              <Pencil className="w-4 h-4 text-stone-500" />
-                              <span className="text-sm text-stone-700">获得链接的任何人都可编辑</span>
-                              {shareAccessLevel === 'edit' && <Check className="w-4 h-4 text-stone-900 ml-auto" />}
-                            </button>
+
                           </div>
                         )}
                       </div>
