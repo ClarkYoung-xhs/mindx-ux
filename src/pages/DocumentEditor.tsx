@@ -165,6 +165,7 @@ export default function DocumentEditor() {
   ]);
   
   const [hoveredParagraph, setHoveredParagraph] = useState<number | null>(null);
+  const [focusedParagraphId, setFocusedParagraphId] = useState<string | null>(null);
   
   // Share settings
   const [sharePermission, setSharePermission] = useState<'private' | 'view'>('private');
@@ -1782,12 +1783,24 @@ export default function DocumentEditor() {
                       className="w-full bg-transparent border-none focus:outline-none text-stone-800 font-sans text-lg leading-relaxed whitespace-pre-wrap relative"
                       contentEditable
                       suppressContentEditableWarning
+                      onFocus={() => setFocusedParagraphId(p.id)}
                       onInput={(e) => {
                         const newText = e.currentTarget.innerText;
+                        const el = e.currentTarget;
+                        const paragraphId = p.id;
+                        clearTimeout((el as any).__debounceTimer);
+                        (el as any).__debounceTimer = setTimeout(() => {
+                          setParagraphs(prev => prev.map(item => item.id === paragraphId ? { ...item, text: newText } : item));
+                        }, 600);
+                      }}
+                      onBlur={(e) => {
+                        const newText = e.currentTarget.innerText;
+                        clearTimeout((e.currentTarget as any).__debounceTimer);
                         setParagraphs(prev => prev.map(item => item.id === p.id ? { ...item, text: newText } : item));
+                        setFocusedParagraphId(null);
                       }}
                     >
-                      {highlightText(p.text)}
+                      {focusedParagraphId === p.id ? undefined : highlightText(p.text)}
                       
                       {/* Cursor and Flag */}
                       {collaboratorsHere.length > 0 && (
