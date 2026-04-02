@@ -3,8 +3,9 @@ import { motion } from 'motion/react';
 import {
   Plus, Search, X, Edit3, Eye, Trash2, RotateCcw,
   ArrowUpRight, ChevronRight, AlertCircle, Fingerprint,
-  Compass, Target, Heart, Star, Hash, FileText, Bot,
-  Clock, Filter, CheckCircle2, XCircle, MoreHorizontal
+  Compass, Target, Heart, Hash, FileText, Bot,
+  Clock, Filter, CheckCircle2, XCircle, MoreHorizontal,
+  HelpCircle
 } from 'lucide-react';
 
 // ─── Types ───────────────────────────────────────────────────
@@ -237,11 +238,6 @@ const episodeMemories: EpisodeMemory[] = [
     date: '3月中旬', source: '会议纪要 · 03-18', expired: false, pendingConfirm: false,
   },
   {
-    id: 'e-010', layer: 'episode', category: '任务',
-    content: '新疆伊犁行程规划（4月3日-8日），已确认本地司机和赛里木湖、那拉提等景点安排',
-    date: '3月下旬', source: '对话记录', expired: false, pendingConfirm: false,
-  },
-  {
     id: 'e-011', layer: 'episode', category: '动态',
     content: '完成了文档列表页 UI 的第一版设计方案，包含活动摘要卡片和 Agent 创建者标识',
     date: '3月中旬', source: '对话记录', expired: true, pendingConfirm: false,
@@ -403,11 +399,6 @@ function MemoryRow({ entry, hoveredMemory, setHoveredMemory }: MemoryRowProps) {
               <button className="p-1.5 rounded-md text-stone-400 hover:text-stone-600 hover:bg-stone-100 transition-colors" title="编辑">
                 <Edit3 className="w-3.5 h-3.5" />
               </button>
-              {entry.layer === 'pattern' && !isPending && (
-                <button className="p-1.5 rounded-md text-stone-400 hover:text-amber-600 hover:bg-amber-50 transition-colors" title="升层">
-                  <Star className="w-3.5 h-3.5" />
-                </button>
-              )}
               {entry.layer === 'episode' && !isPending && (
                 <button className="p-1.5 rounded-md text-stone-400 hover:text-stone-500 hover:bg-stone-100 transition-colors" title="设过期">
                   <Clock className="w-3.5 h-3.5" />
@@ -501,10 +492,16 @@ export default function MemoryV2({ lang }: MemoryV2Props) {
         <h1 className="text-xl font-bold text-stone-900">
           {lang === 'zh' ? '记忆' : 'Memory'}
         </h1>
-        <button className="inline-flex items-center gap-1.5 px-4 py-2 bg-stone-800 text-white text-sm font-medium rounded-lg hover:bg-stone-700 transition-colors shadow-sm">
-          <Plus className="w-4 h-4" />
-          {lang === 'zh' ? '手动添加' : 'Add Manually'}
-        </button>
+        <div className="flex items-center gap-2">
+          <button className="inline-flex items-center gap-1.5 px-3 py-2 text-stone-500 text-sm font-medium rounded-lg hover:bg-stone-100 hover:text-stone-700 transition-colors border border-stone-200" title="了解如何让 Agent 调用你的记忆">
+            <HelpCircle className="w-4 h-4" />
+            {lang === 'zh' ? 'Agent 如何调用？' : 'How Agents use memory?'}
+          </button>
+          <button className="inline-flex items-center gap-1.5 px-4 py-2 bg-stone-800 text-white text-sm font-medium rounded-lg hover:bg-stone-700 transition-colors shadow-sm">
+            <Plus className="w-4 h-4" />
+            {lang === 'zh' ? '手动添加' : 'Add Manually'}
+          </button>
+        </div>
       </div>
 
       {/* ━━━ About Me (Life Layer) — Card Block ━━━ */}
