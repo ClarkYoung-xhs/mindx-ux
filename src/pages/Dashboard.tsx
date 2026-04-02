@@ -68,7 +68,7 @@ const initialWorkspaces = [
 ];
 
 const initialAgents = [
-  { id: 'a1', name: 'Claude Assistant', token: 'mx_agt_9f8e7d6c5b4a3', connected: true, createdAt: '2026-03-10T10:00:00Z', installedSkills: ['MindX Docs', 'Memory System', 'Daily Activity'] },
+  { id: 'a1', name: 'Claude Assistant', token: 'mx_agt_9f8e7d6c5b4a3', connected: true, createdAt: '2026-03-10T10:00:00Z', installedSkills: ['MindX Docs', 'MindX Memory', 'Daily Update'] },
   { id: 'a2', name: 'Data Analyzer', token: 'mx_agt_1a2b3c4d5e6f7', connected: true, createdAt: '2026-03-15T14:30:00Z', installedSkills: ['MindX Docs'] },
   { id: 'a3', name: 'Research Bot', token: 'mx_agt_8x7y6z5w4v3u2', connected: false, createdAt: '2026-03-20T09:00:00Z', installedSkills: [] }
 ];
@@ -2053,8 +2053,8 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                         <div className="border border-stone-200/80 rounded-xl bg-white overflow-hidden">
                           {[
                             { name: 'MindX Docs', tag: 'Core', icon: <FileText className="w-4 h-4" />, provider: 'MindX' },
-                            { name: 'Memory System', tag: 'Core', icon: <Database className="w-4 h-4" />, provider: 'MindX' },
-                            { name: 'Daily Activity', tag: 'Pro', icon: <CalendarDays className="w-4 h-4" />, provider: 'MindX' },
+                            { name: 'MindX Memory', tag: 'Core', icon: <Database className="w-4 h-4" />, provider: 'MindX' },
+                            { name: 'Daily Update', tag: 'Pro', icon: <CalendarDays className="w-4 h-4" />, provider: 'MindX' },
                           ].filter(s => (agent.installedSkills || []).includes(s.name)).map((skill, i, arr) => (
                             <div key={i} className={`flex items-center gap-3 px-4 py-3 ${i < arr.length - 1 ? 'border-b border-stone-100' : ''}`}>
                               <div className="w-8 h-8 rounded-lg bg-stone-900 flex items-center justify-center text-white shrink-0">
@@ -2489,8 +2489,8 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                 <div className="border border-stone-200/80 rounded-xl bg-white shadow-[0_2px_12px_rgba(0,0,0,0.02)] overflow-hidden divide-y divide-stone-200/50">
                   {[
                     { id: 'mindx-docs', name: 'MindX Docs', tag: 'Core', icon: <FileText className="w-4 h-4" />, provider: 'MindX', desc: lang === 'zh' ? '文档创作能力' : 'Document creation' },
-                    { id: 'memory-io', name: 'Memory System', tag: 'Core', icon: <Database className="w-4 h-4" />, provider: 'MindX', desc: lang === 'zh' ? '读写记忆的 Skill' : 'Read/write memory engine' },
-                    { id: 'daily-log', name: 'Daily Activity', tag: 'Pro', icon: <CalendarDays className="w-4 h-4" />, provider: 'MindX', desc: lang === 'zh' ? '上传今天做了啥的 Skill' : 'Daily upload skill' },
+                    { id: 'memory-io', name: 'MindX Memory', tag: 'Core', icon: <Database className="w-4 h-4" />, provider: 'MindX', desc: lang === 'zh' ? '读写记忆的 Skill' : 'Read/write memory engine' },
+                    { id: 'daily-log', name: 'Daily Update', tag: 'Pro', icon: <CalendarDays className="w-4 h-4" />, provider: 'MindX', desc: lang === 'zh' ? '上传今天做了啥的 Skill' : 'Daily upload skill' },
                   ].map((skill, i, arr) => (
                     <div key={skill.id}>
                       <div
@@ -2557,7 +2557,7 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                           </div>
                         </div>
                       )}
-                      {/* Inline detail for Daily Activity */}
+                      {/* Inline detail for Daily Update */}
                       {selectedSkillId === skill.id && skill.id === 'daily-log' && (
                         <div className="border-t border-stone-100 bg-white" onClick={(e) => e.stopPropagation()}>
                           <div className="p-6 pb-5">
@@ -2578,8 +2578,8 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                               <h4 className="text-sm font-bold text-stone-800 mb-2">{lang === 'zh' ? '安装命令' : 'Install Command'}</h4>
                               <p className="text-xs text-stone-500 mb-3">💡 {lang === 'zh' ? '复制以下命令粘贴到 Agent 对话中，Agent 会自动安装此 Skill。' : 'Copy the command below and paste it into your Agent chat.'}</p>
                               <div className="relative">
-                                <div className="bg-stone-50 border border-stone-200 rounded-xl p-4 pr-24 text-sm font-mono text-stone-700 leading-relaxed overflow-x-auto whitespace-pre-wrap">{`Install the MindX Daily Activity skill from https://mindx-ux.vercel.app/skills/daily-activity. API endpoint: https://mindx-ux.vercel.app/api/documents (POST to upload daily reports) and https://mindx-ux.vercel.app/api/activities (POST to log activities). Workspace ID: w1.`}</div>
-                                <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(`Install the MindX Daily Activity skill from https://mindx-ux.vercel.app/skills/daily-activity. API endpoint: https://mindx-ux.vercel.app/api/documents (POST to upload daily reports) and https://mindx-ux.vercel.app/api/activities (POST to log activities). Workspace ID: w1.`); setCopiedStates(prev => ({ ...prev, dailyInstall: true })); setTimeout(() => setCopiedStates(prev => ({ ...prev, dailyInstall: false })), 2000); }} className="absolute right-3 bottom-3 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-stone-900 hover:bg-stone-800 text-white text-xs font-medium transition-colors shadow-sm">{copiedStates['dailyInstall'] ? <><Check className="w-3.5 h-3.5" />{lang === 'zh' ? '已复制' : 'Copied'}</> : <><Copy className="w-3.5 h-3.5" />{lang === 'zh' ? '复制' : 'Copy'}</>}</button>
+                                <div className="bg-stone-50 border border-stone-200 rounded-xl p-4 pr-24 text-sm font-mono text-stone-700 leading-relaxed overflow-x-auto whitespace-pre-wrap">{`Install the MindX Daily Update skill from https://mindx-ux.vercel.app/skills/daily-activity. API endpoint: https://mindx-ux.vercel.app/api/documents (POST to upload daily reports) and https://mindx-ux.vercel.app/api/activities (POST to log activities). Workspace ID: w1.`}</div>
+                                <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(`Install the MindX Daily Update skill from https://mindx-ux.vercel.app/skills/daily-activity. API endpoint: https://mindx-ux.vercel.app/api/documents (POST to upload daily reports) and https://mindx-ux.vercel.app/api/activities (POST to log activities). Workspace ID: w1.`); setCopiedStates(prev => ({ ...prev, dailyInstall: true })); setTimeout(() => setCopiedStates(prev => ({ ...prev, dailyInstall: false })), 2000); }} className="absolute right-3 bottom-3 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-stone-900 hover:bg-stone-800 text-white text-xs font-medium transition-colors shadow-sm">{copiedStates['dailyInstall'] ? <><Check className="w-3.5 h-3.5" />{lang === 'zh' ? '已复制' : 'Copied'}</> : <><Copy className="w-3.5 h-3.5" />{lang === 'zh' ? '复制' : 'Copy'}</>}</button>
                               </div>
                             </div>
                             {/* Step 2 */}
@@ -2602,7 +2602,7 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                           </div>
                         </div>
                       )}
-                      {/* Inline detail for Memory System */}
+                      {/* Inline detail for MindX Memory */}
                       {selectedSkillId === skill.id && skill.id === 'memory-io' && (
                         <div className="border-t border-stone-100 bg-white" onClick={(e) => e.stopPropagation()}>
                           <div className="p-6 pb-5">
