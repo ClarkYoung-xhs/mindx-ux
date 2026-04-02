@@ -7,6 +7,7 @@ import { getAgentAvatar, getUserAvatar } from '../components/AgentAvatars';
 import { useLanguage, LanguageSwitcher } from '../i18n/LanguageContext';
 import { useDocuments } from '../hooks/useDocuments';
 import { useActivities } from '../hooks/useActivities';
+import { useProfile } from '../hooks/useProfile';
 import { 
   Copy, 
   Check, 
@@ -1000,9 +1001,12 @@ export default function Dashboard() {
     try { const saved = localStorage.getItem('mindx_memory_nodes'); return saved ? JSON.parse(saved) : []; } catch { return []; }
   });
 
-  // System core memory nodes
-  const [goalDocContent, setGoalDocContent] = useState(() => localStorage.getItem('mindx_raw_goal_doc') || '');
-  const [whoAmIDocContent, setWhoAmIDocContent] = useState(() => localStorage.getItem('mindx_raw_whoami_doc') || '');
+  // Database-backed profile (Who am I + Goal)
+  const { profile, updateProfile } = useProfile('w1');
+  const whoAmIDocContent = profile.whoami || localStorage.getItem('mindx_raw_whoami_doc') || '';
+  const setWhoAmIDocContent = (v: string) => updateProfile('whoami', v);
+  const goalDocContent = profile.goal || localStorage.getItem('mindx_raw_goal_doc') || '';
+  const setGoalDocContent = (v: string) => updateProfile('goal', v);
 
   // Extraction Prompt
   const [extractionSkillPrompt, setExtractionSkillPrompt] = useState(() => localStorage.getItem('mindx_extraction_prompt') || `You are an expert analyst. Extract key viewpoints, decision points, directions, or principles from the provided text that align with the user's goals. Return ONLY a valid JSON object with a single property "insights" containing an array of objects, each with "title" and "text" (in {{LOCALE}}).
@@ -1013,16 +1017,6 @@ My Goals:
 {{MY_GOALS}}
 Analyze the following text strictly from the perspective of "Who am I" and to serve "My Goals".`);
   useEffect(() => { localStorage.setItem('mindx_extraction_prompt', extractionSkillPrompt); }, [extractionSkillPrompt]);
-
-  // Add event listener to auto update when returning from document editor
-  useEffect(() => {
-    const onFocus = () => {
-      setGoalDocContent(localStorage.getItem('mindx_raw_goal_doc') || '');
-      setWhoAmIDocContent(localStorage.getItem('mindx_raw_whoami_doc') || '');
-    };
-    window.addEventListener('focus', onFocus);
-    return () => window.removeEventListener('focus', onFocus);
-  }, []);
 
   const parsedGoals = goalDocContent.split('\n').map(l => l.trim()).filter(l => l.length > 0)
     .map(l => ({ title: l.replace(/^[-*0-9.)\]]+\s*/, ''), default: false })); // strip bullets like 1. - * 
