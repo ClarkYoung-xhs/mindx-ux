@@ -1005,17 +1005,19 @@ export default function Dashboard() {
     try { const saved = localStorage.getItem('mindx_raw_data_items'); return saved ? JSON.parse(saved) : []; } catch { return []; }
   });
 
-  // Clean up legacy mock data
+  // Fetch raw data from DB on mount
   useEffect(() => {
-    setRawDataItems(prev => prev.filter(item => item.name !== '自定义记忆文档' && item.name !== 'Mindx 的核心产品设定'));
-    setExtractedKeyPoints(prev => prev.filter(item => 
-      !item.text.includes('核心决策要点') && 
-      !item.text.includes('人物关系') && 
-      !item.text.includes('模式与洞察') &&
-      !item.text.includes('Core decision extracted') &&
-      !item.text.includes('Identified key entities') &&
-      !item.text.includes('Discovered actionable patterns')
-    ));
+    fetch('/api/rawdata?workspace_id=w1')
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then((rows: any[]) => {
+        if (rows.length > 0) {
+          setRawDataItems(rows.map(r => ({
+            id: r.id, name: r.name, type: r.type, size: r.size,
+            uploadedAt: r.created_at, source: r.source as 'file' | 'paste', content: r.content
+          })));
+        }
+      })
+      .catch(() => {});
   }, []);
 
   // Persist rawDataItems to localStorage on change
@@ -1086,6 +1088,11 @@ Analyze the following text strictly from the perspective of "Who am I" and to se
         const text = ev.target?.result as string || '';
         localStorage.setItem(`mindx_raw_${newItems[i].id}`, text);
         setRawDataItems(prev => prev.map(item => item.id === newItems[i].id ? { ...item, content: text } : item));
+        // Sync to DB
+        fetch('/api/rawdata', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ workspace_id: 'w1', id: newItems[i].id, name: newItems[i].name, type: newItems[i].type, size: newItems[i].size, source: 'file', content: text })
+        }).catch(() => {});
       };
       reader.readAsText(file);
     });
@@ -1098,17 +1105,19 @@ Analyze the following text strictly from the perspective of "Who am I" and to se
     if (!pasteContent.trim()) return;
     const title = pasteTitle.trim() || (lang === 'zh' ? '粘贴的文本' : 'Pasted Text') + ` — ${new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`;
     const itemId = `raw-${Date.now()}`;
-    // Store content in localStorage for editor to read
     localStorage.setItem(`mindx_raw_${itemId}`, pasteContent);
-    setRawDataItems(prev => [{
-      id: itemId,
-      name: title,
-      type: 'TXT',
+    const newItem = {
+      id: itemId, name: title, type: 'TXT',
       size: new Blob([pasteContent]).size,
       uploadedAt: new Date().toISOString(),
-      source: 'paste' as const,
-      content: pasteContent,
-    }, ...prev]);
+      source: 'paste' as const, content: pasteContent,
+    };
+    setRawDataItems(prev => [newItem, ...prev]);
+    // Sync to DB
+    fetch('/api/rawdata', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ workspace_id: 'w1', id: itemId, name: title, type: 'TXT', size: newItem.size, source: 'paste', content: pasteContent })
+    }).catch(() => {});
     setPasteTitle('');
     setPasteContent('');
     setIsPasteModalOpen(false);
@@ -2650,10 +2659,10 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                         <div className="border-t border-stone-100 bg-white" onClick={(e) => e.stopPropagation()}>
                           <div className="p-6 pb-5">
                             <p className="text-sm text-stone-500 leading-relaxed mb-4">
-                              {lang === 'zh' ? '让你的 AI Agent 拥有持久记忆能力。读写用户画像（Who am I）、当前目标（Goal）、工作空间文档和活动日志。' : 'Give your AI Agent persistent memory. Read/write user profile (Who am I), goals, workspace documents, and activity logs.'}
+                              {lang === 'zh' ? '让你的 AI Agent 拥有持久记忆能力。读写用户画像（Who am I）、当前目标（Goal）、知识库原始数据和已提炼洞察。' : 'Give your AI Agent persistent memory. Read/write user profile (Who am I), goals, knowledge base raw data, and extracted insights.'}
                             </p>
                             <div className="grid md:grid-cols-2 gap-1.5">
-                              {(lang === 'zh' ? ['读写用户身份画像 (Who am I)', '读写当前目标 (Goal)', '查询/创建/更新工作空间文档', '记录和查询活动日志'] : ['Read/write user profile (Who am I)', 'Read/write current goals', 'Query/create/update workspace docs', 'Record & query activity logs']).map((cap, j) => (
+                              {(lang === 'zh' ? ['读写用户身份画像 (Who am I)', '读写当前目标 (Goal)', '读写知识库原始数据', '读写已提炼洞察 (Key Points)'] : ['Read/write user profile (Who am I)', 'Read/write current goals', 'Read/write knowledge base raw data', 'Read/write extracted insights']).map((cap, j) => (
                                 <div key={j} className="flex items-center gap-2 text-sm text-stone-600"><Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />{cap}</div>
                               ))}
                             </div>
@@ -2666,8 +2675,8 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                               <h4 className="text-sm font-bold text-stone-800 mb-2">{lang === 'zh' ? '安装命令' : 'Install Command'}</h4>
                               <p className="text-xs text-stone-500 mb-3">💡 {lang === 'zh' ? '复制粘贴到 Agent 对话中即可自动安装。' : 'Copy and paste into your Agent chat to auto-install.'}</p>
                               <div className="relative">
-                                <div className="bg-stone-50 border border-stone-200 rounded-xl p-4 pr-24 text-sm font-mono text-stone-700 leading-relaxed overflow-x-auto whitespace-pre-wrap">{`Install the MindX Memory skill. API endpoints:\n- GET/PUT https://mindx-ux.vercel.app/api/profile?workspace_id=w1 (read/write user profile: whoami, goal)\n- GET/POST/PUT/DELETE https://mindx-ux.vercel.app/api/documents?workspace_id=w1 (documents)\n- GET/POST https://mindx-ux.vercel.app/api/activities?workspace_id=w1 (activity logs)`}</div>
-                                <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(`Install the MindX Memory skill. API endpoints:\n- GET/PUT https://mindx-ux.vercel.app/api/profile?workspace_id=w1 (read/write user profile: whoami, goal)\n- GET/POST/PUT/DELETE https://mindx-ux.vercel.app/api/documents?workspace_id=w1 (documents)\n- GET/POST https://mindx-ux.vercel.app/api/activities?workspace_id=w1 (activity logs)`); setCopiedStates(prev => ({ ...prev, memoryInstall: true })); setTimeout(() => setCopiedStates(prev => ({ ...prev, memoryInstall: false })), 2000); }} className="absolute right-3 bottom-3 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-stone-900 hover:bg-stone-800 text-white text-xs font-medium transition-colors shadow-sm">{copiedStates['memoryInstall'] ? <><Check className="w-3.5 h-3.5" />{lang === 'zh' ? '已复制' : 'Copied'}</> : <><Copy className="w-3.5 h-3.5" />{lang === 'zh' ? '复制' : 'Copy'}</>}</button>
+                                <div className="bg-stone-50 border border-stone-200 rounded-xl p-4 pr-24 text-sm font-mono text-stone-700 leading-relaxed overflow-x-auto whitespace-pre-wrap">{`Install the MindX Memory skill. API endpoints:\n- GET/PUT https://mindx-ux.vercel.app/api/profile?workspace_id=w1 (user profile: whoami, goal)\n- GET/POST/PUT/DELETE https://mindx-ux.vercel.app/api/rawdata?workspace_id=w1 (knowledge base raw data)\n- GET/POST/DELETE https://mindx-ux.vercel.app/api/keypoints?workspace_id=w1 (extracted insights)\n- GET/POST https://mindx-ux.vercel.app/api/activities?workspace_id=w1 (activity logs)`}</div>
+                                <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(`Install the MindX Memory skill. API endpoints:\n- GET/PUT https://mindx-ux.vercel.app/api/profile?workspace_id=w1 (user profile: whoami, goal)\n- GET/POST/PUT/DELETE https://mindx-ux.vercel.app/api/rawdata?workspace_id=w1 (knowledge base raw data)\n- GET/POST/DELETE https://mindx-ux.vercel.app/api/keypoints?workspace_id=w1 (extracted insights)\n- GET/POST https://mindx-ux.vercel.app/api/activities?workspace_id=w1 (activity logs)`); setCopiedStates(prev => ({ ...prev, memoryInstall: true })); setTimeout(() => setCopiedStates(prev => ({ ...prev, memoryInstall: false })), 2000); }} className="absolute right-3 bottom-3 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-stone-900 hover:bg-stone-800 text-white text-xs font-medium transition-colors shadow-sm">{copiedStates['memoryInstall'] ? <><Check className="w-3.5 h-3.5" />{lang === 'zh' ? '已复制' : 'Copied'}</> : <><Copy className="w-3.5 h-3.5" />{lang === 'zh' ? '复制' : 'Copy'}</>}</button>
                               </div>
                             </div>
                             {/* Step 2 */}
@@ -3306,7 +3315,7 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                         >
                           {lang === 'zh' ? '开始提炼' : 'Extract'}
                         </button>
-                        <button onClick={(e) => { e.stopPropagation(); setRawDataItems(prev => prev.filter(i => i.id !== item.id)); localStorage.removeItem(`mindx_raw_${item.id}`); }} className="p-1.5 rounded-md text-stone-300 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100">
+                        <button onClick={(e) => { e.stopPropagation(); fetch(`/api/rawdata?id=${item.id}`, { method: 'DELETE' }).catch(() => {}); setRawDataItems(prev => prev.filter(i => i.id !== item.id)); localStorage.removeItem(`mindx_raw_${item.id}`); }} className="p-1.5 rounded-md text-stone-300 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100">
                           <X className="w-4 h-4" />
                         </button>
                       </div>
