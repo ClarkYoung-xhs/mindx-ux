@@ -863,6 +863,11 @@ export default function Dashboard() {
   const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
   const [agentListMenuOpen, setAgentListMenuOpen] = useState<string | null>(null);
   const [selectedSkillId, setSelectedSkillId] = useState<string | null>(null);
+  const [profileEditKey, setProfileEditKey] = useState<'whoami' | 'goal' | null>(null);
+  const [profileEditDraft, setProfileEditDraft] = useState('');
+  const [nodeEditId, setNodeEditId] = useState<string | null>(null);
+  const [nodeEditTitle, setNodeEditTitle] = useState('');
+  const [nodeEditDraft, setNodeEditDraft] = useState('');
   const [docSceneFilter, setDocSceneFilter] = useState<'all' | 'today' | 'unread' | 'scheduled' | 'webclip' | 'memory'>('all');
   const [absenceSummaryDismissed, setAbsenceSummaryDismissed] = useState(() => localStorage.getItem('mindx_absence_dismissed') === 'true');
   const [guideDismissed, setGuideDismissedState] = useState(() => localStorage.getItem('mindx_guide_dismissed') === 'true');
@@ -2697,16 +2702,11 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                           <User className="w-4 h-4 text-indigo-500" />
                           {lang === 'zh' ? '关于我 (Who am I)' : 'Who am I'}
                         </h2>
-                        <div className="flex items-center gap-2">
-                          <button onClick={() => navigate('/document?type=text&backTab=memory&source=whoami_doc')} className="text-[10px] font-bold bg-stone-100 text-stone-600 px-2 py-1 rounded hover:bg-stone-200 transition-colors">
-                            {lang === 'zh' ? '编辑画像' : 'Edit Profile'}
+                        <button onClick={() => { setProfileEditKey('whoami'); setProfileEditDraft(profile.whoami || ''); }} className="text-[10px] font-bold bg-stone-100 text-stone-600 px-2 py-1 rounded hover:bg-stone-200 transition-colors">
+                            {lang === 'zh' ? '编辑' : 'Edit'}
                           </button>
-                          <button onClick={() => navigate('/document?type=text&backTab=memory&source=whoami_doc')} className="p-1 rounded-md text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-colors" title={lang === 'zh' ? '作为独立文档打开' : 'Open as Document'}>
-                            <Maximize2 className="w-4 h-4" />
-                          </button>
-                        </div>
                       </div>
-                      <div className="relative z-10 text-xs text-stone-700 leading-relaxed font-medium whitespace-pre-line cursor-pointer hover:text-stone-900 transition-colors" onClick={() => navigate('/document?type=text&backTab=memory&source=whoami_doc')}>
+                      <div className="relative z-10 text-xs text-stone-700 leading-relaxed font-medium whitespace-pre-line cursor-pointer hover:text-stone-900 transition-colors" onClick={() => { setProfileEditKey('whoami'); setProfileEditDraft(profile.whoami || ''); }}>
                         {whoAmIDocContent || (lang === 'zh' ? '点击编辑，描述你的身份与交互偏好...' : 'Click to edit your identity and preferences...')}
                       </div>
                     </section>
@@ -2718,16 +2718,11 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                           <Target className="w-4 h-4 text-orange-500" />
                           {lang === 'zh' ? '当前目标 (Goal)' : 'Current Goal'}
                         </h2>
-                        <div className="flex items-center gap-2">
-                          <button onClick={() => navigate('/document?type=text&backTab=memory&source=goal_doc')} className="text-[10px] font-bold bg-stone-100 text-stone-600 px-2 py-1 rounded hover:bg-stone-200 transition-colors">
-                            {lang === 'zh' ? '更新目标' : 'Update'}
+                        <button onClick={() => { setProfileEditKey('goal'); setProfileEditDraft(profile.goal || ''); }} className="text-[10px] font-bold bg-stone-100 text-stone-600 px-2 py-1 rounded hover:bg-stone-200 transition-colors">
+                            {lang === 'zh' ? '编辑' : 'Edit'}
                           </button>
-                          <button onClick={() => navigate('/document?type=text&backTab=memory&source=goal_doc')} className="p-1 rounded-md text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-colors" title={lang === 'zh' ? '作为独立文档打开' : 'Open as Document'}>
-                            <Maximize2 className="w-4 h-4" />
-                          </button>
-                        </div>
                       </div>
-                      <div className="relative z-10 text-xs text-stone-700 leading-relaxed font-medium whitespace-pre-line cursor-pointer hover:text-stone-900 transition-colors" onClick={() => navigate('/document?type=text&backTab=memory&source=goal_doc')}>
+                      <div className="relative z-10 text-xs text-stone-700 leading-relaxed font-medium whitespace-pre-line cursor-pointer hover:text-stone-900 transition-colors" onClick={() => { setProfileEditKey('goal'); setProfileEditDraft(profile.goal || ''); }}>
                         {goalDocContent || (lang === 'zh' ? '点击编辑，描述你当前的核心目标...' : 'Click to edit your current goals...')}
                       </div>
                     </section>
@@ -2750,29 +2745,13 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                             <span className="truncate">{node.title}</span>
                           </h2>
                           <div className="flex items-center gap-1 shrink-0">
-                            <button onClick={() => navigate(`/document?type=text&backTab=memory&source=rawdata&rawId=${node.id}&title=${encodeURIComponent(node.title)}`)} className="p-1 rounded-md text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-colors" title={lang === 'zh' ? '作为独立文档打开' : 'Open as Document'}>
-                              <Maximize2 className="w-3.5 h-3.5" />
-                            </button>
-                            <button onClick={() => {
-                              setMemoryNodes(prev => prev.filter(n => n.id !== node.id));
-                              localStorage.removeItem(`mindx_raw_${node.id}`);
-                            }} className="p-1 rounded-md text-stone-400 hover:text-red-500 hover:bg-red-50 transition-colors">
-                              <Trash2 className="w-3.5 h-3.5" />
+                            <button onClick={() => { setNodeEditId(node.id); setNodeEditTitle(node.title); setNodeEditDraft(node.content || localStorage.getItem(`mindx_raw_${node.id}`) || ''); }} className="text-[10px] font-bold bg-stone-100 text-stone-600 px-2 py-1 rounded hover:bg-stone-200 transition-colors">
+                              {lang === 'zh' ? '编辑' : 'Edit'}
                             </button>
                           </div>
                         </div>
-                        <div className="space-y-3 relative z-10 mt-auto">
-                          <div onClick={() => navigate(`/document?type=text&backTab=memory&source=rawdata&rawId=${node.id}&title=${encodeURIComponent(node.title)}`)} className="bg-white/70 rounded-xl p-3.5 border border-stone-200/50 hover:bg-white hover:border-stone-300/60 transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-0.5 backdrop-blur-sm cursor-pointer min-h-[80px] group/card">
-                             <div className="flex items-center justify-between mb-2">
-                               <span className="text-[10px] font-medium text-stone-400">
-                                 {new Date(node.updatedAt).toLocaleString(lang === 'zh' ? 'zh-CN' : 'en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                               </span>
-                               <ExternalLink className="w-3 h-3 text-stone-400 opacity-0 group-hover/card:opacity-100 transition-opacity" />
-                             </div>
-                             <p className="text-xs text-stone-600 line-clamp-3 font-medium">
-                               {node.content ? node.content : (lang === 'zh' ? '自定义记忆节点。点击进入完整文档进行读写。' : 'Custom memory node. Click to edit in full document view.')}
-                             </p>
-                          </div>
+                        <div className="relative z-10 text-xs text-stone-700 leading-relaxed font-medium whitespace-pre-line cursor-pointer hover:text-stone-900 transition-colors mt-auto" onClick={() => { setNodeEditId(node.id); setNodeEditTitle(node.title); setNodeEditDraft(node.content || localStorage.getItem(`mindx_raw_${node.id}`) || ''); }}>
+                          {(node.content || localStorage.getItem(`mindx_raw_${node.id}`)) || (lang === 'zh' ? '点击编辑...' : 'Click to edit...')}
                         </div>
                       </section>
                     ))}
@@ -2908,8 +2887,8 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                   <section>
                     <div className="flex items-start justify-between mb-5">
                       <div>
-                        <h2 className="text-sm font-bold text-stone-900 mb-2">{lang === 'zh' ? '底层素材源 (Raw Data)' : 'Raw Data Sources'}</h2>
-                        <p className="text-xs text-stone-500">{lang === 'zh' ? '当前工作空间等待 Agent 提取、理解并蒸馏为以上图谱的底层未加工数据。' : 'Raw workspace materials waiting for Agent extraction and distillation into the structured knowledge above.'}</p>
+                        <h2 className="text-sm font-bold text-stone-900 mb-2">{lang === 'zh' ? '知识库 (Knowledge Base)' : 'Knowledge Base'}</h2>
+                        <p className="text-xs text-stone-500">{lang === 'zh' ? '等待 Agent 提取、理解并蒸馏为结构化知识的原始数据。' : 'Raw materials waiting for Agent extraction and distillation into structured knowledge.'}</p>
                       </div>
                       <div className="relative z-50">
                         <button 
@@ -3059,18 +3038,9 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                         {/* 空间内部源 — 展开式文件列表 */}
                         <div className="bg-white/60 border border-stone-100 rounded-xl overflow-hidden">
                           <div 
-                            className="flex items-center justify-between p-3.5 cursor-pointer hover:bg-stone-50/50 transition-colors"
-                            onClick={() => setIsRawDataModalOpen(true)}
+                            className="flex items-center justify-between px-4 py-2.5 text-xs text-stone-500"
                           >
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
-                                <Database className="w-4 h-4 text-blue-600" />
-                              </div>
-                              <div>
-                                <div className="text-sm font-semibold text-stone-900">{lang === 'zh' ? '空间内部源' : 'Workspace Docs'}</div>
-                                <div className="text-[11px] text-stone-400">{rawDataItems.length} {lang === 'zh' ? '份资料' : 'files'}</div>
-                              </div>
-                            </div>
+                            <span>{rawDataItems.length} {lang === 'zh' ? '份资料' : 'files'}</span>
                           </div>
                           {rawDataItems.length > 0 && (
                             <div className="border-t border-stone-100">
@@ -3414,6 +3384,122 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
             </div>
           </div>
         </div>
+      )}
+
+      {/* Profile Markdown Editor Modal */}
+      {profileEditKey && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 z-[9999] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setProfileEditKey(null)}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100">
+              <h2 className="text-sm font-bold text-stone-900 flex items-center gap-2">
+                {profileEditKey === 'whoami' ? (
+                  <><User className="w-4 h-4 text-indigo-500" />{lang === 'zh' ? '编辑画像' : 'Edit Profile'}</>
+                ) : (
+                  <><Target className="w-4 h-4 text-orange-500" />{lang === 'zh' ? '编辑目标' : 'Edit Goal'}</>
+                )}
+              </h2>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setProfileEditKey(null)}
+                  className="text-xs text-stone-400 hover:text-stone-700 px-3 py-1.5 rounded-lg hover:bg-stone-100 transition-colors"
+                >
+                  {lang === 'zh' ? '取消' : 'Cancel'}
+                </button>
+                <button
+                  onClick={() => {
+                    updateProfile(profileEditKey, profileEditDraft);
+                    setProfileEditKey(null);
+                  }}
+                  className="text-xs font-bold text-white bg-stone-900 hover:bg-stone-800 px-4 py-1.5 rounded-lg transition-colors"
+                >
+                  {lang === 'zh' ? '保存' : 'Save'}
+                </button>
+              </div>
+            </div>
+            <div className="flex-1 overflow-auto p-6">
+              <textarea
+                autoFocus
+                value={profileEditDraft}
+                onChange={(e) => setProfileEditDraft(e.target.value)}
+                placeholder={profileEditKey === 'whoami'
+                  ? (lang === 'zh' ? '描述你的身份、角色、交互偏好...\n\n支持 Markdown 格式' : 'Describe your identity, role, preferences...\n\nSupports Markdown')
+                  : (lang === 'zh' ? '描述你当前的核心目标...\n\n支持 Markdown 格式' : 'Describe your current goals...\n\nSupports Markdown')
+                }
+                className="w-full h-full min-h-[40vh] bg-transparent border-none focus:outline-none text-sm text-stone-800 leading-relaxed font-mono resize-none placeholder:text-stone-300"
+              />
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+
+      {/* Custom Node Markdown Editor Modal */}
+      {nodeEditId && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 z-[9999] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setNodeEditId(null)}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100">
+              <h2 className="text-sm font-bold text-stone-900 flex items-center gap-2">
+                <Brain className="w-4 h-4 text-violet-500" />{nodeEditTitle}
+              </h2>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    setMemoryNodes(prev => prev.filter(n => n.id !== nodeEditId));
+                    localStorage.removeItem(`mindx_raw_${nodeEditId}`);
+                    setNodeEditId(null);
+                  }}
+                  className="text-xs text-red-400 hover:text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors"
+                >
+                  {lang === 'zh' ? '删除' : 'Delete'}
+                </button>
+                <button
+                  onClick={() => setNodeEditId(null)}
+                  className="text-xs text-stone-400 hover:text-stone-700 px-3 py-1.5 rounded-lg hover:bg-stone-100 transition-colors"
+                >
+                  {lang === 'zh' ? '取消' : 'Cancel'}
+                </button>
+                <button
+                  onClick={() => {
+                    localStorage.setItem(`mindx_raw_${nodeEditId}`, nodeEditDraft);
+                    setMemoryNodes(prev => prev.map(n => n.id === nodeEditId ? { ...n, content: nodeEditDraft, updatedAt: new Date().toISOString() } : n));
+                    setNodeEditId(null);
+                  }}
+                  className="text-xs font-bold text-white bg-stone-900 hover:bg-stone-800 px-4 py-1.5 rounded-lg transition-colors"
+                >
+                  {lang === 'zh' ? '保存' : 'Save'}
+                </button>
+              </div>
+            </div>
+            <div className="flex-1 overflow-auto p-6">
+              <textarea
+                autoFocus
+                value={nodeEditDraft}
+                onChange={(e) => setNodeEditDraft(e.target.value)}
+                placeholder={lang === 'zh' ? '输入记忆内容...\n\n支持 Markdown 格式' : 'Enter memory content...\n\nSupports Markdown'}
+                className="w-full h-full min-h-[40vh] bg-transparent border-none focus:outline-none text-sm text-stone-800 leading-relaxed font-mono resize-none placeholder:text-stone-300"
+              />
+            </div>
+          </motion.div>
+        </motion.div>
       )}
     </div>
   );

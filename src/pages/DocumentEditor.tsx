@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
+import { useProfile } from '../hooks/useProfile';
 import { 
   ArrowLeft, 
   MessageSquare, 
@@ -249,68 +250,61 @@ export default function DocumentEditor() {
     if (params.get('type') === 'chatlog') {
       setIsChatLog(true);
     }
+    // Fetch profile data from database for whoami_doc / goal_doc
+    const source = params.get('source');
+    if (source === 'whoami_doc' || source === 'goal_doc') {
+      const profileKey = source === 'whoami_doc' ? 'whoami' : 'goal';
+      fetch(`/api/profile?workspace_id=w1`)
+        .then(r => r.json())
+        .then(data => {
+          const content = data[profileKey];
+          if (content) {
+            localStorage.setItem(`mindx_raw_${source}`, content);
+            const lines = content.split('\n').filter((l: string) => l.trim());
+            setParagraphs(lines.map((text: string, i: number) => ({
+              id: `p${i + 1}`, text, author: currentUserName, authorType: 'human' as const
+            })));
+          }
+        })
+        .catch(() => {});
+    }
   }, []);
+
+  // Profile hook for whoami_doc / goal_doc persistence
+  const urlSource = new URLSearchParams(window.location.search).get('source');
+  const isProfileSource = urlSource === 'whoami_doc' || urlSource === 'goal_doc';
+  const profileKey = urlSource === 'whoami_doc' ? 'whoami' : 'goal';
+  const { profile, loading: profileLoading, updateProfile } = useProfile('w1');
+
+  // Sync profile data into paragraphs when loaded from DB
+  useEffect(() => {
+    if (!isProfileSource || profileLoading) return;
+    const content = profile[profileKey];
+    if (content) {
+      const lines = content.split('\n').filter((l: string) => l.trim());
+      if (lines.length > 0) {
+        setParagraphs(lines.map((text: string, i: number) => ({
+          id: `p${i + 1}`, text, author: currentUserName, authorType: 'human' as const
+        })));
+      }
+    }
+  }, [profileLoading]);
 
   const [paragraphs, setParagraphs] = useState<Paragraph[]>(() => {
     const params = new URLSearchParams(window.location.search);
     const source = params.get('source');
     
-    if (source === 'whoami_doc') {
-      return [
-        {
-          id: 'p1',
-          text: '## 核心身份 (Identity)',
-          author: currentUserName,
-          authorType: 'human'
-        },
-        {
-          id: 'p2',
-          text: '前沿科技创业者，独立产品经理。偏好极致体验和极简设计，推崇 Agent-Native 理念。',
-          author: currentUserName,
-          authorType: 'human'
-        },
-        {
-          id: 'p3',
-          text: '## 交互原则 (Directives)',
-          author: currentUserName,
-          authorType: 'human'
-        },
-        {
-          id: 'p4',
-          text: '1. 沟通直入主题，拒绝废话套话。\n2. 代码给出完整可执行的实现。\n3. 分析问题遵循第一性原理。',
-          author: currentUserName,
-          authorType: 'human'
-        }
-      ];
-    }
-    
-    if (source === 'goal_doc') {
-      return [
-        {
-          id: 'p1',
-          text: '## 构建 Agent-Native 记忆中枢',
-          author: currentUserName,
-          authorType: 'human'
-        },
-        {
-          id: 'p2',
-          text: 'Deadline: Q2\nPriority: High',
-          author: currentUserName,
-          authorType: 'human'
-        },
-        {
-          id: 'p3',
-          text: '## 完善全平台交互与多端适配体验',
-          author: currentUserName,
-          authorType: 'human'
-        },
-        {
-          id: 'p4',
-          text: 'Deadline: May\nPriority: Medium',
-          author: currentUserName,
-          authorType: 'human'
-        }
-      ];
+    if (source === 'whoami_doc' || source === 'goal_doc') {
+      // Start with localStorage fallback; useEffect will fetch from DB and update
+      const profileKey = source === 'whoami_doc' ? 'whoami' : 'goal';
+      const cached = localStorage.getItem(`mindx_raw_${source}`);
+      if (cached) {
+        return cached.split('\n').filter((l: string) => l.trim()).map((text: string, i: number) => ({
+          id: `p${i + 1}`, text, author: currentUserName, authorType: 'human' as const
+        }));
+      }
+      // Default placeholder while loading
+      return [{ id: 'p1', text: source === 'whoami_doc' ? '加载中...' : '加载中...', author: currentUserName, authorType: 'human' as const }];
     }
     
     if (source === 'keypoints_doc') {
@@ -566,6 +560,16 @@ export default function DocumentEditor() {
           }
         }
       } catch(e) {}
+    }
+
+    // Auto-save for whoami_doc and goal_doc
+    if (isProfileSource && paragraphs.length > 0 && !profileLoading) {
+      const content = paragraphs.map(p => p.text).join('\n');
+      // Debounced save to DB via useProfile
+      clearTimeout((window as any).__profileSaveTimer);
+      (window as any).__profileSaveTimer = setTimeout(() => {
+        updateProfile(profileKey, content);
+      }, 1000);
     }
   }, [paragraphs]);
 
@@ -1784,7 +1788,17 @@ export default function DocumentEditor() {
                       contentEditable
                       suppressContentEditableWarning
                       onFocus={() => setFocusedParagraphId(p.id)}
+                      onCompositionStart={(e) => { (e.currentTarget as any).__composing = true; }}
+                      onCompositionEnd={(e) => {
+                        (e.currentTarget as any).__composing = false;
+                        // Fire the update after composition ends
+                        const newText = e.currentTarget.innerText;
+                        const paragraphId = p.id;
+                        setParagraphs(prev => prev.map(item => item.id === paragraphId ? { ...item, text: newText } : item));
+                      }}
                       onInput={(e) => {
+                        // Skip during IME composition (Chinese/Japanese/Korean input)
+                        if ((e.currentTarget as any).__composing) return;
                         const newText = e.currentTarget.innerText;
                         const el = e.currentTarget;
                         const paragraphId = p.id;
