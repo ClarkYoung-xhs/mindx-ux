@@ -1,7 +1,10 @@
 import { sql } from '@vercel/postgres';
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+import type { IncomingMessage, ServerResponse } from 'http';
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+type Req = IncomingMessage & { method?: string; query: Record<string, string | string[]>; body: any };
+type Res = ServerResponse & { status: (code: number) => Res; json: (data: any) => void; end: () => void };
+
+export default async function handler(req: Req, res: Res) {
   try {
     if (req.method === 'GET') {
       const workspaceId = (req.query.workspace_id as string) || 'w1';
