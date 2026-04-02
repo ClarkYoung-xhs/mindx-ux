@@ -30,3 +30,20 @@
 ## 涉及修改的文件 (File Changes)
 - `src/pages/Dashboard.tsx` 
 - `src/pages/DocumentEditor.tsx`
+
+## 版本号 / 日期
+**v1.8.6** - 2026-04-02
+
+## 核心变更点 (Core Changes)
+1. **Supabase 后端数据持久化**：引入 `@supabase/supabase-js`，将 Documents 和 Activities 两大核心数据模型从前端硬编码迁移至 Supabase 数据库，实现多用户/多浏览器间的数据实时共享与同步。
+2. **自定义 Hooks 架构**：封装 `useDocuments` / `useActivities` 两个 Hook，内建 CRUD 操作、Supabase Realtime 实时订阅、以及无后端时自动 Fallback 回本地 mock 数据的降级机制。
+3. **零破坏式渐进集成**：未配置 Supabase 环境变量时，系统行为与改造前完全一致，不影响现有 Demo 流程。
+
+## 涉及修改的文件 (File Changes)
+- `src/lib/supabaseClient.ts` (NEW)
+- `src/hooks/useDocuments.ts` (NEW)
+- `src/hooks/useActivities.ts` (NEW)
+- `supabase/seed.sql` (NEW)
+- `src/pages/Dashboard.tsx`
+- `.env.example`
+- `package.json`

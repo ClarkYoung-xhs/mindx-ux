@@ -5,6 +5,8 @@ import OnboardingWizard from '../components/OnboardingWizard';
 import { getDocTypeIcon } from '../components/DocIcons';
 import { getAgentAvatar, getUserAvatar } from '../components/AgentAvatars';
 import { useLanguage, LanguageSwitcher } from '../i18n/LanguageContext';
+import { useDocuments } from '../hooks/useDocuments';
+import { useActivities } from '../hooks/useActivities';
 import { 
   Copy, 
   Check, 
@@ -792,6 +794,9 @@ function getDemoMode(): DemoMode {
 }
 
 export default function Dashboard() {
+  const { t, lang } = useLanguage();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [demoMode, setDemoModeState] = useState<DemoMode>(getDemoMode);
 
   const setDemoMode = (mode: DemoMode) => {
@@ -827,13 +832,12 @@ export default function Dashboard() {
     }
     return initialPermissions;
   });
-  const [documents, setDocuments] = useState(() => {
-    if (isNewUser) {
-      return [{ id: 'welcome', workspaceId: 'w1', name: initLang === 'zh' ? '欢迎使用 MindX' : 'Welcome to MindX', type: 'Smart Doc', date: initLang === 'zh' ? '刚刚' : 'Just now', lastModified: new Date().toISOString(), lastViewed: new Date().toISOString(), labels: ['Getting Started'], creatorName: 'Agent', creatorType: 'agent' as const, size: 8192, isNew: true, isRead: false, source: 'normal' as const }];
-    }
-    return initialDocuments;
-  });
-  const [activities, setActivities] = useState(() => isNewUser ? [] : initialActivities);
+  // Supabase-backed documents & activities (fallback to mock data when not configured)
+  const fallbackDocs = isNewUser
+    ? [{ id: 'welcome', workspaceId: 'w1', name: initLang === 'zh' ? '欢迎使用 MindX' : 'Welcome to MindX', type: 'Smart Doc', date: initLang === 'zh' ? '刚刚' : 'Just now', lastModified: new Date().toISOString(), lastViewed: new Date().toISOString(), labels: ['Getting Started'], creatorName: 'Agent', creatorType: 'agent' as const, size: 8192, isNew: true, isRead: false, source: 'normal' as const }]
+    : initialDocuments;
+  const { documents, setDocuments, loading: docsLoading, createDoc, updateDoc, deleteDoc } = useDocuments('w1', fallbackDocs);
+  const { activities, setActivities, loading: activitiesLoading, createActivity } = useActivities('w1', isNewUser ? [] : initialActivities);
   const [activeTab, setActiveTabState] = useState<'documents' | 'activity' | 'agents' | 'members' | 'settings' | 'labels' | 'skills' | 'memory'>(() => {
     const params = new URLSearchParams(window.location.search);
     const tab = params.get('tab');
@@ -898,11 +902,14 @@ export default function Dashboard() {
       
       for (const item of rawDataItems) {
         // Find content either from item properties, or read from localStorage if it's been edited
-        const rawContent = item.content || localStorage.getItem(`mindx_raw_${item.id}`) || '';
-        if (!rawContent.trim()) continue;
+        const whoAmI = localStorage.getItem('mindx_raw_whoami_doc') || '';
+        const goal = localStorage.getItem('mindx_raw_goal_doc') || '';
 
-        const prompt = `You MUST return ONLY a valid JSON object with a single property "insights" containing an array. Each object in the array should have two string properties: "type" (choose one of: '${lang === 'zh' ? '决策' : 'Decision'}', '${lang === 'zh' ? '实体' : 'Entity'}', '${lang === 'zh' ? '洞察' : 'Insight'}') and "text" (a one-sentence description of the insight, respond in ${lang === 'zh' ? 'Chinese' : 'English'}). \n\nText:\n${rawContent}`;
-
+        const prompt = extractionSkillPrompt
+          .replace('{{LOCALE}}', lang === 'zh' ? 'Chinese' : 'English')
+          .replace('{{WHO_AM_I}}', whoAmI)
+          .replace('{{MY_GOALS}}', goal)
+          + `\n\nText:\n${item.content}`;
         let baseUrl = extractionBaseUrl.endsWith('/') ? extractionBaseUrl.slice(0, -1) : extractionBaseUrl;
         const apiUrl = baseUrl.includes('/v1') || baseUrl.includes('/chat') ? baseUrl : `${baseUrl}/v1/chat/completions`;
 
@@ -992,6 +999,42 @@ export default function Dashboard() {
   const [memoryNodes, setMemoryNodes] = useState<{id: string; title: string; content: string; createdAt: string; updatedAt: string}[]>(() => {
     try { const saved = localStorage.getItem('mindx_memory_nodes'); return saved ? JSON.parse(saved) : []; } catch { return []; }
   });
+
+  // System core memory nodes
+  const [goalDocContent, setGoalDocContent] = useState(() => localStorage.getItem('mindx_raw_goal_doc') || '');
+  const [whoAmIDocContent, setWhoAmIDocContent] = useState(() => localStorage.getItem('mindx_raw_whoami_doc') || '');
+
+  // Extraction Prompt
+  const [extractionSkillPrompt, setExtractionSkillPrompt] = useState(() => localStorage.getItem('mindx_extraction_prompt') || `You are an expert analyst. Extract key viewpoints, decision points, directions, or principles from the provided text that align with the user's goals. Return ONLY a valid JSON object with a single property "insights" containing an array of objects, each with "title" and "text" (in {{LOCALE}}).
+IMPORTANT CONTEXT:
+Who am I:
+{{WHO_AM_I}}
+My Goals:
+{{MY_GOALS}}
+Analyze the following text strictly from the perspective of "Who am I" and to serve "My Goals".`);
+  useEffect(() => { localStorage.setItem('mindx_extraction_prompt', extractionSkillPrompt); }, [extractionSkillPrompt]);
+
+  // Add event listener to auto update when returning from document editor
+  useEffect(() => {
+    const onFocus = () => {
+      setGoalDocContent(localStorage.getItem('mindx_raw_goal_doc') || '');
+      setWhoAmIDocContent(localStorage.getItem('mindx_raw_whoami_doc') || '');
+    };
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, []);
+
+  const parsedGoals = goalDocContent.split('\n').map(l => l.trim()).filter(l => l.length > 0)
+    .map(l => ({ title: l.replace(/^[-*0-9.)\]]+\s*/, ''), default: false })); // strip bullets like 1. - * 
+
+  const displayGoals = parsedGoals.length > 0 ? parsedGoals : [
+    { title: '构建 Agent-Native 记忆中枢', deadline: 'Q2', priority: 'High', color: 'orange' },
+    { title: '完善全平台交互与多端适配体验', deadline: 'May', priority: 'Medium', color: 'stone' }
+  ];
+
+  const parsedWhoAmI = whoAmIDocContent.split('\n').map(l => l.trim()).filter(l => l.length > 0)
+    .map(l => l.replace(/^[-*0-9.)\]]+\s*/, ''));
+
   useEffect(() => {
     localStorage.setItem('mindx_memory_nodes', JSON.stringify(memoryNodes));
   }, [memoryNodes]);
@@ -1046,11 +1089,6 @@ export default function Dashboard() {
   const [agentPermissionModalOpen, setAgentPermissionModalOpen] = useState(false);
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
   const [agentPermissions, setAgentPermissions] = useState<AgentPermission[]>([]);
-
-  const { t, lang } = useLanguage();
-
-  const location = useLocation();
-  const navigate = useNavigate();
 
   const setActiveTab = (tab: 'documents' | 'activity' | 'agents' | 'members' | 'settings' | 'labels' | 'skills' | 'memory') => {
     setActiveTabState(tab);
@@ -1548,7 +1586,7 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
 
         {/* Content Area */}
         <div className="flex-1 overflow-y-auto p-8">
-          <div className="mx-auto space-y-8 max-w-5xl">
+          <div className="space-y-8 max-w-6xl">
             
             {activeTab === 'documents' && (
               <motion.div 
@@ -1805,11 +1843,12 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
               <motion.div 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="max-w-4xl"
+                className="w-full h-full"
               >
                 {/* Embedded Agents Settings */}
                 <div className="mb-12 pb-8 border-b border-stone-200/80">
                   <h3 className="text-xl font-bold text-stone-900 mb-6">Agent Configuration</h3>
+                </div>
 <motion.div 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -2053,109 +2092,139 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
 
                     </div>
                   );
-                })() : agents.length === 0 ? (
-                  <div className="text-center py-12 border border-stone-200 border-dashed rounded-lg">
-                    <Bot className="w-10 h-10 text-stone-300 mx-auto mb-3" />
-                    <h3 className="text-sm font-medium mb-1">No Agents Found</h3>
-                    <p className="text-stone-500 text-sm mb-4">Create an agent account to generate a token and start collaborating.</p>
-                    <button 
-                      onClick={() => setIsCreatingAgent(true)}
-                      className="bg-stone-900 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-stone-800 transition-colors"
-                    >
-                      Create Agent
-                    </button>
-                  </div>
-                ) : (
-                  agents.map(agent => {
-                    const agentActivityCount = activities.filter(a => a.userId === agent.id).length;
-                    const recentActivities = activities
-                      .filter(a => a.userId === agent.id)
-                      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-                      .slice(0, 3);
-
-                    return (
-                      <div 
-                        key={agent.id} 
-                        onClick={() => setSelectedAgentId(agent.id)}
-                        className="rounded-xl bg-white border border-stone-200/80 shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_20px_rgba(0,0,0,0.06)] transition-all duration-300 cursor-pointer group"
-                      >
-                        <div className="px-5 py-3.5">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              {getAgentAvatar(agent.name, 24)}
-                              <div>
-                                <div className="flex items-center gap-2">
-                                  <h2 className="text-sm font-semibold text-stone-900 tracking-tight group-hover:text-stone-700 transition-colors">{agent.name}</h2>
-                                  <span className={`inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full ${agent.connected ? 'bg-emerald-50 text-emerald-600' : 'bg-stone-100 text-stone-400'}`}>
-                                    <span className={`w-1.5 h-1.5 rounded-full ${agent.connected ? 'bg-emerald-500' : 'bg-stone-300'}`} />
-                                    {agent.connected ? (lang === 'zh' ? '已连接' : 'Connected') : (lang === 'zh' ? '未连接' : 'Disconnected')}
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-2 mt-0.5">
-                                  <p className="text-[11px] text-stone-400">{t('agent.globalAccount')}</p>
-                                  <span className="text-[11px] text-stone-300">·</span>
-                                  <p className="text-[11px] text-stone-400 flex items-center gap-1">
-                                    <Clock className="w-3 h-3" />
-                                    {new Date(agent.createdAt).toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <span className="text-[11px] text-stone-400 font-medium flex items-center gap-1">
-                                <ActivityIcon className="w-3 h-3" />
-                                {agentActivityCount} {t('agent.activities')}
-                              </span>
-                              <div className="relative">
-                                <button 
-                                  className="p-1.5 rounded-md hover:bg-stone-100 text-stone-400 transition-colors opacity-0 group-hover:opacity-100"
-                                  onClick={(e) => { e.stopPropagation(); setAgentListMenuOpen(agentListMenuOpen === agent.id ? null : agent.id); }}
-                                >
-                                  <MoreVertical className="w-4 h-4" />
-                                </button>
-                                {agentListMenuOpen === agent.id && (
-                                  <>
-                                    <div className="fixed inset-0 z-10" onClick={(e) => { e.stopPropagation(); setAgentListMenuOpen(null); }} />
-                                    <div className="absolute right-0 top-full mt-1 w-52 bg-white border border-stone-200 rounded-lg shadow-xl z-20 overflow-hidden py-1">
-                                      <button
-                                        onClick={(e) => { e.stopPropagation(); setAgentListMenuOpen(null); }}
-                                        className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
-                                      >
-                                        <Shield className="w-4 h-4 text-stone-400" />
-                                        Manage Permissions
-                                      </button>
-                                      <button
-                                        onClick={(e) => { e.stopPropagation(); setAgentListMenuOpen(null); }}
-                                        className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
-                                      >
-                                        <StopCircle className="w-4 h-4 text-stone-400" />
-                                        Stop Sync
-                                      </button>
-                                      <div className="border-t border-stone-100 my-0.5" />
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          setAgentListMenuOpen(null);
-                                          setAgents(prev => prev.filter(a => a.id !== agent.id));
-                                        }}
-                                        className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                                      >
-                                        <Trash2 className="w-4 h-4 text-red-400" />
-                                        Delete
-                                      </button>
-                                    </div>
-                                  </>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
+                })() : (
+                  <div 
+                    className="max-w-5xl w-full flex items-start flex-col md:flex-row md:gap-8"
+                  >
+                    {/* Left Navigation Menu */}
+                    <div className="w-full md:w-40 lg:w-44 shrink-0 -order-1 md:order-none mb-6 md:mb-0 self-start md:sticky md:top-0">
+                      <div className="space-y-1.5 p-1 bg-white md:bg-transparent rounded-xl shadow-sm border border-stone-100 md:shadow-none md:border-none md:rounded-none">
+                        {[
+                          { id: 'section-agent-config', label: lang === 'zh' ? 'Agent 代理配置' : 'Agent Config' },
+                          { id: 'section-storage', label: lang === 'zh' ? '账号容量' : 'Storage Capacity' },
+                          { id: 'section-demo', label: lang === 'zh' ? '演示模式' : 'Demo Mode' },
+                          { id: 'section-share', label: lang === 'zh' ? '分享文档预览' : 'Share Preview' },
+                          { id: 'section-extraction', label: lang === 'zh' ? '萃取引擎配置' : 'Extraction Engine Config' },
+                        ].map(nav => (
+                          <button
+                            key={nav.id}
+                            onClick={() => {
+                              const el = document.getElementById(nav.id);
+                              if(el) {
+                                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                              }
+                            }}
+                            className="w-full text-left px-4 py-2.5 text-[13px] font-semibold text-stone-500 rounded-lg hover:bg-stone-100 hover:text-stone-900 transition-colors"
+                          >
+                            {nav.label}
+                          </button>
+                        ))}
                       </div>
+                    </div>
+
+                    {/* Right Content */}
+                    <div className="flex-1 w-full max-w-3xl space-y-6">
+                      {/* Agent Config Box */}
+                      <div id="section-agent-config" className="bg-white border border-stone-200/80 rounded-xl shadow-[0_2px_12px_rgba(0,0,0,0.02)] p-6">
+                        <div className="flex items-center justify-between mb-6">
+                          <h2 className="text-xl font-bold tracking-tight text-stone-900 mb-0">Agent Configuration</h2>
+                        </div>
+                        {(() => {
+                          const agentList = agents;
+                          return agents.length > 0 ? (
+                            agents.map(agent => {
+                              const agentActivityCount = activities.filter(a => a.userId === agent.id).length;
+                              return (
+                                <div 
+                                  key={agent.id} 
+                                  onClick={() => setSelectedAgentId(agent.id)}
+                                  className="rounded-xl bg-white border border-stone-200/80 shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:shadow-[0_4px_20px_rgba(0,0,0,0.06)] transition-all duration-300 cursor-pointer group mb-4"
+                                >
+                                  <div className="px-5 py-3.5">
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center gap-3">
+                                        {getAgentAvatar(agent.name, 24)}
+                                        <div>
+                                          <div className="flex items-center gap-2">
+                                            <h2 className="text-sm font-semibold text-stone-900 tracking-tight group-hover:text-stone-700 transition-colors">{agent.name}</h2>
+                                            <span className={`inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full ${agent.connected ? 'bg-emerald-50 text-emerald-600' : 'bg-stone-100 text-stone-400'}`}>
+                                              <span className={`w-1.5 h-1.5 rounded-full ${agent.connected ? 'bg-emerald-500' : 'bg-stone-300'}`} />
+                                              {agent.connected ? (lang === 'zh' ? '已连接' : 'Connected') : (lang === 'zh' ? '未连接' : 'Disconnected')}
+                                            </span>
+                                          </div>
+                                          <div className="flex items-center gap-2 mt-0.5">
+                                            <p className="text-[11px] text-stone-400">{t('agent.globalAccount')}</p>
+                                            <span className="text-[11px] text-stone-300">·</span>
+                                            <p className="text-[11px] text-stone-400 flex items-center gap-1">
+                                              <Clock className="w-3 h-3" />
+                                              {new Date(agent.createdAt).toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                            </p>
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <div className="flex items-center gap-3">
+                                        <span className="text-[11px] text-stone-400 font-medium flex items-center gap-1">
+                                          <ActivityIcon className="w-3 h-3" />
+                                          {agentActivityCount} {t('agent.activities')}
+                                        </span>
+                                        <div className="relative">
+                                          <button 
+                                            className="p-1.5 rounded-md hover:bg-stone-100 text-stone-400 transition-colors opacity-0 group-hover:opacity-100"
+                                            onClick={(e) => { e.stopPropagation(); setAgentListMenuOpen(agentListMenuOpen === agent.id ? null : agent.id); }}
+                                          >
+                                            <MoreVertical className="w-4 h-4" />
+                                          </button>
+                                          {agentListMenuOpen === agent.id && (
+                                            <>
+                                              <div className="fixed inset-0 z-10" onClick={(e) => { e.stopPropagation(); setAgentListMenuOpen(null); }} />
+                                              <div className="absolute right-0 top-full mt-1 w-52 bg-white border border-stone-200 rounded-lg shadow-xl z-20 overflow-hidden py-1">
+                                                <button
+                                                  onClick={(e) => { e.stopPropagation(); setAgentListMenuOpen(null); }}
+                                                  className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
+                                                >
+                                                  <Shield className="w-4 h-4 text-stone-400" />
+                                                  Manage Permissions
+                                                </button>
+                                                <button
+                                                  onClick={(e) => { e.stopPropagation(); setAgentListMenuOpen(null); }}
+                                                  className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
+                                                >
+                                                  <StopCircle className="w-4 h-4 text-stone-400" />
+                                                  Stop Sync
+                                                </button>
+                                                <div className="border-t border-stone-100 my-0.5" />
+                                                <button
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setAgentListMenuOpen(null);
+                                                    setAgents(prev => prev.filter(a => a.id !== agent.id));
+                                                  }}
+                                                  className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                                                >
+                                                  <Trash2 className="w-4 h-4 text-red-400" />
+                                                  Delete
+                                                </button>
+                                              </div>
+                                            </>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
                     );
                   })
-                )}
-                              {/* Storage Capacity Bar */}
-                <div className="bg-white border border-stone-200/80 rounded-xl shadow-[0_2px_12px_rgba(0,0,0,0.02)] p-6 mb-6">
+                ) : (
+                  <div className="text-center py-12 border border-stone-200 border-dashed rounded-lg">
+                    <p className="text-sm font-medium text-stone-900 mb-1">{lang === 'zh' ? '暂无可配置的 Agent' : 'No Agents Available'}</p>
+                    <p className="text-xs text-stone-500">{lang === 'zh' ? '您可以随时创建一个新的私人助理' : 'Create a new personal assistant anytime'}</p>
+                  </div>
+                );
+              })()}
+              </div>
+
+              {/* Storage Capacity Bar */}
+              <div id="section-storage" className="bg-white border border-stone-200/80 rounded-xl shadow-[0_2px_12px_rgba(0,0,0,0.02)] p-6 mb-6">
                   {(() => {
                     const totalCapacityBytes = 2 * 1024 * 1024 * 1024; // 2GB in bytes
                     const usedBytes = documents.reduce((sum, doc) => sum + doc.size, 0);
@@ -2183,7 +2252,7 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                         
                         {/* Progress Bar */}
                         <div className="w-full h-3 bg-stone-100 rounded-full overflow-hidden">
-                          <motion.div
+                          <div
                             initial={{ width: 0 }}
                             animate={{ width: `${usedPercentage}%` }}
                             transition={{ duration: 0.6, ease: "easeOut" }}
@@ -2200,7 +2269,7 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                 </div>
 
                 {/* Demo Mode Switcher */}
-                <div className="bg-white border border-stone-200/80 rounded-xl shadow-[0_2px_12px_rgba(0,0,0,0.02)] p-6 mb-6">
+                <div id="section-demo" className="bg-white border border-stone-200/80 rounded-xl shadow-[0_2px_12px_rgba(0,0,0,0.02)] p-6 mb-6">
                   <h3 className="text-sm font-semibold text-stone-900 mb-1">
                     {lang === 'zh' ? '演示模式' : 'Demo Mode'}
                   </h3>
@@ -2266,7 +2335,7 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                 </div>
 
                 {/* Shared Document Preview Entry */}
-                <div className="bg-white border border-stone-200/80 rounded-xl shadow-[0_2px_12px_rgba(0,0,0,0.02)] p-6 mb-6">
+                <div id="section-share" className="bg-white border border-stone-200/80 rounded-xl shadow-[0_2px_12px_rgba(0,0,0,0.02)] p-6 mb-6">
                   <h3 className="text-sm font-semibold text-stone-900 mb-1">
                     {lang === 'zh' ? '分享预览' : 'Share Preview'}
                   </h3>
@@ -2285,7 +2354,7 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                 </div>
 
                 {/* Extraction Agent Model Config */}
-                <div className="bg-white border border-stone-200/80 rounded-xl shadow-[0_2px_12px_rgba(0,0,0,0.02)] p-6 mb-6">
+                <div id="section-extraction" className="bg-white border border-stone-200/80 rounded-xl shadow-[0_2px_12px_rgba(0,0,0,0.02)] p-6 mb-6">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-9 h-9 rounded-xl bg-violet-600 flex items-center justify-center shadow-sm shadow-violet-500/20">
                       <Bot className="w-4 h-4 text-white" />
@@ -2359,6 +2428,24 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                       />
                     </div>
 
+                    {/* Extraction Prompt Template */}
+                    <div className="pt-1">
+                      <label className="text-xs font-semibold text-stone-600 mb-1.5 flex items-center justify-between">
+                        <span>{lang === 'zh' ? '系统提示词 (Prompt Template)' : 'System Prompt Template'}</span>
+                      </label>
+                      <textarea
+                        value={extractionSkillPrompt}
+                        onChange={e => setExtractionSkillPrompt(e.target.value)}
+                        placeholder="You are an expert analyst..."
+                        className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-[13px] leading-relaxed font-mono focus:outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-200 transition-colors h-48 resize-y"
+                      />
+                      <p className="text-[11px] text-stone-500 mt-1.5 leading-relaxed">
+                        {lang === 'zh' 
+                          ? '支持的变量：{{LOCALE}} (当前语言), {{WHO_AM_I}} (我的身份信息), {{MY_GOALS}} (我的长期目标)' 
+                          : 'Supported variables: {{LOCALE}}, {{WHO_AM_I}}, {{MY_GOALS}}'}
+                      </p>
+                    </div>
+
                     {/* Save */}
                     <div className="flex items-center justify-between pt-2">
                       <div className="bg-violet-50/60 rounded-lg px-3 py-2 border border-violet-100 flex-1 mr-4">
@@ -2390,13 +2477,15 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                   {lang === 'zh' ? '退出登录' : 'Sign Out'}
                 </button>
 
-              
-</motion.div>
                 </div>
-</motion.div>
+              </div>
             )}
+            </motion.div>
+          </motion.div>
+        )}
 
-            {activeTab === 'skills' && (
+        {/* --- Next blocks --- */}
+        {activeTab === 'skills' && (
               <motion.div 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -2405,6 +2494,7 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                 {/* Skill List */}
                 <div className="border border-stone-200/80 rounded-xl bg-white shadow-[0_2px_12px_rgba(0,0,0,0.02)] overflow-hidden divide-y divide-stone-200/50">
                   {[
+                    { id: 'insight-extract', name: 'Insight Extraction', tag: 'Core', icon: <Sparkles className="w-4 h-4" />, provider: 'MindX', desc: lang === 'zh' ? '基于设定提取核心洞察与决策点' : 'Extract key insights & decisions' },
                     { id: 'mindx-docs', name: 'MindX Docs', tag: 'Core', icon: <FileText className="w-4 h-4" />, provider: 'MindX', desc: lang === 'zh' ? '文档创作能力' : 'Document creation' },
                     { id: 'memory-io', name: 'Memory System', tag: 'Core', icon: <Database className="w-4 h-4" />, provider: 'MindX', desc: lang === 'zh' ? '读写记忆的 Skill' : 'Read/write memory engine' },
                     { id: 'daily-log', name: 'Daily Activity', tag: 'Pro', icon: <CalendarDays className="w-4 h-4" />, provider: 'MindX', desc: lang === 'zh' ? '上传今天做了啥的 Skill' : 'Daily upload skill' },
@@ -2546,7 +2636,11 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                             {lang === 'zh' ? '交互原则 (Directives)' : 'Directives'}
                             <ExternalLink className="w-3 h-3 opacity-0 group-hover/card:opacity-100 transition-opacity" />
                           </h4>
-                          <p className="text-xs text-stone-700 leading-relaxed font-medium">1. 沟通直入主题，拒绝废话套话。<br/>2. 代码给出完整可执行的实现。<br/>3. 分析问题遵循第一性原理。</p>
+                          <p className="text-xs text-stone-700 leading-relaxed font-medium">
+                            {parsedWhoAmI.length > 0 ? parsedWhoAmI.map((l, i) => <span key={i} className="block mb-1">{!l.startsWith('-') && !l.startsWith('•') ? `• ${l}` : l}</span>) : (
+                              <>1. 沟通直入主题，拒绝废话套话。<br/>2. 代码给出完整可执行的实现。<br/>3. 分析问题遵循第一性原理。</>
+                            )}
+                          </p>
                         </div>
                       </div>
                     </section>
@@ -2568,32 +2662,24 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                         </div>
                       </div>
                       <div className="space-y-3 relative z-10">
-                        <div onClick={() => navigate('/document?type=text&backTab=memory&source=goal_doc')} className="flex items-start gap-3 p-3.5 rounded-xl border border-stone-200/50 bg-white/70 hover:bg-white hover:border-stone-300/60 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 backdrop-blur-sm cursor-pointer group/goal">
-                          <div className="w-7 h-7 rounded-lg bg-orange-50 flex items-center justify-center shrink-0 mt-0.5">
-                            <span className="text-orange-600 font-bold text-[11px]">1</span>
-                          </div>
-                          <div>
-                            <h4 className="text-[13px] font-semibold text-stone-800">构建 Agent-Native 记忆中枢</h4>
-                            <p className="text-[11px] text-stone-500 mt-1 flex items-center gap-2">
-                              <span>Deadline: Q2</span>
-                              <span className="w-1 h-1 rounded-full bg-stone-300"></span>
-                              <span className="text-orange-600 font-medium">Priority: High</span>
-                            </p>
-                          </div>
-                        </div>
-                        <div onClick={() => navigate('/document?type=text&backTab=memory&source=goal_doc')} className="flex items-start gap-3 p-3.5 rounded-xl border border-stone-200/50 bg-white/70 hover:bg-white hover:border-stone-300/60 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 backdrop-blur-sm cursor-pointer group/goal">
-                          <div className="w-7 h-7 rounded-lg bg-orange-50 flex items-center justify-center shrink-0 mt-0.5">
-                            <span className="text-orange-600 font-bold text-[11px]">2</span>
-                          </div>
-                          <div>
-                            <h4 className="text-[13px] font-semibold text-stone-800">完善全平台交互与多端适配体验</h4>
-                            <p className="text-[11px] text-stone-500 mt-1 flex items-center gap-2">
-                              <span>Deadline: May</span>
-                              <span className="w-1 h-1 rounded-full bg-stone-300"></span>
-                              <span className="text-stone-500 font-medium">Priority: Medium</span>
-                            </p>
-                          </div>
-                        </div>
+                        {displayGoals.map((item: any, idx) => {
+                          const isOrange = item.color === 'orange' || (!item.color && idx % 2 === 0);
+                          return (
+                            <div key={idx} onClick={() => navigate('/document?type=text&backTab=memory&source=goal_doc')} className="flex items-start gap-3 p-3.5 rounded-xl border border-stone-200/50 bg-white/70 hover:bg-white hover:border-stone-300/60 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 backdrop-blur-sm cursor-pointer group/goal">
+                              <div className={`w-7 h-7 rounded-lg ${isOrange ? 'bg-orange-50' : 'bg-stone-50'} flex items-center justify-center shrink-0 mt-0.5`}>
+                                <span className={`${isOrange ? 'text-orange-600' : 'text-stone-600'} font-bold text-[11px]`}>{idx + 1}</span>
+                              </div>
+                              <div>
+                                <h4 className="text-[13px] font-semibold text-stone-800">{item.title}</h4>
+                                <p className="text-[11px] text-stone-500 mt-1 flex items-center gap-2">
+                                  {item.deadline && <><span>Deadline: {item.deadline}</span><span className="w-1 h-1 rounded-full bg-stone-300"></span></>}
+                                  {item.priority && <span className={`${isOrange ? 'text-orange-600' : 'text-stone-500'} font-medium`}>Priority: {item.priority}</span>}
+                                  {!item.default && !item.deadline && !item.priority && <span className="text-stone-400 italic">User Goal ({lang === 'zh' ? '已收录' : 'Custom'})</span>}
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </section>
                   </div>
@@ -2729,14 +2815,11 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                       ) : (
                         <div className="space-y-3">
                           {extractedKeyPoints.map(kp => {
-                            const typeConfig = kp.type === '决策' || kp.type === 'Decision' ? { color: 'bg-emerald-50 text-emerald-600', icon: <Tag className="w-4 h-4" /> }
-                              : kp.type === '实体' || kp.type === 'Entity' ? { color: 'bg-indigo-50 text-indigo-600', icon: <Network className="w-4 h-4" /> }
-                              : { color: 'bg-blue-50 text-blue-600', icon: <Brain className="w-4 h-4" /> };
                             return (
                               <div key={kp.id} className="flex items-center justify-between p-4 rounded-xl border border-stone-200/60 bg-white hover:bg-stone-50 hover:border-stone-200 transition-all group cursor-pointer shadow-sm">
                                 <div className="flex items-center gap-3.5 flex-1 min-w-0">
-                                  <div className={`w-9 h-9 rounded-xl ${typeConfig.color} flex items-center justify-center shrink-0`}>
-                                    {typeConfig.icon}
+                                  <div className="w-9 h-9 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center shrink-0">
+                                    <Sparkles className="w-4 h-4" />
                                   </div>
                                   <div className="min-w-0">
                                     <h4 className="text-[13px] font-semibold text-stone-800 truncate">{kp.text}</h4>
@@ -2744,8 +2827,6 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                                       <LinkIcon className="w-3.5 h-3.5 shrink-0" />
                                       {lang === 'zh' ? '源自：' : 'From: '}
                                       <span className="hover:text-stone-700 hover:underline truncate">{kp.source}</span>
-                                      <span className="mx-1 w-1 h-1 rounded-full bg-stone-300 shrink-0" />
-                                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${typeConfig.color}`}>{kp.type}</span>
                                     </p>
                                   </div>
                                 </div>
