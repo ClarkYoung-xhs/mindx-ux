@@ -868,6 +868,8 @@ export default function Dashboard() {
   const [nodeEditId, setNodeEditId] = useState<string | null>(null);
   const [nodeEditTitle, setNodeEditTitle] = useState('');
   const [nodeEditDraft, setNodeEditDraft] = useState('');
+  const [showExtractionFilePicker, setShowExtractionFilePicker] = useState(false);
+  const [selectedExtractionFileIds, setSelectedExtractionFileIds] = useState<Set<string>>(new Set());
   const [docSceneFilter, setDocSceneFilter] = useState<'all' | 'today' | 'unread' | 'scheduled' | 'webclip' | 'memory'>('all');
   const [absenceSummaryDismissed, setAbsenceSummaryDismissed] = useState(() => localStorage.getItem('mindx_absence_dismissed') === 'true');
   const [guideDismissed, setGuideDismissedState] = useState(() => localStorage.getItem('mindx_guide_dismissed') === 'true');
@@ -906,12 +908,14 @@ export default function Dashboard() {
 
   const handleStartExtraction = async () => {
     if (!extractionApiKey.trim()) { setIsModelConfigOpen(true); return; }
-    if (rawDataItems.length === 0) return;
+    const itemsToExtract = rawDataItems.filter(i => selectedExtractionFileIds.has(i.id));
+    if (itemsToExtract.length === 0) return;
+    setShowExtractionFilePicker(false);
     setExtractionRunning(true);
 
     const newLog = {
       id: `log-${Date.now()}`,
-      text: lang === 'zh' ? `正在使用 ${extractionModel} 提炼全局 ${rawDataItems.length} 个未处理文件...` : `Extracting ${rawDataItems.length} documents with ${extractionModel}...`,
+      text: lang === 'zh' ? `正在使用 ${extractionModel} 提炼 ${itemsToExtract.length} 个文件...` : `Extracting ${itemsToExtract.length} documents with ${extractionModel}...`,
       time: 'now',
       status: 'running' as const,
     };
@@ -920,7 +924,7 @@ export default function Dashboard() {
     try {
       const allKPs: any[] = [];
       
-      for (const item of rawDataItems) {
+      for (const item of itemsToExtract) {
         // Find content either from item properties, or read from localStorage if it's been edited
         const whoAmI = localStorage.getItem('mindx_raw_whoami_doc') || '';
         const goal = localStorage.getItem('mindx_raw_goal_doc') || '';
@@ -976,7 +980,7 @@ export default function Dashboard() {
       }
 
       setExtractionRunning(false);
-      setExtractionLogs(prev => prev.map(l => l.id === newLog.id ? { ...l, text: lang === 'zh' ? `已完成全量 ${rawDataItems.length} 个文档的提炼，共发现 ${allKPs.length} 条有效洞察并入库` : `Completed extraction of ${rawDataItems.length} docs, found ${allKPs.length} insights`, status: 'done' as const, time: 'just now' } : l));
+      setExtractionLogs(prev => prev.map(l => l.id === newLog.id ? { ...l, text: lang === 'zh' ? `已完成 ${itemsToExtract.length} 个文档的提炼，共发现 ${allKPs.length} 条有效洞察并入库` : `Completed extraction of ${itemsToExtract.length} docs, found ${allKPs.length} insights`, status: 'done' as const, time: 'just now' } : l));
       
       if (allKPs.length > 0) {
         setExtractedKeyPoints(prev => [...allKPs, ...prev]);
@@ -3110,7 +3114,8 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                         <button 
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleStartExtraction();
+                            setSelectedExtractionFileIds(new Set(rawDataItems.map(i => i.id)));
+                            setShowExtractionFilePicker(true);
                           }}
                           disabled={extractionRunning || rawDataItems.length === 0}
                           className={`w-full flex items-center justify-center gap-2 text-white text-sm font-semibold p-3.5 rounded-xl transition-all duration-300 shadow-md ${
@@ -3519,6 +3524,78 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                 placeholder={lang === 'zh' ? '输入记忆内容...\n\n支持 Markdown 格式' : 'Enter memory content...\n\nSupports Markdown'}
                 className="w-full h-full min-h-[40vh] bg-transparent border-none focus:outline-none text-sm text-stone-800 leading-relaxed font-mono resize-none placeholder:text-stone-300"
               />
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+
+      {/* Extraction File Picker Modal */}
+      {showExtractionFilePicker && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 z-[9999] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setShowExtractionFilePicker(false)}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[70vh] flex flex-col overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100">
+              <h2 className="text-sm font-bold text-stone-900 flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-blue-500" />
+                {lang === 'zh' ? '选择要提取的文件' : 'Select Files to Extract'}
+              </h2>
+              <button onClick={() => setShowExtractionFilePicker(false)} className="p-1 rounded-md text-stone-400 hover:text-stone-700 transition-colors">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-auto px-6 py-3">
+              {/* Select all */}
+              <label className="flex items-center gap-3 py-2 border-b border-stone-100 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={selectedExtractionFileIds.size === rawDataItems.length}
+                  onChange={(e) => setSelectedExtractionFileIds(e.target.checked ? new Set(rawDataItems.map(i => i.id)) : new Set())}
+                  className="w-4 h-4 rounded border-stone-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-xs font-bold text-stone-700">{lang === 'zh' ? '全选' : 'Select All'}</span>
+                <span className="text-[10px] text-stone-400 ml-auto">{selectedExtractionFileIds.size}/{rawDataItems.length}</span>
+              </label>
+              {rawDataItems.map(item => (
+                <label key={item.id} className="flex items-center gap-3 py-2.5 border-b border-stone-50 cursor-pointer hover:bg-stone-50/50 rounded-lg px-1 transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={selectedExtractionFileIds.has(item.id)}
+                    onChange={(e) => {
+                      const next = new Set(selectedExtractionFileIds);
+                      e.target.checked ? next.add(item.id) : next.delete(item.id);
+                      setSelectedExtractionFileIds(next);
+                    }}
+                    className="w-4 h-4 rounded border-stone-300 text-blue-600 focus:ring-blue-500 shrink-0"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs font-medium text-stone-700 truncate">{item.name}</div>
+                    <div className="text-[10px] text-stone-400">{item.type}</div>
+                  </div>
+                </label>
+              ))}
+            </div>
+            <div className="px-6 py-4 border-t border-stone-100">
+              <button
+                onClick={() => handleStartExtraction()}
+                disabled={selectedExtractionFileIds.size === 0}
+                className={`w-full flex items-center justify-center gap-2 text-white text-sm font-semibold py-3 rounded-xl transition-all ${
+                  selectedExtractionFileIds.size === 0
+                    ? 'bg-stone-300 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 shadow-md hover:shadow-lg'
+                }`}
+              >
+                <Sparkles className="w-4 h-4" />
+                {lang === 'zh' ? `开始提取 (${selectedExtractionFileIds.size} 个文件)` : `Start Extraction (${selectedExtractionFileIds.size} files)`}
+              </button>
             </div>
           </motion.div>
         </motion.div>
