@@ -890,6 +890,20 @@ export default function Dashboard() {
     localStorage.setItem('mindx_extracted_keypoints', JSON.stringify(extractedKeyPoints));
   }, [extractedKeyPoints]);
 
+  // Fetch key points from DB on mount
+  useEffect(() => {
+    fetch('/api/keypoints?workspace_id=w1')
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then((rows: any[]) => {
+        if (rows.length > 0) {
+          setExtractedKeyPoints(rows.map(r => ({
+            id: r.id, title: r.title, type: r.type, text: r.text, source: r.source, createdAt: r.created_at
+          })));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const handleStartExtraction = async () => {
     if (!extractionApiKey.trim()) { setIsModelConfigOpen(true); return; }
     if (rawDataItems.length === 0) return;
@@ -966,6 +980,14 @@ export default function Dashboard() {
       
       if (allKPs.length > 0) {
         setExtractedKeyPoints(prev => [...allKPs, ...prev]);
+        // Persist each KP to DB
+        for (const kp of allKPs) {
+          fetch('/api/keypoints', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ workspace_id: 'w1', id: kp.id, title: kp.title, type: kp.type, text: kp.text, source: kp.source })
+          }).catch(() => {});
+        }
       }
     } catch (err: any) {
       setExtractionRunning(false);
@@ -2858,7 +2880,7 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                                     </p>
                                   </div>
                                 </div>
-                                <button onClick={e => { e.stopPropagation(); setExtractedKeyPoints(prev => prev.filter(p => p.id !== kp.id)); }} className="p-1 rounded-md text-stone-300 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100 shrink-0">
+                                <button onClick={e => { e.stopPropagation(); fetch(`/api/keypoints?id=${kp.id}`, { method: 'DELETE' }).catch(() => {}); setExtractedKeyPoints(prev => prev.filter(p => p.id !== kp.id)); }} className="p-1 rounded-md text-stone-300 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100 shrink-0">
                                   <X className="w-3.5 h-3.5" />
                                 </button>
                               </div>
