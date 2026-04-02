@@ -1069,14 +1069,26 @@ Analyze the following text strictly from the perspective of "Who am I" and to se
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
-    const newItems = Array.from(files).map((file: File, i: number) => ({
+    const fileArray = Array.from(files);
+    const newItems = fileArray.map((file: File, i: number) => ({
       id: `raw-${Date.now()}-${i}`,
       name: file.name,
       type: file.name.split('.').pop()?.toUpperCase() || 'FILE',
       size: file.size,
       uploadedAt: new Date().toISOString(),
       source: 'file' as const,
+      content: '',
     }));
+    // Read each file's text content
+    fileArray.forEach((file: File, i: number) => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const text = ev.target?.result as string || '';
+        localStorage.setItem(`mindx_raw_${newItems[i].id}`, text);
+        setRawDataItems(prev => prev.map(item => item.id === newItems[i].id ? { ...item, content: text } : item));
+      };
+      reader.readAsText(file);
+    });
     setRawDataItems(prev => [...newItems, ...prev]);
     setIsIntegrationMenuOpen(false);
     if (fileInputRef.current) fileInputRef.current.value = '';
