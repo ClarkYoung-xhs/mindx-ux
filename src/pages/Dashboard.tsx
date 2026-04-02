@@ -2617,25 +2617,8 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                           </button>
                         </div>
                       </div>
-                      <div className="space-y-3 relative z-10">
-                        <div onClick={() => navigate('/document?type=text&backTab=memory&source=whoami_doc')} className="bg-white/70 rounded-xl p-3.5 border border-stone-200/50 hover:bg-white hover:border-stone-300/60 transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-0.5 backdrop-blur-sm cursor-pointer group/card">
-                          <h4 className="text-[11px] font-semibold text-stone-500 uppercase tracking-wider mb-2 flex items-center justify-between">
-                            {lang === 'zh' ? '核心身份 (Identity)' : 'Identity'}
-                            <ExternalLink className="w-3 h-3 opacity-0 group-hover/card:opacity-100 transition-opacity" />
-                          </h4>
-                          <p className="text-xs text-stone-700 leading-relaxed font-medium">前沿科技创业者，独立产品经理。偏好极致体验和极简设计，推崇 Agent-Native 理念。</p>
-                        </div>
-                        <div onClick={() => navigate('/document?type=text&backTab=memory&source=whoami_doc')} className="bg-white/70 rounded-xl p-3.5 border border-stone-200/50 hover:bg-white hover:border-stone-300/60 transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-0.5 backdrop-blur-sm cursor-pointer group/card">
-                          <h4 className="text-[11px] font-semibold text-stone-500 uppercase tracking-wider mb-2 flex items-center justify-between">
-                            {lang === 'zh' ? '交互原则 (Directives)' : 'Directives'}
-                            <ExternalLink className="w-3 h-3 opacity-0 group-hover/card:opacity-100 transition-opacity" />
-                          </h4>
-                          <p className="text-xs text-stone-700 leading-relaxed font-medium">
-                            {parsedWhoAmI.length > 0 ? parsedWhoAmI.map((l, i) => <span key={i} className="block mb-1">{!l.startsWith('-') && !l.startsWith('•') ? `• ${l}` : l}</span>) : (
-                              <>1. 沟通直入主题，拒绝废话套话。<br/>2. 代码给出完整可执行的实现。<br/>3. 分析问题遵循第一性原理。</>
-                            )}
-                          </p>
-                        </div>
+                      <div className="relative z-10 text-xs text-stone-700 leading-relaxed font-medium whitespace-pre-line cursor-pointer hover:text-stone-900 transition-colors" onClick={() => navigate('/document?type=text&backTab=memory&source=whoami_doc')}>
+                        {whoAmIDocContent || (lang === 'zh' ? '点击编辑，描述你的身份与交互偏好...' : 'Click to edit your identity and preferences...')}
                       </div>
                     </section>
 
@@ -2655,25 +2638,8 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                           </button>
                         </div>
                       </div>
-                      <div className="space-y-3 relative z-10">
-                        {displayGoals.map((item: any, idx) => {
-                          const isOrange = item.color === 'orange' || (!item.color && idx % 2 === 0);
-                          return (
-                            <div key={idx} onClick={() => navigate('/document?type=text&backTab=memory&source=goal_doc')} className="flex items-start gap-3 p-3.5 rounded-xl border border-stone-200/50 bg-white/70 hover:bg-white hover:border-stone-300/60 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 backdrop-blur-sm cursor-pointer group/goal">
-                              <div className={`w-7 h-7 rounded-lg ${isOrange ? 'bg-orange-50' : 'bg-stone-50'} flex items-center justify-center shrink-0 mt-0.5`}>
-                                <span className={`${isOrange ? 'text-orange-600' : 'text-stone-600'} font-bold text-[11px]`}>{idx + 1}</span>
-                              </div>
-                              <div>
-                                <h4 className="text-[13px] font-semibold text-stone-800">{item.title}</h4>
-                                <p className="text-[11px] text-stone-500 mt-1 flex items-center gap-2">
-                                  {item.deadline && <><span>Deadline: {item.deadline}</span><span className="w-1 h-1 rounded-full bg-stone-300"></span></>}
-                                  {item.priority && <span className={`${isOrange ? 'text-orange-600' : 'text-stone-500'} font-medium`}>Priority: {item.priority}</span>}
-                                  {!item.default && !item.deadline && !item.priority && <span className="text-stone-400 italic">User Goal ({lang === 'zh' ? '已收录' : 'Custom'})</span>}
-                                </p>
-                              </div>
-                            </div>
-                          );
-                        })}
+                      <div className="relative z-10 text-xs text-stone-700 leading-relaxed font-medium whitespace-pre-line cursor-pointer hover:text-stone-900 transition-colors" onClick={() => navigate('/document?type=text&backTab=memory&source=goal_doc')}>
+                        {goalDocContent || (lang === 'zh' ? '点击编辑，描述你当前的核心目标...' : 'Click to edit your current goals...')}
                       </div>
                     </section>
                   </div>
@@ -3001,26 +2967,47 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                       </div>
                     </div>
                     <div className="space-y-3">
-                        {/* 文档管理入口 — 横条式 */}
-                        <div 
-                          className="flex items-center justify-between p-3.5 bg-white/60 border border-stone-100 rounded-xl cursor-pointer hover:shadow-md hover:border-blue-200 transition-all duration-200 group"
-                          onClick={() => setIsRawDataModalOpen(true)}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
-                              <Database className="w-4 h-4 text-blue-600" />
-                            </div>
-                            <div>
-                              <div className="text-sm font-semibold text-stone-900">{lang === 'zh' ? '空间内部源' : 'Workspace Docs'}</div>
-                              <div className="text-[11px] text-stone-400">{lang === 'zh' ? '当前工作空间内的所有内部文档' : 'All internal docs in workspace'}</div>
+                        {/* 空间内部源 — 展开式文件列表 */}
+                        <div className="bg-white/60 border border-stone-100 rounded-xl overflow-hidden">
+                          <div 
+                            className="flex items-center justify-between p-3.5 cursor-pointer hover:bg-stone-50/50 transition-colors"
+                            onClick={() => setIsRawDataModalOpen(true)}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
+                                <Database className="w-4 h-4 text-blue-600" />
+                              </div>
+                              <div>
+                                <div className="text-sm font-semibold text-stone-900">{lang === 'zh' ? '空间内部源' : 'Workspace Docs'}</div>
+                                <div className="text-[11px] text-stone-400">{rawDataItems.length} {lang === 'zh' ? '份资料' : 'files'}</div>
+                              </div>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-stone-700 bg-stone-100 group-hover:bg-blue-50 group-hover:text-blue-700 px-2.5 py-1 rounded-lg transition-colors">
-                              {rawDataItems.length} {lang === 'zh' ? '份资料' : 'Files'}
-                            </span>
-                            <ChevronRight className="w-4 h-4 text-stone-300 group-hover:text-blue-500 group-hover:translate-x-0.5 transition-all" />
-                          </div>
+                          {rawDataItems.length > 0 && (
+                            <div className="border-t border-stone-100">
+                              {rawDataItems.slice(0, 5).map((item, idx) => (
+                                <div 
+                                  key={item.id} 
+                                  className={`flex items-center justify-between px-4 py-2.5 text-xs hover:bg-stone-50/80 transition-colors cursor-pointer ${idx < Math.min(rawDataItems.length, 5) - 1 ? 'border-b border-stone-50' : ''}`}
+                                  onClick={() => openRawDataInEditor(item)}
+                                >
+                                  <div className="flex items-center gap-2.5 min-w-0">
+                                    <FileText className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+                                    <span className="text-stone-700 font-medium truncate">{item.name}</span>
+                                  </div>
+                                  <span className="text-[10px] text-stone-400 shrink-0 ml-2">{item.type}</span>
+                                </div>
+                              ))}
+                              {rawDataItems.length > 5 && (
+                                <div 
+                                  className="px-4 py-2 text-center text-xs text-blue-600 font-semibold cursor-pointer hover:bg-blue-50/50 transition-colors border-t border-stone-100"
+                                  onClick={() => setIsRawDataModalOpen(true)}
+                                >
+                                  {lang === 'zh' ? `查看全部 ${rawDataItems.length} 份资料 →` : `View all ${rawDataItems.length} files →`}
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
 
                         {/* 提炼引擎状态条 */}
