@@ -2488,7 +2488,6 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                 {/* Skill List */}
                 <div className="border border-stone-200/80 rounded-xl bg-white shadow-[0_2px_12px_rgba(0,0,0,0.02)] overflow-hidden divide-y divide-stone-200/50">
                   {[
-                    { id: 'insight-extract', name: 'Insight Extraction', tag: 'Core', icon: <Sparkles className="w-4 h-4" />, provider: 'MindX', desc: lang === 'zh' ? '基于设定提取核心洞察与决策点' : 'Extract key insights & decisions' },
                     { id: 'mindx-docs', name: 'MindX Docs', tag: 'Core', icon: <FileText className="w-4 h-4" />, provider: 'MindX', desc: lang === 'zh' ? '文档创作能力' : 'Document creation' },
                     { id: 'memory-io', name: 'Memory System', tag: 'Core', icon: <Database className="w-4 h-4" />, provider: 'MindX', desc: lang === 'zh' ? '读写记忆的 Skill' : 'Read/write memory engine' },
                     { id: 'daily-log', name: 'Daily Activity', tag: 'Pro', icon: <CalendarDays className="w-4 h-4" />, provider: 'MindX', desc: lang === 'zh' ? '上传今天做了啥的 Skill' : 'Daily upload skill' },
@@ -2603,8 +2602,53 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                           </div>
                         </div>
                       )}
+                      {/* Inline detail for Memory System */}
+                      {selectedSkillId === skill.id && skill.id === 'memory-io' && (
+                        <div className="border-t border-stone-100 bg-white" onClick={(e) => e.stopPropagation()}>
+                          <div className="p-6 pb-5">
+                            <p className="text-sm text-stone-500 leading-relaxed mb-4">
+                              {lang === 'zh' ? '让你的 AI Agent 拥有持久记忆能力。读写用户画像（Who am I）、当前目标（Goal）、工作空间文档和活动日志。' : 'Give your AI Agent persistent memory. Read/write user profile (Who am I), goals, workspace documents, and activity logs.'}
+                            </p>
+                            <div className="grid md:grid-cols-2 gap-1.5">
+                              {(lang === 'zh' ? ['读写用户身份画像 (Who am I)', '读写当前目标 (Goal)', '查询/创建/更新工作空间文档', '记录和查询活动日志'] : ['Read/write user profile (Who am I)', 'Read/write current goals', 'Query/create/update workspace docs', 'Record & query activity logs']).map((cap, j) => (
+                                <div key={j} className="flex items-center gap-2 text-sm text-stone-600"><Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />{cap}</div>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="border-t border-stone-100 p-6 space-y-6">
+                            {/* Step 1 */}
+                            <div className="relative pl-10">
+                              <div className="absolute left-[11px] top-8 -bottom-6 flex flex-col items-center w-0"><div className="flex-1 border-l border-dashed border-stone-300" /><svg className="w-2.5 h-2.5 text-stone-300 shrink-0" viewBox="0 0 10 10" fill="none"><path d="M1 3L5 7L9 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></div>
+                              <div className="absolute left-0 top-0 w-6 h-6 rounded-md border border-stone-300 bg-stone-50 flex items-center justify-center text-stone-700 text-[10px] font-bold">1</div>
+                              <h4 className="text-sm font-bold text-stone-800 mb-2">{lang === 'zh' ? '安装命令' : 'Install Command'}</h4>
+                              <p className="text-xs text-stone-500 mb-3">💡 {lang === 'zh' ? '复制粘贴到 Agent 对话中即可自动安装。' : 'Copy and paste into your Agent chat to auto-install.'}</p>
+                              <div className="relative">
+                                <div className="bg-stone-50 border border-stone-200 rounded-xl p-4 pr-24 text-sm font-mono text-stone-700 leading-relaxed overflow-x-auto whitespace-pre-wrap">{`Install the MindX Memory skill. API endpoints:\n- GET/PUT https://mindx-ux.vercel.app/api/profile?workspace_id=w1 (read/write user profile: whoami, goal)\n- GET/POST/PUT/DELETE https://mindx-ux.vercel.app/api/documents?workspace_id=w1 (documents)\n- GET/POST https://mindx-ux.vercel.app/api/activities?workspace_id=w1 (activity logs)`}</div>
+                                <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(`Install the MindX Memory skill. API endpoints:\n- GET/PUT https://mindx-ux.vercel.app/api/profile?workspace_id=w1 (read/write user profile: whoami, goal)\n- GET/POST/PUT/DELETE https://mindx-ux.vercel.app/api/documents?workspace_id=w1 (documents)\n- GET/POST https://mindx-ux.vercel.app/api/activities?workspace_id=w1 (activity logs)`); setCopiedStates(prev => ({ ...prev, memoryInstall: true })); setTimeout(() => setCopiedStates(prev => ({ ...prev, memoryInstall: false })), 2000); }} className="absolute right-3 bottom-3 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-stone-900 hover:bg-stone-800 text-white text-xs font-medium transition-colors shadow-sm">{copiedStates['memoryInstall'] ? <><Check className="w-3.5 h-3.5" />{lang === 'zh' ? '已复制' : 'Copied'}</> : <><Copy className="w-3.5 h-3.5" />{lang === 'zh' ? '复制' : 'Copy'}</>}</button>
+                              </div>
+                            </div>
+                            {/* Step 2 */}
+                            <div className="relative pl-10">
+                              <div className="absolute left-[11px] top-8 -bottom-6 flex flex-col items-center w-0"><div className="flex-1 border-l border-dashed border-stone-300" /><svg className="w-2.5 h-2.5 text-stone-300 shrink-0" viewBox="0 0 10 10" fill="none"><path d="M1 3L5 7L9 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></div>
+                              <div className="absolute left-0 top-0 w-6 h-6 rounded-md border border-stone-300 bg-stone-50 flex items-center justify-center text-stone-700 text-[10px] font-bold">2</div>
+                              <h4 className="text-sm font-bold text-stone-800 mb-2">{lang === 'zh' ? 'Agent 完成安装' : 'Agent Completes Installation'}</h4>
+                              <p className="text-xs text-stone-500 leading-relaxed">{lang === 'zh' ? '💡 Agent 会自动创建 Skill 配置并记住 API 端点。之后在任何对话中都可以读写你的 MindX 记忆。' : '💡 Agent auto-creates config and remembers endpoints. Can read/write MindX memory in any conversation.'}</p>
+                            </div>
+                            {/* Step 3 */}
+                            <div className="relative pl-10">
+                              <div className="absolute left-0 top-0 w-6 h-6 rounded-md border border-stone-300 bg-stone-50 flex items-center justify-center text-stone-700 text-[10px] font-bold">3</div>
+                              <h4 className="text-sm font-bold text-stone-800 mb-2">{lang === 'zh' ? '使用 Skill' : 'Use Skill'}</h4>
+                              <p className="text-xs text-stone-500 leading-relaxed mb-3">💡 {lang === 'zh' ? 'Agent 会在需要时自动调用 MindX 记忆接口，也可以主动触发。' : 'Agent auto-calls MindX memory API when needed, or trigger manually.'}</p>
+                              <div className="space-y-2">
+                                <div className="flex items-start gap-2.5 p-3 rounded-lg bg-stone-50 border border-stone-200/60"><span className="text-xs font-bold text-stone-800 shrink-0">{lang === 'zh' ? '读记忆' : 'Read'}</span><span className="text-xs text-stone-500">—</span><span className="text-xs text-stone-600">{lang === 'zh' ? '"读一下我的记忆"、"我的目标是什么"、"查看我的画像"' : '"read my memory", "what are my goals", "show my profile"'}</span></div>
+                                <div className="flex items-start gap-2.5 p-3 rounded-lg bg-stone-50 border border-stone-200/60"><span className="text-xs font-bold text-stone-800 shrink-0">{lang === 'zh' ? '写记忆' : 'Write'}</span><span className="text-xs text-stone-500">—</span><span className="text-xs text-stone-600">{lang === 'zh' ? '"更新我的目标为 XXX"、"记住我是 XXX"' : '"update my goal to XXX", "remember I am XXX"'}</span></div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                       {/* Inline Coming Soon for other skills */}
-                      {selectedSkillId === skill.id && skill.id !== 'mindx-docs' && skill.id !== 'daily-log' && (
+                      {selectedSkillId === skill.id && !['mindx-docs', 'daily-log', 'memory-io'].includes(skill.id) && (
                         <div className="bg-stone-50/50 p-8 text-center">
                           <Package className="w-8 h-8 text-stone-300 mx-auto mb-2" />
                           <h3 className="text-sm font-semibold text-stone-900 mb-1">{lang === 'zh' ? '即将上线' : 'Coming Soon'}</h3>
