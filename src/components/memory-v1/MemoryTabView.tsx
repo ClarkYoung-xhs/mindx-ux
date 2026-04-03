@@ -85,7 +85,6 @@ type MemoryTabViewProps = {
   onCreateMemoryNode: () => void | Promise<void>;
   onEditNode: (node: MemoryNode) => void;
   extractedKeyPoints: ExtractedKeyPoint[];
-  onDeleteKeyPoint: (id: string) => void;
   onOpenKeyPointsDocument: () => void;
   rawDataItems: RawDataItem[];
   extractionRunning: boolean;
@@ -273,7 +272,6 @@ export default function MemoryTabView({
   onCreateMemoryNode,
   onEditNode,
   extractedKeyPoints,
-  onDeleteKeyPoint,
   onOpenKeyPointsDocument,
   rawDataItems,
   extractionRunning,
@@ -710,8 +708,6 @@ export default function MemoryTabView({
 
         <div className="grid gap-4 lg:grid-cols-2">
           {insightCards.map(point => {
-              const isSample = 'sample' in point;
-
               return (
                 <div
                   key={point.id}
@@ -738,23 +734,11 @@ export default function MemoryTabView({
                   </h4>
                   <p className="mt-2 text-sm leading-6 text-stone-600">{point.text}</p>
 
-                  <div className="mt-4 flex items-center justify-between gap-3">
+                  <div className="mt-4 flex items-center gap-3">
                     <div className="inline-flex min-w-0 items-center gap-2 rounded-full bg-stone-100 px-3 py-1.5 text-[11px] font-medium text-stone-500">
                       <FileSearch className="h-3.5 w-3.5 shrink-0" />
                       <span className="truncate">{point.source}</span>
                     </div>
-                    {!isSample ? (
-                      <button
-                        type="button"
-                        onClick={event => {
-                          event.stopPropagation();
-                          onDeleteKeyPoint(point.id);
-                        }}
-                        className="rounded-full px-3 py-1.5 text-xs font-medium text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-700"
-                      >
-                        删除
-                      </button>
-                    ) : null}
                   </div>
                 </div>
               );

@@ -1189,11 +1189,6 @@ Analyze the following text strictly from the perspective of "Who am I" and to se
     setNodeEditDraft(node.content || localStorage.getItem(`mindx_raw_${node.id}`) || '');
   };
 
-  const handleDeleteKeyPoint = (id: string) => {
-    fetch(`/api/keypoints?id=${id}`, { method: 'DELETE' }).catch(() => {});
-    setExtractedKeyPoints(prev => prev.filter(point => point.id !== id));
-  };
-
   const handleOpenKeyPointsDocument = () => {
     navigate('/document?type=text&backTab=memory&source=keypoints_doc');
   };
@@ -2806,7 +2801,6 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                   onCreateMemoryNode={handleCreateMemoryNode}
                   onEditNode={handleOpenMemoryNodeEditor}
                   extractedKeyPoints={extractedKeyPoints}
-                  onDeleteKeyPoint={handleDeleteKeyPoint}
                   onOpenKeyPointsDocument={handleOpenKeyPointsDocument}
                   rawDataItems={rawDataItems}
                   extractionRunning={extractionRunning}
