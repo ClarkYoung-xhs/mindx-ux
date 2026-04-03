@@ -105,6 +105,70 @@ interface CommentThread {
   isAwaitingReply: boolean;
 }
 
+function paragraphSnapshot(paragraphs: Paragraph[]) {
+  return JSON.stringify(paragraphs.map(paragraph => paragraph.text));
+}
+
+function normalizeTagList(text: string) {
+  return text
+    .split(/[\s,，]+/)
+    .map(token => token.replace(/^#/, '').trim())
+    .filter(Boolean);
+}
+
+function firstBodyParagraph(paragraphs: Paragraph[]) {
+  return (
+    paragraphs.find(
+      paragraph => paragraph.text.trim() && !paragraph.text.trim().startsWith('#')
+    )?.text ?? ''
+  );
+}
+
+function findSectionContent(paragraphs: Paragraph[], heading: string) {
+  const headingIndex = paragraphs.findIndex(paragraph => paragraph.text.trim() === heading);
+  if (headingIndex === -1) return [];
+
+  const collected: string[] = [];
+  for (let index = headingIndex + 1; index < paragraphs.length; index += 1) {
+    const text = paragraphs[index].text.trim();
+    if (text.startsWith('### ')) break;
+    if (text) collected.push(text);
+  }
+
+  return collected;
+}
+
+function splitSectionLines(paragraphs: Paragraph[], heading: string) {
+  return findSectionContent(paragraphs, heading)
+    .flatMap(line => line.split('\n'))
+    .map(line => line.trim())
+    .filter(Boolean);
+}
+
+function stripOrderedPrefix(line: string) {
+  return line.replace(/^\d+\.\s+/, '');
+}
+
+function readEditableText(node: HTMLElement) {
+  const rawText = node.textContent ?? '';
+  return rawText.replace(/^(\d+\.)\s+\1\s+/gm, '$1 ');
+}
+
+function isProfileLoadingPlaceholder(value: string) {
+  const normalized = value.trim();
+  return normalized === '加载中...' || normalized === 'Loading...';
+}
+
+function paragraphStateFromDom(paragraphs: Paragraph[]) {
+  if (typeof document === 'undefined') return paragraphs;
+
+  return paragraphs.map(paragraph => {
+    const node = document.querySelector<HTMLElement>(`[data-paragraph-id="${paragraph.id}"]`);
+    if (!node) return paragraph;
+    return { ...paragraph, text: readEditableText(node) || paragraph.text };
+  });
+}
+
 function buildAgentReply(type: CommentThreadType, highlight: string, userText: string): string[] {
   if (type === 'modify') {
     return [`I've reviewed the suggestion about "${highlight}". ${userText ? `Regarding your note: "${userText}" — ` : ''}I'll update the document accordingly.`];
@@ -213,7 +277,16 @@ function buildDefaultProjectVersionHistory(
 
 export default function DocumentEditor() {
   const navigate = useNavigate();
-  const { documents, memoryAssets, memoryDataSources, memorySourceLinks } = useMindXDemo();
+  const {
+    documents,
+    memoryAssets,
+    memoryDataSources,
+    memorySourceLinks,
+    setMemoryAssets,
+    setMemoryDataSources,
+    setMemoryTimeline,
+    setAgentWritebacks,
+  } = useMindXDemo();
   const currentUserName = 'You';
   const externalCollaboratorName = 'Maya Chen';
   const [isChatLog, setIsChatLog] = useState(false);
@@ -238,6 +311,7 @@ export default function DocumentEditor() {
   const source = queryParams.get('source');
   const assetId = queryParams.get('assetId');
   const dataSourceId = queryParams.get('dataSourceId');
+  const from = queryParams.get('from');
   const isMemoryScopedDocument =
     source === 'memory_asset' ||
     source === 'data_source' ||
@@ -321,6 +395,24 @@ export default function DocumentEditor() {
       ],
     };
   }, [currentUserName, dataSourceId, memoryDataSources, source]);
+  const relatedMemorySourceIds = useMemo(
+    () =>
+      dataSourceId
+        ? memorySourceLinks
+            .filter(item => item.dataSourceId === dataSourceId)
+            .map(item => item.id)
+        : [],
+    [dataSourceId, memorySourceLinks]
+  );
+  const relatedSourceAssets = useMemo(
+    () =>
+      relatedMemorySourceIds.length === 0
+        ? []
+        : memoryAssets.filter(asset =>
+            asset.sourceIds.some(sourceId => relatedMemorySourceIds.includes(sourceId))
+          ),
+    [memoryAssets, relatedMemorySourceIds]
+  );
   
   // Modal states
   const [duplicateModalOpen, setDuplicateModalOpen] = useState(false);
@@ -437,14 +529,16 @@ export default function DocumentEditor() {
   useEffect(() => {
     if (!isProfileSource || profileLoading) return;
     const content = profile[profileKey];
-    if (content) {
+    if (content && !isProfileLoadingPlaceholder(content)) {
       const lines = content.split('\n').filter((l: string) => l.trim());
       if (lines.length > 0) {
         setParagraphs(lines.map((text: string, i: number) => ({
           id: `p${i + 1}`, text, author: currentUserName, authorType: 'human' as const
         })));
+        return;
       }
     }
+    setParagraphs([{ id: 'p1', text: '', author: currentUserName, authorType: 'human' as const }]);
   }, [profileLoading]);
 
   const [paragraphs, setParagraphs] = useState<Paragraph[]>(() => {
@@ -461,15 +555,13 @@ export default function DocumentEditor() {
     
     if (source === 'whoami_doc' || source === 'goal_doc') {
       // Start with localStorage fallback; useEffect will fetch from DB and update
-      const profileKey = source === 'whoami_doc' ? 'whoami' : 'goal';
       const cached = localStorage.getItem(`mindx_raw_${source}`);
-      if (cached) {
+      if (cached && !isProfileLoadingPlaceholder(cached)) {
         return cached.split('\n').filter((l: string) => l.trim()).map((text: string, i: number) => ({
           id: `p${i + 1}`, text, author: currentUserName, authorType: 'human' as const
         }));
       }
-      // Default placeholder while loading
-      return [{ id: 'p1', text: source === 'whoami_doc' ? '加载中...' : '加载中...', author: currentUserName, authorType: 'human' as const }];
+      return [{ id: 'p1', text: '', author: currentUserName, authorType: 'human' as const }];
     }
     
     if (source === 'keypoints_doc') {
@@ -540,12 +632,6 @@ export default function DocumentEditor() {
             }]
         )
       ];
-    }
-
-    // If we have a doc ID and no special source, start with loading placeholder
-    // (real content will be fetched via useEffect below)
-    if (requestedDocId && !source) {
-      return [{ id: 'p1', text: '加载中...', author: currentUserName, authorType: 'human' as const }];
     }
 
     return [
@@ -707,31 +793,15 @@ export default function DocumentEditor() {
     }
     ];
   });
-
-  // Fetch real document content from DB when doc ID is provided
-  useEffect(() => {
-    if (!requestedDocId || source) return; // skip if no id or has special source
-    fetch(`/api/documents?workspace_id=w1`)
-      .then(r => r.ok ? r.json() : Promise.reject())
-      .then((rows: any[]) => {
-        const doc = rows.find((d: any) => d.id === requestedDocId);
-        if (doc) {
-          const content = doc.content || '';
-          const lines = content.split('\n').filter((l: string) => l.trim());
-          if (lines.length > 0) {
-            setParagraphs(lines.map((text: string, i: number) => ({
-              id: `p${i + 1}`, text,
-              author: doc.creator_name || doc.creatorName || currentUserName,
-              authorType: (doc.creator_type || doc.creatorType || 'human') as 'human' | 'agent'
-            })));
-          } else {
-            // Empty doc — show blank editable paragraph
-            setParagraphs([{ id: 'p1', text: '', author: currentUserName, authorType: 'human' }]);
-          }
-        }
-      })
-      .catch(() => {});
-  }, [requestedDocId, source, currentUserName]);
+  const memorySyncSnapshotRef = useRef('');
+  const [memoryWritebackState, setMemoryWritebackState] = useState<'clean' | 'dirty' | 'syncing'>('clean');
+  const [memoryWritebackLabel, setMemoryWritebackLabel] = useState<string>(
+    source === 'memory_asset'
+      ? '这张知识卡已和文档保持同步'
+      : source === 'data_source'
+        ? '这份数据源当前没有待处理改动'
+        : ''
+  );
 
   // Auto-save mechanism for rawdata / custom memory nodes
   useEffect(() => {
@@ -761,6 +831,7 @@ export default function DocumentEditor() {
     // Auto-save for whoami_doc and goal_doc
     if (isProfileSource && paragraphs.length > 0 && !profileLoading) {
       const content = paragraphs.map(p => p.text).join('\n');
+      if (isProfileLoadingPlaceholder(content)) return;
       // Debounced save to DB via useProfile
       clearTimeout((window as any).__profileSaveTimer);
       (window as any).__profileSaveTimer = setTimeout(() => {
@@ -777,6 +848,33 @@ export default function DocumentEditor() {
       setParagraphs(memoryDataSourceDoc.paragraphs);
     }
   }, [memoryAssetDoc, memoryDataSourceDoc, source]);
+
+  useEffect(() => {
+    if (source !== 'memory_asset' && source !== 'data_source') return;
+    const snapshot = paragraphSnapshot(paragraphs);
+    memorySyncSnapshotRef.current = snapshot;
+    setMemoryWritebackState('clean');
+    setMemoryWritebackLabel(
+      source === 'memory_asset'
+        ? '这张知识卡已和文档保持同步'
+        : '这份数据源当前没有待处理改动'
+    );
+  }, [assetId, dataSourceId, memoryAssetDoc, memoryDataSourceDoc, source]);
+
+  useEffect(() => {
+    if (source !== 'memory_asset' && source !== 'data_source') return;
+    if (!memorySyncSnapshotRef.current) return;
+    const nextSnapshot = paragraphSnapshot(paragraphs);
+    const isDirty = nextSnapshot !== memorySyncSnapshotRef.current;
+    setMemoryWritebackState(isDirty ? 'dirty' : 'clean');
+    if (isDirty) {
+      setMemoryWritebackLabel(
+        source === 'memory_asset'
+          ? '文档改动待回写到知识资产'
+          : '文档改动待重新提炼这份数据源'
+      );
+    }
+  }, [paragraphs, source]);
 
   useEffect(() => {
     if (!isMemoryScopedDocument) {
@@ -1041,44 +1139,6 @@ export default function DocumentEditor() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showShareMenu]);
 
-  const highlightText = (text: string) => {
-    let result: (string | React.ReactNode)[] = [text];
-    
-    comments.forEach(comment => {
-      if (comment.resolved) return;
-      
-      const newResult: (string | React.ReactNode)[] = [];
-      result.forEach(part => {
-        if (typeof part === 'string') {
-          // Case-insensitive match or exact match? Let's stick to exact for now but ensure it exists
-          const segments = part.split(comment.highlight);
-          segments.forEach((segment, i) => {
-            newResult.push(segment);
-            if (i < segments.length - 1) {
-              newResult.push(
-                <span 
-                  key={`${comment.id}-${i}`}
-                  className={`comment-highlight ${activeCommentId === comment.id ? 'active' : ''}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setActiveCommentId(comment.id);
-                  }}
-                >
-                  {comment.highlight}
-                </span>
-              );
-            }
-          });
-        } else {
-          newResult.push(part);
-        }
-      });
-      result = newResult;
-    });
-    
-    return result;
-  };
-
   const handleCopyLink = () => {
     navigator.clipboard.writeText(window.location.href);
     setCopiedLink(true);
@@ -1094,6 +1154,190 @@ export default function DocumentEditor() {
     }
   };
 
+  const handleSyncToMemory = () => {
+    if ((source !== 'memory_asset' && source !== 'data_source') || memoryWritebackState !== 'dirty') {
+      return;
+    }
+
+    const liveParagraphs = paragraphStateFromDom(paragraphs);
+    if (paragraphSnapshot(liveParagraphs) !== paragraphSnapshot(paragraphs)) {
+      setParagraphs(liveParagraphs);
+    }
+
+    const now = new Date();
+    const nowIso = now.toISOString();
+    const nowLabel = 'Just now';
+    const timeLabel = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const summary = firstBodyParagraph(liveParagraphs);
+    const relatedTags = normalizeTagList(findSectionContent(liveParagraphs, '### Related Tags').join(' '));
+    const sectionTags = normalizeTagList(findSectionContent(liveParagraphs, '### Tags').join(' '));
+    const tagsFromDoc = relatedTags.length > 0 ? relatedTags : sectionTags;
+
+    setMemoryWritebackState('syncing');
+
+    if (source === 'memory_asset' && assetId) {
+      const editedEvidence = splitSectionLines(liveParagraphs, '### Evidence').map(stripOrderedPrefix);
+      const editedNextStep = findSectionContent(liveParagraphs, '### Next Step').join('\n');
+      const targetAsset = memoryAssets.find(asset => asset.id === assetId);
+      if (!targetAsset) return;
+
+      setMemoryAssets(prev =>
+        prev.map(asset =>
+          asset.id === assetId
+            ? {
+                ...asset,
+                summary: summary || asset.summary,
+                evidence: editedEvidence.length > 0 ? editedEvidence : asset.evidence,
+                nextStep: editedNextStep || asset.nextStep,
+                tags: tagsFromDoc.length > 0 ? tagsFromDoc : asset.tags,
+                freshness: '刚刚手动更新',
+                status: 'review',
+              }
+            : asset
+        )
+      );
+
+      setMemoryTimeline(prev => [
+        {
+          id: `evt${Date.now()}`,
+          dayLabel: 'Today',
+          timeLabel,
+          occurredAt: nowIso,
+          stage: 'candidate',
+          lane: 'refine',
+          title: 'Knowledge card was manually revised in document view',
+          summary:
+            summary || 'The backing document changed, so this knowledge asset is back in active review.',
+          docId: targetAsset.docIds[0] ?? currentDocId,
+          docName: targetAsset.title,
+          actorName: currentUserName,
+          actorType: 'human',
+          sourceIds: targetAsset.sourceIds,
+          assetIds: [targetAsset.id],
+          tags: tagsFromDoc.length > 0 ? tagsFromDoc : targetAsset.tags,
+        },
+        ...prev,
+      ]);
+
+      setAgentWritebacks(prev => [
+        {
+          id: `wb${Date.now()}`,
+          title: 'Manual edit pushed a knowledge card back into review',
+          detail: 'The backing document changed, so memo agent queued a fresh refinement pass.',
+          assetId: targetAsset.id,
+          docId: targetAsset.docIds[0] ?? currentDocId,
+          docName: targetAsset.title,
+        },
+        ...prev,
+      ]);
+
+      setVersionHistory(prev => [
+        {
+          id: `v-memory-sync-${Date.now()}`,
+          author: currentUserName,
+          authorType: 'human',
+          timestamp: nowLabel,
+          date: 'Today',
+          changes: 'Synced manual edits back into the knowledge asset',
+          paragraphs: [...liveParagraphs],
+        },
+        ...prev,
+      ]);
+
+      memorySyncSnapshotRef.current = paragraphSnapshot(liveParagraphs);
+      setMemoryWritebackState('clean');
+      setMemoryWritebackLabel('这张知识卡已回写，并重新进入提炼流程');
+      return;
+    }
+
+    if (source === 'data_source' && dataSourceId) {
+      const previewLines = splitSectionLines(liveParagraphs, '### Content Preview').map(stripOrderedPrefix);
+      const targetSource = memoryDataSources.find(item => item.id === dataSourceId);
+      if (!targetSource) return;
+      const relatedAssetIds = new Set(relatedSourceAssets.map(asset => asset.id));
+
+      setMemoryDataSources(prev =>
+        prev.map(item =>
+          item.id === dataSourceId
+            ? {
+                ...item,
+                summary: summary || item.summary,
+                contentPreview: previewLines.length > 0 ? previewLines.slice(0, 3) : item.contentPreview,
+                tags: tagsFromDoc.length > 0 ? tagsFromDoc : item.tags,
+                freshness: '刚刚手动更新',
+                status: 'reviewing',
+              }
+            : item
+        )
+      );
+
+      setMemoryAssets(prev =>
+        prev.map(asset =>
+          relatedAssetIds.has(asset.id)
+            ? {
+                ...asset,
+                freshness: '刚刚补充证据',
+                status: asset.status === 'durable' ? 'review' : asset.status,
+              }
+            : asset
+        )
+      );
+
+      setMemoryTimeline(prev => [
+        {
+          id: `evt${Date.now()}`,
+          dayLabel: 'Today',
+          timeLabel,
+          occurredAt: nowIso,
+          stage: 'candidate',
+          lane: 'extract',
+          title: 'Manual review updated a memory data source',
+          summary:
+            summary || 'This source was manually revised and the linked memories need a fresh extraction pass.',
+          docId: dataSourceId,
+          docName: targetSource.name,
+          actorName: currentUserName,
+          actorType: 'human',
+          sourceIds: relatedMemorySourceIds,
+          assetIds: relatedSourceAssets.map(asset => asset.id),
+          tags: tagsFromDoc.length > 0 ? tagsFromDoc : targetSource.tags,
+        },
+        ...prev,
+      ]);
+
+      if (relatedSourceAssets[0]) {
+        setAgentWritebacks(prev => [
+          {
+            id: `wb${Date.now()}`,
+            title: 'Manual source edits queued a new extraction pass',
+            detail: 'memo agent needs to revisit the linked knowledge after this data source changed.',
+            assetId: relatedSourceAssets[0].id,
+            docId: dataSourceId,
+            docName: targetSource.name,
+          },
+          ...prev,
+        ]);
+      }
+
+      setVersionHistory(prev => [
+        {
+          id: `v-source-sync-${Date.now()}`,
+          author: currentUserName,
+          authorType: 'human',
+          timestamp: nowLabel,
+          date: 'Today',
+          changes: 'Synced manual edits back into the memory data source',
+          paragraphs: [...liveParagraphs],
+        },
+        ...prev,
+      ]);
+
+      memorySyncSnapshotRef.current = paragraphSnapshot(liveParagraphs);
+      setMemoryWritebackState('clean');
+      setMemoryWritebackLabel('这份数据源已更新，并重新进入提炼流程');
+    }
+  };
+
   const scrollToCollaborator = (collaboratorId: string) => {
     const collaborator = collaborators.find(c => c.id === collaboratorId);
     if (collaborator && collaborator.cursorPosition !== undefined) {
@@ -1105,6 +1349,52 @@ export default function DocumentEditor() {
         });
       }
     }
+  };
+
+  const handleBackNavigation = () => {
+    if (from === 'knowledge') {
+      if (assetId) {
+        navigate(`/v2/memory/knowledge?asset=${assetId}`);
+        return;
+      }
+      if (dataSourceId) {
+        navigate(`/v2/memory/knowledge?source=${dataSourceId}`);
+        return;
+      }
+      navigate('/v2/memory/knowledge');
+      return;
+    }
+
+    if (from === 'data-sources') {
+      navigate(dataSourceId ? `/v2/memory/sources?source=${dataSourceId}` : '/v2/memory/sources');
+      return;
+    }
+
+    if (from === 'memory') {
+      if (dataSourceId) {
+        navigate(`/v2/memory/timeline?source=${dataSourceId}`);
+        return;
+      }
+      if (assetId) {
+        navigate(`/v2/memory/timeline?asset=${assetId}`);
+        return;
+      }
+      navigate('/v2/memory/timeline');
+      return;
+    }
+
+    if (from === 'v2-workspace') {
+      navigate(requestedDocId ? `/v2/workspace?doc=${requestedDocId}` : '/v2/workspace');
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const backTab = params.get('backTab');
+    if (backTab) {
+      navigate(`/dashboard?tab=${backTab}`);
+      return;
+    }
+    navigate('/dashboard');
   };
 
   const displayedParagraphs = selectedVersion 
@@ -1130,15 +1420,7 @@ export default function DocumentEditor() {
         <div className="flex items-center gap-4">
           <div className="relative">
             <button 
-              onClick={() => {
-                const params = new URLSearchParams(window.location.search);
-                const backTab = params.get('backTab');
-                if (backTab) {
-                  navigate(`/dashboard?tab=${backTab}`);
-                } else {
-                  navigate('/dashboard');
-                }
-              }} 
+              onClick={handleBackNavigation} 
               className="p-2 rounded-md hover:bg-stone-100 text-stone-500 transition-colors"
               title="返回"
             >
@@ -1170,6 +1452,34 @@ export default function DocumentEditor() {
             <Clock className="w-3 h-3" />
             {`Last edited 2 mins ago by ${lastEditedAuthor}`}
           </div>
+
+          {(source === 'memory_asset' || source === 'data_source') && (
+            <>
+              <div
+                className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium ${
+                  memoryWritebackState === 'dirty'
+                    ? 'bg-amber-50 text-amber-700'
+                    : memoryWritebackState === 'syncing'
+                      ? 'bg-stone-900 text-white'
+                      : 'bg-stone-100 text-stone-600'
+                }`}
+              >
+                <RefreshCw className={`w-3 h-3 ${memoryWritebackState === 'syncing' ? 'animate-spin' : ''}`} />
+                {memoryWritebackLabel}
+              </div>
+              <button
+                onClick={handleSyncToMemory}
+                disabled={memoryWritebackState !== 'dirty'}
+                className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                  memoryWritebackState === 'dirty'
+                    ? 'bg-stone-900 text-white hover:bg-stone-800'
+                    : 'bg-stone-100 text-stone-400 cursor-not-allowed'
+                }`}
+              >
+                同步到 Memory
+              </button>
+            </>
+          )}
           
           <button 
             onClick={() => {
@@ -1936,6 +2246,7 @@ export default function DocumentEditor() {
                     
                     <div 
                       className="w-full bg-transparent border-none focus:outline-none text-stone-800 font-sans text-lg leading-relaxed whitespace-pre-wrap relative"
+                      data-paragraph-id={p.id}
                       contentEditable
                       suppressContentEditableWarning
                       onFocus={() => setFocusedParagraphId(p.id)}
@@ -1943,14 +2254,14 @@ export default function DocumentEditor() {
                       onCompositionEnd={(e) => {
                         (e.currentTarget as any).__composing = false;
                         // Fire the update after composition ends
-                        const newText = e.currentTarget.innerText;
+                        const newText = readEditableText(e.currentTarget);
                         const paragraphId = p.id;
                         setParagraphs(prev => prev.map(item => item.id === paragraphId ? { ...item, text: newText } : item));
                       }}
                       onInput={(e) => {
                         // Skip during IME composition (Chinese/Japanese/Korean input)
                         if ((e.currentTarget as any).__composing) return;
-                        const newText = e.currentTarget.innerText;
+                        const newText = readEditableText(e.currentTarget);
                         const el = e.currentTarget;
                         const paragraphId = p.id;
                         clearTimeout((el as any).__debounceTimer);
@@ -1959,13 +2270,13 @@ export default function DocumentEditor() {
                         }, 600);
                       }}
                       onBlur={(e) => {
-                        const newText = e.currentTarget.innerText;
+                        const newText = readEditableText(e.currentTarget);
                         clearTimeout((e.currentTarget as any).__debounceTimer);
                         setParagraphs(prev => prev.map(item => item.id === p.id ? { ...item, text: newText } : item));
                         setFocusedParagraphId(null);
                       }}
                     >
-                      {focusedParagraphId === p.id ? undefined : highlightText(p.text)}
+                      {p.text}
                       
                       {/* Cursor and Flag */}
                       {collaboratorsHere.length > 0 && (

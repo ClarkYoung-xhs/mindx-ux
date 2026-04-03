@@ -62,17 +62,6 @@ export function useDocuments(workspaceId: string, fallbackDocs: any[]) {
 
   useEffect(() => {
     fetchDocs();
-    // Poll every 30s for external changes (e.g. agent writes via API)
-    const interval = setInterval(fetchDocs, 30_000);
-    // Also refresh when tab becomes visible
-    const onVisibilityChange = () => {
-      if (document.visibilityState === 'visible') fetchDocs();
-    };
-    document.addEventListener('visibilitychange', onVisibilityChange);
-    return () => {
-      clearInterval(interval);
-      document.removeEventListener('visibilitychange', onVisibilityChange);
-    };
   }, [fetchDocs]);
 
   const createDoc = useCallback(async (doc: Partial<DocRow>) => {

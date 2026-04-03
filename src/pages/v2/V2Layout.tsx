@@ -41,6 +41,7 @@ export default function V2Layout() {
   const { lang } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
+  const backTarget = location.pathname.startsWith('/v2/memory') ? '/dashboard?tab=memory' : '/dashboard';
 
   const copy =
     lang === 'zh'
@@ -167,7 +168,7 @@ export default function V2Layout() {
 
         <div className="shrink-0 border-t border-stone-200 px-3 py-2 bg-[#F7F7F5] space-y-1">
           <button
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate(backTarget)}
             className="w-full flex items-center gap-2 px-2 py-2 rounded-lg text-sm text-stone-500 hover:bg-stone-100 hover:text-stone-900 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />

@@ -306,14 +306,19 @@ function localizedSource(source: SourceLink, lang: 'zh' | 'en') {
 }
 
 function localizedAsset(asset: MemoryAsset, lang: 'zh' | 'en') {
-  return (
-    localizedAssetCopy[asset.id]?.[lang] ?? {
-      title: asset.title,
-      summary: asset.summary,
-      freshness: asset.freshness,
-      evidence: asset.evidence,
-    }
-  );
+  const base = localizedAssetCopy[asset.id]?.[lang];
+  const shouldPreferLiveContent =
+    asset.freshness.includes('刚刚') ||
+    asset.freshness.toLowerCase().includes('just now') ||
+    asset.freshness.includes('手动更新') ||
+    asset.freshness.includes('补充证据');
+
+  return {
+    title: base?.title ?? asset.title,
+    summary: shouldPreferLiveContent ? asset.summary : base?.summary ?? asset.summary,
+    freshness: shouldPreferLiveContent ? asset.freshness : base?.freshness ?? asset.freshness,
+    evidence: shouldPreferLiveContent ? asset.evidence : base?.evidence ?? asset.evidence,
+  };
 }
 
 function formatLibraryCategoryLabel(
@@ -419,7 +424,7 @@ export default function V2KnowledgePage() {
   const { lang } = useLanguage();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { documents, memoryAssets, memorySourceLinks, setMemoryAssets } = useMindXDemo();
+  const { documents, memoryAssets, memoryDataSources, memorySourceLinks, setMemoryAssets } = useMindXDemo();
   const [knowledgeMode, setKnowledgeMode] = useState<KnowledgeMode>('assets');
   const [tagFilter, setTagFilter] = useState<string | null>(null);
   const [assetCategoryFilter, setAssetCategoryFilter] = useState<MemoryAsset['libraryCategory'] | null>(null);
@@ -427,6 +432,7 @@ export default function V2KnowledgePage() {
   const [resolvedInsightActions, setResolvedInsightActions] = useState<
     Record<string, 'accept' | 'ignore'>
   >({});
+  const sourceFilterId = searchParams.get('source');
 
   const sourceMap = useMemo(
     () =>
@@ -477,6 +483,11 @@ export default function V2KnowledgePage() {
     setKnowledgeMode('assets');
   }, [assetCardMap, searchParams]);
 
+  useEffect(() => {
+    if (!sourceFilterId) return;
+    setKnowledgeMode('assets');
+  }, [sourceFilterId]);
+
   const relatedCards = useMemo(() => {
     if (!selectedCard) return [];
     return (selectedCard.relatedIds ?? [])
@@ -495,10 +506,18 @@ export default function V2KnowledgePage() {
         .filter(asset => {
           const matchesTag = !tagFilter || asset.tags.includes(tagFilter);
           const matchesCategory = !assetCategoryFilter || asset.libraryCategory === assetCategoryFilter;
-          return matchesTag && matchesCategory;
+          const matchesSource =
+            !sourceFilterId ||
+            asset.sourceIds.some(sourceId => sourceMap[sourceId]?.dataSourceId === sourceFilterId);
+          return matchesTag && matchesCategory && matchesSource;
         })
         .map(asset => assetCardMap[asset.id]),
-    [assetCardMap, assetCategoryFilter, memoryAssets, tagFilter]
+    [assetCardMap, assetCategoryFilter, memoryAssets, sourceFilterId, sourceMap, tagFilter]
+  );
+
+  const activeSourceFilter = useMemo(
+    () => memoryDataSources.find(source => source.id === sourceFilterId) ?? null,
+    [memoryDataSources, sourceFilterId]
   );
 
   const allResonanceCards = useMemo(() => {
@@ -1035,6 +1054,21 @@ export default function V2KnowledgePage() {
                   </h3>
                 </div>
               </div>
+
+              {activeSourceFilter && (
+                <div className="mb-6 flex flex-wrap items-center gap-2">
+                  <span className="rounded-full bg-stone-100 px-3 py-1.5 text-xs font-medium text-stone-600">
+                    {activeSourceFilter.name}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/v2/memory/knowledge')}
+                    className="rounded-full bg-stone-100 px-3 py-1.5 text-xs font-medium text-stone-500 transition-colors hover:bg-stone-200 hover:text-stone-700"
+                  >
+                    {lang === 'zh' ? '清除筛选' : 'Clear filter'}
+                  </button>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
                 {assetCategoryCards.map(asset => (
