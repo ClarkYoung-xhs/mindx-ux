@@ -892,7 +892,7 @@ export default function Dashboard() {
     localStorage.setItem('mindx_extracted_keypoints', JSON.stringify(extractedKeyPoints));
   }, [extractedKeyPoints]);
 
-  // Fetch key points from DB on mount
+  // Fetch key points from DB on mount; migrate localStorage → DB if DB is empty
   useEffect(() => {
     fetch('/api/keypoints?workspace_id=w1')
       .then(r => r.ok ? r.json() : Promise.reject())
@@ -901,6 +901,18 @@ export default function Dashboard() {
           setExtractedKeyPoints(rows.map(r => ({
             id: r.id, title: r.title, type: r.type, text: r.text, source: r.source, createdAt: r.created_at
           })));
+        } else {
+          // DB empty — migrate localStorage keypoints to DB
+          try {
+            const saved = localStorage.getItem('mindx_extracted_keypoints');
+            const localKPs = saved ? JSON.parse(saved) : [];
+            for (const kp of localKPs) {
+              fetch('/api/keypoints', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ workspace_id: 'w1', id: kp.id, title: kp.title, type: kp.type, text: kp.text, source: kp.source })
+              }).catch(() => {});
+            }
+          } catch {}
         }
       })
       .catch(() => {});
@@ -1005,7 +1017,7 @@ export default function Dashboard() {
     try { const saved = localStorage.getItem('mindx_raw_data_items'); return saved ? JSON.parse(saved) : []; } catch { return []; }
   });
 
-  // Fetch raw data from DB on mount
+  // Fetch raw data from DB on mount; migrate localStorage → DB if DB is empty
   useEffect(() => {
     fetch('/api/rawdata?workspace_id=w1')
       .then(r => r.ok ? r.json() : Promise.reject())
@@ -1015,6 +1027,19 @@ export default function Dashboard() {
             id: r.id, name: r.name, type: r.type, size: r.size,
             uploadedAt: r.created_at, source: r.source as 'file' | 'paste', content: r.content
           })));
+        } else {
+          // DB empty — migrate localStorage items to DB
+          try {
+            const saved = localStorage.getItem('mindx_raw_data_items');
+            const localItems = saved ? JSON.parse(saved) : [];
+            for (const item of localItems) {
+              const content = localStorage.getItem(`mindx_raw_${item.id}`) || item.content || '';
+              fetch('/api/rawdata', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ workspace_id: 'w1', id: item.id, name: item.name, type: item.type, size: item.size, source: item.source, content })
+              }).catch(() => {});
+            }
+          } catch {}
         }
       })
       .catch(() => {});
@@ -2540,7 +2565,7 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                 {/* Skill List */}
                 <div className="border border-stone-200/80 rounded-xl bg-white shadow-[0_2px_12px_rgba(0,0,0,0.02)] overflow-hidden divide-y divide-stone-200/50">
                   {[
-                    { id: 'mindx-docs', name: 'MindX Docs', tag: 'Core', icon: <FileText className="w-4 h-4" />, provider: 'MindX', desc: lang === 'zh' ? '文档创作能力' : 'Document creation' },
+                    { id: 'mindx-docs', name: 'MindX Docs', tag: 'Core', icon: <FileText className="w-4 h-4" />, provider: 'MindX', desc: lang === 'zh' ? '文档读写 Skill' : 'Document read/write' },
                     { id: 'memory-io', name: 'MindX Memory', tag: 'Core', icon: <Database className="w-4 h-4" />, provider: 'MindX', desc: lang === 'zh' ? '读写记忆的 Skill' : 'Read/write memory engine' },
                     { id: 'daily-log', name: 'Daily Update', tag: 'Pro', icon: <CalendarDays className="w-4 h-4" />, provider: 'MindX', desc: lang === 'zh' ? '上传今天做了啥的 Skill' : 'Daily upload skill' },
                   ].map((skill, i, arr) => (
