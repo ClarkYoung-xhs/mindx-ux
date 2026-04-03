@@ -542,6 +542,12 @@ export default function DocumentEditor() {
       ];
     }
 
+    // If we have a doc ID and no special source, start with loading placeholder
+    // (real content will be fetched via useEffect below)
+    if (requestedDocId && !source) {
+      return [{ id: 'p1', text: '加载中...', author: currentUserName, authorType: 'human' as const }];
+    }
+
     return [
     {
       id: 'p1',
@@ -701,6 +707,31 @@ export default function DocumentEditor() {
     }
     ];
   });
+
+  // Fetch real document content from DB when doc ID is provided
+  useEffect(() => {
+    if (!requestedDocId || source) return; // skip if no id or has special source
+    fetch(`/api/documents?workspace_id=w1`)
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then((rows: any[]) => {
+        const doc = rows.find((d: any) => d.id === requestedDocId);
+        if (doc) {
+          const content = doc.content || '';
+          const lines = content.split('\n').filter((l: string) => l.trim());
+          if (lines.length > 0) {
+            setParagraphs(lines.map((text: string, i: number) => ({
+              id: `p${i + 1}`, text,
+              author: doc.creator_name || doc.creatorName || currentUserName,
+              authorType: (doc.creator_type || doc.creatorType || 'human') as 'human' | 'agent'
+            })));
+          } else {
+            // Empty doc — show blank editable paragraph
+            setParagraphs([{ id: 'p1', text: '', author: currentUserName, authorType: 'human' }]);
+          }
+        }
+      })
+      .catch(() => {});
+  }, [requestedDocId, source, currentUserName]);
 
   // Auto-save mechanism for rawdata / custom memory nodes
   useEffect(() => {

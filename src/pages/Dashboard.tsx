@@ -60,7 +60,8 @@ import {
   Video,
   Mic,
   RefreshCw,
-  CheckCircle2
+  CheckCircle2,
+  FolderOpen
 } from 'lucide-react';
 
 const initialWorkspaces = [
@@ -1051,6 +1052,8 @@ export default function Dashboard() {
   }, [rawDataItems]);
   const [isPasteModalOpen, setIsPasteModalOpen] = useState(false);
   const [isRawDataModalOpen, setIsRawDataModalOpen] = useState(false);
+  const [isWorkspaceImportOpen, setIsWorkspaceImportOpen] = useState(false);
+  const [selectedImportDocIds, setSelectedImportDocIds] = useState<Set<string>>(new Set());
 
   // Custom memory nodes
   const [isMemoryNodesExpanded, setIsMemoryNodesExpanded] = useState(false);
@@ -1372,24 +1375,18 @@ Analyze the following text strictly from the perspective of "Who am I" and to se
     setSelectedAgentId(newAgent.id);
   };
 
-  const handleQuickCreateDoc = (type: 'Smart Doc' | 'Markdown' | 'Table' | 'Whiteboard' | 'Form') => {
-    const newDoc: WorkspaceDoc = {
-      id: `d${Date.now()}`,
-      workspaceId: activeWorkspaceId,
+  const handleQuickCreateDoc = async (type: 'Smart Doc' | 'Markdown' | 'Table' | 'Whiteboard' | 'Form') => {
+    setIsNewDocMenuOpen(false);
+    const newDoc = await createDoc({
       name: 'Untitled',
       type: type,
-      date: 'Just now',
-      lastModified: new Date().toISOString(),
-      lastViewed: new Date().toISOString(),
-      labels: [],
-      creatorName: currentUser.name,
-      creatorType: 'human',
-      size: 0
-    };
-
-    setDocuments([newDoc, ...documents]);
-    setIsNewDocMenuOpen(false);
-    navigate(`/document?type=${type.toLowerCase().replace(' ', '')}`);
+      content: '',
+      creator_name: currentUser.name,
+      creator_type: 'human',
+      source: 'normal',
+      size: 0,
+    });
+    navigate(`/document?id=${newDoc.id}&type=${type.toLowerCase().replace(' ', '')}`);
   };
 
   const generatePrompt = (token: string) => `1. Copy the installation command to Lobster
@@ -1619,34 +1616,22 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                       {getDocTypeIcon('Smart Doc', 16)}
                       <span>{t('docs.smartDoc')}</span>
                     </button>
-                    <button 
-                      onClick={() => handleQuickCreateDoc('Table')}
-                      className="w-full flex items-center gap-3 px-4 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
-                    >
-                      {getDocTypeIcon('Table', 16)}
-                      <span>{t('docs.table')}</span>
-                    </button>
-                    <button 
-                      onClick={() => handleQuickCreateDoc('Whiteboard')}
-                      className="w-full flex items-center gap-3 px-4 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
-                    >
-                      {getDocTypeIcon('Whiteboard', 16)}
-                      <span>{t('docs.whiteboard')}</span>
-                    </button>
-                    <button 
-                      onClick={() => handleQuickCreateDoc('Form')}
-                      className="w-full flex items-center gap-3 px-4 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
-                    >
-                      {getDocTypeIcon('Form', 16)}
-                      <span>{t('docs.form')}</span>
-                    </button>
-                    <button 
-                      onClick={() => handleQuickCreateDoc('Markdown')}
-                      className="w-full flex items-center gap-3 px-4 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
-                    >
-                      {getDocTypeIcon('Markdown', 16)}
-                      <span>Markdown</span>
-                    </button>
+                    {[
+                      { type: 'Table' as const, label: t('docs.table') },
+                      { type: 'Whiteboard' as const, label: t('docs.whiteboard') },
+                      { type: 'Form' as const, label: t('docs.form') },
+                      { type: 'Markdown' as const, label: 'Markdown' },
+                    ].map(item => (
+                      <button 
+                        key={item.type}
+                        disabled
+                        className="w-full flex items-center gap-3 px-4 py-2 text-sm text-stone-700 opacity-40 cursor-not-allowed"
+                      >
+                        {getDocTypeIcon(item.type, 16)}
+                        <span>{item.label}</span>
+                        <span className="text-[8px] font-bold bg-stone-200 text-stone-500 px-1 py-0.5 rounded leading-none ml-auto">{lang === 'zh' ? '即将上线' : 'Soon'}</span>
+                      </button>
+                    ))}
                   </div>
                 </>
               )}
@@ -3001,6 +2986,15 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                                             <div className="text-[10px] text-stone-400 group-hover:text-stone-500 transition-colors">{lang === 'zh' ? '直接粘贴文本内容' : 'Paste text directly'}</div>
                                           </div>
                                         </button>
+                                        <button onClick={() => { setIsWorkspaceImportOpen(true); setSelectedImportDocIds(new Set()); setIsIntegrationMenuOpen(false); }} className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-stone-50 transition-colors group">
+                                          <div className="w-8 h-8 rounded-md bg-indigo-50 flex items-center justify-center shrink-0">
+                                            <FolderOpen className="w-4 h-4 text-indigo-600" />
+                                          </div>
+                                          <div className="text-left">
+                                            <div className="text-sm font-medium text-stone-800">{lang === 'zh' ? '从工作空间导入' : 'Import from Workspace'}</div>
+                                            <div className="text-[10px] text-stone-400 group-hover:text-stone-500 transition-colors">{lang === 'zh' ? '导入 MindX 文档列表中的文档' : 'Import docs from MindX list'}</div>
+                                          </div>
+                                        </button>
                                       </div>
                                       <div>
                                         <h4 className="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-2">{lang === 'zh' ? '搜索与收藏' : 'Search & Save'}</h4>
@@ -3551,6 +3545,100 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
       )}
 
       {/* Extraction File Picker Modal */}
+      {/* Workspace Import Modal */}
+      {isWorkspaceImportOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 z-[9999] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setIsWorkspaceImportOpen(false)}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[70vh] flex flex-col overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100">
+              <h2 className="text-sm font-bold text-stone-900 flex items-center gap-2">
+                <FolderOpen className="w-4 h-4 text-indigo-500" />
+                {lang === 'zh' ? '从工作空间导入' : 'Import from Workspace'}
+              </h2>
+              <button onClick={() => setIsWorkspaceImportOpen(false)} className="p-1 rounded-md text-stone-400 hover:text-stone-700 transition-colors">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-auto px-6 py-3">
+              {documents.filter(d => d.name !== 'Welcome to MindX' && d.name !== '欢迎使用 MindX').length === 0 ? (
+                <div className="text-center py-8 text-stone-400 text-sm">{lang === 'zh' ? '工作空间没有文档' : 'No documents in workspace'}</div>
+              ) : (
+                <>
+                  <label className="flex items-center gap-3 py-2 border-b border-stone-100 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedImportDocIds.size === documents.filter(d => d.name !== 'Welcome to MindX' && d.name !== '欢迎使用 MindX').length && selectedImportDocIds.size > 0}
+                      onChange={(e) => setSelectedImportDocIds(e.target.checked ? new Set(documents.filter(d => d.name !== 'Welcome to MindX' && d.name !== '欢迎使用 MindX').map(d => d.id)) : new Set())}
+                      className="w-4 h-4 rounded border-stone-300 text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <span className="text-xs font-bold text-stone-700">{lang === 'zh' ? '全选' : 'Select All'}</span>
+                    <span className="text-[10px] text-stone-400 ml-auto">{selectedImportDocIds.size}/{documents.filter(d => d.name !== 'Welcome to MindX' && d.name !== '欢迎使用 MindX').length}</span>
+                  </label>
+                  {documents.filter(d => d.name !== 'Welcome to MindX' && d.name !== '欢迎使用 MindX').map(doc => (
+                    <label key={doc.id} className="flex items-center gap-3 py-2.5 border-b border-stone-50 cursor-pointer hover:bg-stone-50/50 rounded-lg px-1 transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={selectedImportDocIds.has(doc.id)}
+                        onChange={(e) => {
+                          const next = new Set(selectedImportDocIds);
+                          e.target.checked ? next.add(doc.id) : next.delete(doc.id);
+                          setSelectedImportDocIds(next);
+                        }}
+                        className="w-4 h-4 rounded border-stone-300 text-indigo-600 focus:ring-indigo-500"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm text-stone-800 truncate">{doc.name}</div>
+                        <div className="text-[10px] text-stone-400">{doc.type} · {doc.creatorName || 'Unknown'}</div>
+                      </div>
+                    </label>
+                  ))}
+                </>
+              )}
+            </div>
+            <div className="px-6 py-4 border-t border-stone-100 flex items-center justify-between">
+              <span className="text-xs text-stone-400">{lang === 'zh' ? `已选 ${selectedImportDocIds.size} 个文档` : `${selectedImportDocIds.size} selected`}</span>
+              <button
+                disabled={selectedImportDocIds.size === 0}
+                onClick={() => {
+                  const docsToImport = documents.filter(d => selectedImportDocIds.has(d.id));
+                  for (const doc of docsToImport) {
+                    const itemId = `raw-ws-${doc.id}`;
+                    // Skip if already imported
+                    if (rawDataItems.some(r => r.id === itemId)) continue;
+                    const content = (doc as any).content || '';
+                    const newItem = {
+                      id: itemId, name: doc.name, type: doc.type || 'DOC',
+                      size: new Blob([content]).size,
+                      uploadedAt: new Date().toISOString(),
+                      source: 'paste' as const, content,
+                    };
+                    setRawDataItems(prev => [newItem, ...prev]);
+                    localStorage.setItem(`mindx_raw_${itemId}`, content);
+                    fetch('/api/rawdata', {
+                      method: 'POST', headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ workspace_id: 'w1', id: itemId, name: doc.name, type: doc.type || 'DOC', size: newItem.size, source: 'workspace', content })
+                    }).catch(() => {});
+                  }
+                  setIsWorkspaceImportOpen(false);
+                }}
+                className="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-indigo-500 to-blue-500 hover:from-indigo-600 hover:to-blue-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+              >
+                {lang === 'zh' ? `导入 (${selectedImportDocIds.size})` : `Import (${selectedImportDocIds.size})`}
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+
       {showExtractionFilePicker && (
         <motion.div
           initial={{ opacity: 0 }}
@@ -3781,7 +3869,7 @@ function DocRow({ docId, name, type, date, creatorName, creatorType, isNew, onDe
   };
 
   return (
-    <tr className={`transition-colors group cursor-pointer ${isNew ? 'bg-blue-50/60 hover:bg-blue-50' : 'hover:bg-stone-50'}`} onClick={() => { if (isNew) onMarkRead?.(docId); navigate(`/document?type=${type.toLowerCase().replace(' ', '')}`); }}>
+    <tr className={`transition-colors group cursor-pointer ${isNew ? 'bg-blue-50/60 hover:bg-blue-50' : 'hover:bg-stone-50'}`} onClick={() => { if (isNew) onMarkRead?.(docId); navigate(`/document?id=${docId}&type=${type.toLowerCase().replace(' ', '')}`); }}>
       <td className="px-6 py-3 max-w-0">
         <div className="flex items-center gap-2 min-w-0">
           <span className="flex items-center justify-center w-2 mr-1 shrink-0">
