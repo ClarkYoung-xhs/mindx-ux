@@ -3018,22 +3018,22 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                                       </div>
                                       <div>
                                         <h4 className="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-2">{lang === 'zh' ? '搜索与收藏' : 'Search & Save'}</h4>
-                                        <button className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-stone-50 transition-colors group">
+                                        <button disabled className="w-full flex items-center gap-3 p-2 rounded-lg transition-colors opacity-40 cursor-not-allowed">
                                           <div className="w-8 h-8 rounded-md bg-emerald-50 flex items-center justify-center shrink-0">
                                             <Globe className="w-4 h-4 text-emerald-600" />
                                           </div>
-                                          <div className="text-left">
-                                            <div className="text-sm font-medium text-stone-800">{lang === 'zh' ? '网页剪存' : 'Web Clipper'}</div>
-                                            <div className="text-[10px] text-stone-400 group-hover:text-stone-500 transition-colors">{lang === 'zh' ? '保存并在MindX阅读网页' : 'Save and read pages in MindX'}</div>
+                                          <div className="text-left flex-1">
+                                            <div className="flex items-center gap-1.5"><span className="text-sm font-medium text-stone-800">{lang === 'zh' ? '网页剪存' : 'Web Clipper'}</span><span className="text-[8px] font-bold bg-stone-200 text-stone-500 px-1 py-0.5 rounded leading-none">{lang === 'zh' ? '即将上线' : 'Soon'}</span></div>
+                                            <div className="text-[10px] text-stone-400">{lang === 'zh' ? '保存并在MindX阅读网页' : 'Save and read pages in MindX'}</div>
                                           </div>
                                         </button>
-                                        <button className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-stone-50 transition-colors group">
+                                        <button disabled className="w-full flex items-center gap-3 p-2 rounded-lg transition-colors opacity-40 cursor-not-allowed">
                                           <div className="w-8 h-8 rounded-md bg-green-50 flex items-center justify-center shrink-0">
                                             <FileText className="w-4 h-4 text-green-600" />
                                           </div>
                                           <div className="text-left">
-                                            <div className="flex items-center gap-1.5"><div className="text-sm font-medium text-stone-800">flomo</div><span className="text-[8px] font-bold bg-stone-200 text-stone-600 px-1 py-0.5 rounded leading-none">Beta</span></div>
-                                            <div className="text-[10px] text-stone-400 group-hover:text-stone-500 transition-colors">{lang === 'zh' ? '浮墨笔记同步' : 'Sync from flomo'}</div>
+                                            <div className="flex items-center gap-1.5"><div className="text-sm font-medium text-stone-800">flomo</div><span className="text-[8px] font-bold bg-stone-200 text-stone-500 px-1 py-0.5 rounded leading-none">{lang === 'zh' ? '即将上线' : 'Soon'}</span></div>
+                                            <div className="text-[10px] text-stone-400">{lang === 'zh' ? '浮墨笔记同步' : 'Sync from flomo'}</div>
                                           </div>
                                         </button>
                                       </div>
@@ -3042,45 +3042,20 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                                     <div className="space-y-4">
                                       <div>
                                         <h4 className="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-2">{lang === 'zh' ? '云端协作' : 'Cloud Apps'}</h4>
-                                        <button className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-stone-50 transition-colors group">
-                                          <div className="w-8 h-8 rounded-md bg-blue-100 flex items-center justify-center shrink-0">
-                                            <Cloud className="w-4 h-4 text-blue-700" />
-                                          </div>
-                                          <div className="text-left w-full flex items-center justify-between pr-1">
-                                            <div>
-                                              <div className="text-sm font-medium text-stone-800">{lang === 'zh' ? '腾讯文档' : 'Tencent Docs'}</div>
-                                              <div className="text-[10px] text-stone-400 group-hover:text-stone-500 transition-colors">{lang === 'zh' ? '自动同步更新的在线文档' : 'Auto sync online docs'}</div>
+                                        {[
+                                          { icon: <Cloud className="w-4 h-4 text-blue-700" />, bg: 'bg-blue-100', name: lang === 'zh' ? '腾讯文档' : 'Tencent Docs', desc: lang === 'zh' ? '自动同步更新的在线文档' : 'Auto sync online docs' },
+                                          { icon: <Cloud className="w-4 h-4 text-blue-600" />, bg: 'bg-blue-50', name: lang === 'zh' ? '微云' : 'Weiyun', desc: lang === 'zh' ? '导入微云文件' : 'Import Weiyun files' },
+                                          { icon: <MessageCircle className="w-4 h-4 text-green-600" />, bg: 'bg-green-50', name: lang === 'zh' ? '微信' : 'WeChat', desc: lang === 'zh' ? '同步微信文件通过小助手' : 'Sync via WeChat helper' },
+                                          { icon: <Mail className="w-4 h-4 text-blue-600" />, bg: 'bg-blue-50', name: lang === 'zh' ? 'QQ邮箱' : 'QQ Mail', desc: lang === 'zh' ? '解析邮件及其附件' : 'Parse emails and attachments' },
+                                        ].map((item, idx) => (
+                                          <button key={idx} disabled className="w-full flex items-center gap-3 p-2 rounded-lg transition-colors opacity-40 cursor-not-allowed">
+                                            <div className={`w-8 h-8 rounded-md ${item.bg} flex items-center justify-center shrink-0`}>{item.icon}</div>
+                                            <div className="text-left">
+                                              <div className="flex items-center gap-1.5"><span className="text-sm font-medium text-stone-800">{item.name}</span><span className="text-[8px] font-bold bg-stone-200 text-stone-500 px-1 py-0.5 rounded leading-none">{lang === 'zh' ? '即将上线' : 'Soon'}</span></div>
+                                              <div className="text-[10px] text-stone-400">{item.desc}</div>
                                             </div>
-                                            <ChevronRight className="w-3.5 h-3.5 text-stone-300 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                          </div>
-                                        </button>
-                                        <button className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-stone-50 transition-colors group">
-                                          <div className="w-8 h-8 rounded-md bg-blue-50 flex items-center justify-center shrink-0">
-                                            <Cloud className="w-4 h-4 text-blue-600" />
-                                          </div>
-                                          <div className="text-left">
-                                            <div className="text-sm font-medium text-stone-800">{lang === 'zh' ? '微云' : 'Weiyun'}</div>
-                                            <div className="text-[10px] text-stone-400 group-hover:text-stone-500 transition-colors">{lang === 'zh' ? '导入微云文件' : 'Import Weiyun files'}</div>
-                                          </div>
-                                        </button>
-                                        <button className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-stone-50 transition-colors group">
-                                          <div className="w-8 h-8 rounded-md bg-green-50 flex items-center justify-center shrink-0">
-                                            <MessageCircle className="w-4 h-4 text-green-600" />
-                                          </div>
-                                          <div className="text-left">
-                                            <div className="text-sm font-medium text-stone-800">{lang === 'zh' ? '微信' : 'WeChat'}</div>
-                                            <div className="text-[10px] text-stone-400 group-hover:text-stone-500 transition-colors">{lang === 'zh' ? '同步微信文件通过小助手' : 'Sync via WeChat helper'}</div>
-                                          </div>
-                                        </button>
-                                        <button className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-stone-50 transition-colors group">
-                                          <div className="w-8 h-8 rounded-md bg-blue-50 flex items-center justify-center shrink-0">
-                                            <Mail className="w-4 h-4 text-blue-600" />
-                                          </div>
-                                          <div className="text-left">
-                                            <div className="text-sm font-medium text-stone-800">{lang === 'zh' ? 'QQ邮箱' : 'QQ Mail'}</div>
-                                            <div className="text-[10px] text-stone-400 group-hover:text-stone-500 transition-colors">{lang === 'zh' ? '解析邮件及其附件' : 'Parse emails and attachments'}</div>
-                                          </div>
-                                        </button>
+                                          </button>
+                                        ))}
                                       </div>
                                     </div>
                                     {/* Column 3: 第三方插件同步 */}
@@ -3100,7 +3075,7 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                                             { name: '讯飞听见', type: 'mic' },
                                             { name: 'TicNote', type: 'mic' },
                                           ].map((item, idx) => (
-                                            <button key={idx} className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-stone-50 transition-colors group cursor-pointer justify-between">
+                                            <button key={idx} disabled className="w-full flex items-center gap-3 p-2 rounded-lg transition-colors cursor-not-allowed opacity-40 justify-between">
                                               <div className="flex items-center gap-3">
                                                 <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center shrink-0 shadow-sm shadow-blue-500/20">
                                                   {item.type === 'video' ? <Video className="w-3.5 h-3.5 text-white" /> : <Mic className="w-3.5 h-3.5 text-white" />}
