@@ -112,6 +112,105 @@ function buildAgentReply(type: CommentThreadType, highlight: string, userText: s
   return [`Thanks for the comment on "${highlight}". ${userText ? `You mentioned: "${userText}" — ` : ''}I'll take this into consideration.`];
 }
 
+function buildDefaultProjectComments(externalCollaboratorName: string): CommentThread[] {
+  return [
+    {
+      id: 1,
+      highlight: 'Data Service',
+      type: 'modify',
+      resolved: false,
+      createdAtLabel: '10 mins ago',
+      draftText: '',
+      isDraft: false,
+      isReplying: false,
+      replyDraftText: '',
+      isAwaitingReply: false,
+      messages: [
+        {
+          id: '1-agent-initial',
+          author: 'Claude 3.5 Sonnet',
+          authorType: 'agent',
+          text: 'I suggest we use Redis for caching to improve the performance of the Data Service.',
+          time: '10 mins ago'
+        }
+      ]
+    },
+    {
+      id: 2,
+      highlight: '### 3. Deployment',
+      type: 'comment',
+      resolved: true,
+      createdAtLabel: '5 mins ago',
+      draftText: '',
+      isDraft: false,
+      isReplying: false,
+      replyDraftText: '',
+      isAwaitingReply: false,
+      messages: [
+        {
+          id: '2-human-initial',
+          author: externalCollaboratorName,
+          authorType: 'human',
+          text: 'Please also mention the staging approval step before deployment so our review flow is clear.',
+          time: '5 mins ago'
+        },
+        {
+          id: '2-agent-initial',
+          author: 'Claude 3.5 Sonnet',
+          authorType: 'agent',
+          text: 'Makes sense. I can add a staging approval checkpoint before release so the rollout path is explicit.',
+          time: '4 mins ago'
+        }
+      ]
+    }
+  ];
+}
+
+function buildDefaultProjectVersionHistory(
+  paragraphs: Paragraph[],
+  currentUserName: string,
+  externalCollaboratorName: string
+): VersionHistory[] {
+  return [
+    {
+      id: 'v1',
+      author: 'Claude 3.5 Sonnet',
+      authorType: 'agent',
+      timestamp: '2 mins ago',
+      date: 'Today',
+      changes: 'Updated deployment section with staging approval',
+      paragraphs: [...paragraphs]
+    },
+    {
+      id: 'v2',
+      author: externalCollaboratorName,
+      authorType: 'human',
+      timestamp: '15 mins ago',
+      date: 'Today',
+      changes: 'Added deployment requirements',
+      paragraphs: paragraphs.slice(0, -1)
+    },
+    {
+      id: 'v3',
+      author: 'Claude 3.5 Sonnet',
+      authorType: 'agent',
+      timestamp: '1 hour ago',
+      date: 'Today',
+      changes: 'Expanded database schema section',
+      paragraphs: paragraphs.slice(0, 6)
+    },
+    {
+      id: 'v4',
+      author: currentUserName,
+      authorType: 'human',
+      timestamp: '2 hours ago',
+      date: 'Today',
+      changes: 'Initial architecture draft',
+      paragraphs: paragraphs.slice(0, 3)
+    }
+  ];
+}
+
 export default function DocumentEditor() {
   const navigate = useNavigate();
   const { documents, memoryAssets, memoryDataSources, memorySourceLinks } = useMindXDemo();
@@ -139,6 +238,13 @@ export default function DocumentEditor() {
   const source = queryParams.get('source');
   const assetId = queryParams.get('assetId');
   const dataSourceId = queryParams.get('dataSourceId');
+  const isMemoryScopedDocument =
+    source === 'memory_asset' ||
+    source === 'data_source' ||
+    source === 'whoami_doc' ||
+    source === 'goal_doc' ||
+    source === 'rawdata' ||
+    source === 'keypoints_doc';
   const allDocs = documents.map(doc => ({ id: doc.id, name: doc.name, type: doc.type }));
   const currentDoc = requestedDocId ? allDocs.find(doc => doc.id === requestedDocId) ?? null : null;
   const memoryAssetDoc = useMemo(() => {
@@ -641,96 +747,70 @@ export default function DocumentEditor() {
     }
   }, [memoryAssetDoc, memoryDataSourceDoc, source]);
 
-  const [comments, setComments] = useState<CommentThread[]>(() => [
-    {
-      id: 1,
-      highlight: 'Data Service',
-      type: 'modify',
-      resolved: false,
-      createdAtLabel: '10 mins ago',
-      draftText: '',
-      isDraft: false,
-      isReplying: false,
-      replyDraftText: '',
-      isAwaitingReply: false,
-      messages: [
-        {
-          id: '1-agent-initial',
-          author: 'Claude 3.5 Sonnet',
-          authorType: 'agent',
-          text: 'I suggest we use Redis for caching to improve the performance of the Data Service.',
-          time: '10 mins ago'
-        }
-      ]
-    },
-    {
-      id: 2,
-      highlight: '### 3. Deployment',
-      type: 'comment',
-      resolved: true,
-      createdAtLabel: '5 mins ago',
-      draftText: '',
-      isDraft: false,
-      isReplying: false,
-      replyDraftText: '',
-      isAwaitingReply: false,
-      messages: [
-        {
-          id: '2-human-initial',
-          author: externalCollaboratorName,
-          authorType: 'human',
-          text: 'Please also mention the staging approval step before deployment so our review flow is clear.',
-          time: '5 mins ago'
-        },
-        {
-          id: '2-agent-initial',
-          author: 'Claude 3.5 Sonnet',
-          authorType: 'agent',
-          text: 'Makes sense. I can add a staging approval checkpoint before release so the rollout path is explicit.',
-          time: '4 mins ago'
-        }
-      ]
+  useEffect(() => {
+    if (!isMemoryScopedDocument) {
+      setComments(buildDefaultProjectComments(externalCollaboratorName));
+      setVersionHistory(buildDefaultProjectVersionHistory(paragraphs, currentUserName, externalCollaboratorName));
+      return;
     }
+
+    setComments([]);
+    setVersionHistory([
+      {
+        id: 'v1',
+        author: source === 'memory_asset' || source === 'data_source' ? 'memo agent' : currentUserName,
+        authorType: source === 'memory_asset' || source === 'data_source' ? 'agent' : 'human',
+        timestamp: 'Just now',
+        date: 'Today',
+        changes:
+          source === 'memory_asset'
+            ? 'Prepared this knowledge asset for document editing'
+            : source === 'data_source'
+              ? 'Prepared this data source for manual review'
+              : 'Opened this memory document for editing',
+        paragraphs:
+          source === 'memory_asset' && memoryAssetDoc
+            ? memoryAssetDoc.paragraphs
+            : source === 'data_source' && memoryDataSourceDoc
+              ? memoryDataSourceDoc.paragraphs
+              : [...paragraphs],
+      },
+    ]);
+    setSelectedVersion(null);
+    setActiveCommentId(null);
+  }, [
+    currentUserName,
+    externalCollaboratorName,
+    isMemoryScopedDocument,
+    memoryAssetDoc,
+    memoryDataSourceDoc,
+    source,
   ]);
 
-  const [versionHistory, setVersionHistory] = useState<VersionHistory[]>([
-    {
-      id: 'v1',
-      author: 'Claude 3.5 Sonnet',
-      authorType: 'agent',
-      timestamp: '2 mins ago',
-      date: 'Today',
-      changes: 'Updated deployment section with staging approval',
-      paragraphs: [...paragraphs]
-    },
-    {
-      id: 'v2',
-      author: externalCollaboratorName,
-      authorType: 'human',
-      timestamp: '15 mins ago',
-      date: 'Today',
-      changes: 'Added deployment requirements',
-      paragraphs: paragraphs.slice(0, -1)
-    },
-    {
-      id: 'v3',
-      author: 'Claude 3.5 Sonnet',
-      authorType: 'agent',
-      timestamp: '1 hour ago',
-      date: 'Today',
-      changes: 'Expanded database schema section',
-      paragraphs: paragraphs.slice(0, 6)
-    },
-    {
-      id: 'v4',
-      author: currentUserName,
-      authorType: 'human',
-      timestamp: '2 hours ago',
-      date: 'Today',
-      changes: 'Initial architecture draft',
-      paragraphs: paragraphs.slice(0, 3)
-    }
-  ]);
+  const [comments, setComments] = useState<CommentThread[]>(() =>
+    isMemoryScopedDocument ? [] : buildDefaultProjectComments(externalCollaboratorName)
+  );
+
+  const [versionHistory, setVersionHistory] = useState<VersionHistory[]>(() =>
+    isMemoryScopedDocument
+      ? [
+          {
+            id: 'v1',
+            author: source === 'memory_asset' || source === 'data_source' ? 'memo agent' : currentUserName,
+            authorType: source === 'memory_asset' || source === 'data_source' ? 'agent' : 'human',
+            timestamp: 'Just now',
+            date: 'Today',
+            changes:
+              source === 'memory_asset'
+                ? 'Prepared this knowledge asset for document editing'
+                : source === 'data_source'
+                  ? 'Prepared this data source for manual review'
+                  : 'Opened this memory document for editing',
+            paragraphs: [...paragraphs]
+          }
+        ]
+      : buildDefaultProjectVersionHistory(paragraphs, currentUserName, externalCollaboratorName)
+  );
 
   const [activeCommentId, setActiveCommentId] = useState<number | null>(null);
   const [selectionMenu, setSelectionMenu] = useState<{ x: number, y: number, text: string } | null>(null);
@@ -999,6 +1079,12 @@ export default function DocumentEditor() {
   const displayedParagraphs = selectedVersion 
     ? versionHistory.find(v => v.id === selectedVersion)?.paragraphs || paragraphs
     : paragraphs;
+  const versionAuthors = Array.from(new Set(versionHistory.map(version => version.author)));
+  const lastEditedAuthor = isMemoryScopedDocument
+    ? source === 'memory_asset' || source === 'data_source'
+      ? 'memo agent'
+      : currentUserName
+    : 'Claude';
 
   const filteredVersions = versionHistory.filter(v => {
     if (versionFilterAuthor !== 'all' && v.author !== versionFilterAuthor) return false;
@@ -1051,7 +1137,7 @@ export default function DocumentEditor() {
           <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 text-xs text-stone-500 mr-4">
             <Clock className="w-3 h-3" />
-            Last edited 2 mins ago by Claude
+            {`Last edited 2 mins ago by ${lastEditedAuthor}`}
           </div>
           
           <button 
@@ -1901,7 +1987,15 @@ export default function DocumentEditor() {
           </div>
           
           <div className={`flex-1 p-4 space-y-4 ${showCommentsSidebar ? 'overflow-y-auto' : 'overflow-hidden'}`}>
-            {comments.map((comment) => (
+            {comments.length === 0 ? (
+              <div className="h-full min-h-[240px] flex flex-col items-center justify-center text-center px-6">
+                <MessageSquare className="w-8 h-8 text-stone-300 mb-3" />
+                <p className="text-sm font-medium text-stone-600">No comments yet</p>
+                <p className="text-xs text-stone-400 mt-1 leading-relaxed">
+                  Select text in the document to start a comment thread.
+                </p>
+              </div>
+            ) : comments.map((comment) => (
               <motion.div 
                 key={comment.id}
                 ref={(el) => {
@@ -2206,9 +2300,11 @@ export default function DocumentEditor() {
                   className="w-full px-2 py-1.5 border border-stone-200 rounded text-xs focus:outline-none focus:border-stone-400"
                 >
                   <option value="all">全部</option>
-                  <option value={currentUserName}>{currentUserName}</option>
-                  <option value={externalCollaboratorName}>{externalCollaboratorName}</option>
-                  <option value="Claude 3.5 Sonnet">Claude 3.5 Sonnet</option>
+                  {versionAuthors.map(author => (
+                    <option key={author} value={author}>
+                      {author}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
