@@ -911,7 +911,7 @@ export default function V2KnowledgePage() {
           actionSlot={<V2MemoryIntakeLauncher />}
         />
 
-        <div className="space-y-16 lg:space-y-20">
+        <div className="space-y-10 lg:space-y-12">
           <div className="border-b border-stone-200">
             <div className="flex items-center gap-6 overflow-x-auto">
               {[
@@ -1028,20 +1028,15 @@ export default function V2KnowledgePage() {
 
           {knowledgeMode === 'assets' && (
             <section>
-              <div className="mb-8 flex flex-wrap items-end justify-between gap-3">
+              <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
                 <div>
                   <h3 className="text-2xl font-bold tracking-tight text-zinc-900">
                     {lang === 'zh' ? '知识资产库' : 'Knowledge Assets'}
                   </h3>
-                  <p className="mt-1 text-xs text-zinc-400">
-                    {lang === 'zh'
-                      ? '结构化管理你的核心数字资产'
-                      : 'Structured management for your most reusable digital assets'}
-                  </p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-5">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
                 {assetCategoryCards.map(asset => (
                   <motion.button
                     key={asset.id}
@@ -1049,28 +1044,27 @@ export default function V2KnowledgePage() {
                     onClick={() =>
                       setAssetCategoryFilter(assetCategoryFilter === asset.id ? null : asset.id)
                     }
-                    className={`group rounded-[1.35rem] border p-6 text-left transition-all ${
+                    className={`group rounded-[1.15rem] border p-5 text-left transition-all ${
                       assetCategoryFilter === asset.id
                         ? 'border-zinc-300 bg-white shadow-[0_10px_24px_rgba(24,24,27,0.06)]'
                         : 'border-zinc-200 bg-white shadow-[0_4px_14px_rgba(24,24,27,0.03)]'
                     }`}
                   >
                     <div
-                      className={`mb-5 flex h-12 w-12 items-center justify-center rounded-2xl ${asset.color} transition-transform group-hover:scale-105`}
+                      className={`mb-4 flex h-10 w-10 items-center justify-center rounded-xl ${asset.color} transition-transform group-hover:scale-105`}
                     >
                       {asset.icon}
                     </div>
-                    <div className="text-[17px] font-semibold leading-tight text-zinc-900">{asset.label}</div>
-                    <p className="mt-2 text-xs leading-6 text-zinc-500">{asset.description}</p>
-                    <div className="mt-4 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
+                    <div className="text-[15px] font-semibold leading-tight text-zinc-900">{asset.label}</div>
+                    <div className="mt-3 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
                       {lang === 'zh' ? `${asset.count} 条资产` : `${asset.count} Assets`}
                     </div>
                   </motion.button>
                 ))}
               </div>
 
-              <div className="mt-12">
-                <div className="mb-8 flex items-center justify-between">
+              <div className="mt-10">
+                <div className="mb-6 flex items-center justify-between">
                   <h4 className="text-xl font-bold text-zinc-900">
                     {activeCategory ? activeCategory.label : lang === 'zh' ? '全部资产' : 'All Assets'}
                   </h4>

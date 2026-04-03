@@ -859,6 +859,7 @@ export default function Dashboard() {
   const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
   const [isTypeFilterOpen, setIsTypeFilterOpen] = useState(false);
   const [isAgentMenuOpen, setIsAgentMenuOpen] = useState(false);
+  const [isIntegrationMenuOpen, setIsIntegrationMenuOpen] = useState(false);
   const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
   const [agentListMenuOpen, setAgentListMenuOpen] = useState<string | null>(null);
   const [selectedSkillId, setSelectedSkillId] = useState<string | null>(null);
@@ -1121,6 +1122,7 @@ Analyze the following text strictly from the perspective of "Who am I" and to se
       reader.readAsText(file);
     });
     setRawDataItems(prev => [...newItems, ...prev]);
+    setIsIntegrationMenuOpen(false);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -1144,6 +1146,7 @@ Analyze the following text strictly from the perspective of "Who am I" and to se
     setPasteTitle('');
     setPasteContent('');
     setIsPasteModalOpen(false);
+    setIsIntegrationMenuOpen(false);
   };
 
   const openRawDataInEditor = (item: typeof rawDataItems[0]) => {
@@ -2753,15 +2756,19 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
               <motion.div 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="space-y-8 pb-12 w-full max-w-5xl"
+                className="space-y-8 pb-12 w-full max-w-6xl relative"
               >
+                {/* Ambient Background Glows */}
+                <div className="absolute top-[10%] left-[-10%] w-[40%] h-[40%] bg-blue-300/10 rounded-full blur-[120px] pointer-events-none -z-10" />
+                <div className="absolute bottom-[20%] right-[-10%] w-[50%] h-[50%] bg-indigo-300/10 rounded-full blur-[140px] pointer-events-none -z-10" />
+                {/* Global Memory Search */}
                 <div className="relative w-full max-w-5xl bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden flex items-center focus-within:ring-2 focus-within:ring-stone-200/50 focus-within:border-stone-400 transition-all">
                   <div className="pl-5 pr-3 py-4 text-stone-400">
                     <Search className="w-5 h-5" />
                   </div>
                   <input
                     type="text"
-                    placeholder={lang === 'zh' ? '搜索基础记忆（支持 user.md、goals、directives 等）...' : 'Search base memory docs, goals, directives...'}
+                    placeholder={lang === 'zh' ? '搜索空间记忆（支持原始文档、节点、决策提炼内容）...' : 'Search memories (docs, nodes, insights, decisions)...'}
                     className="flex-1 bg-transparent text-sm text-stone-800 placeholder-stone-400 focus:outline-none py-4"
                   />
                   <div className="px-5 text-xs font-medium text-stone-400 flex items-center gap-1 border-l border-stone-100 py-4 h-full bg-stone-50/50">
@@ -2770,82 +2777,425 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                   </div>
                 </div>
 
-                <div className="grid lg:grid-cols-2 gap-8 items-stretch">
-                  <section className="h-full flex flex-col bg-white border border-stone-200 shadow-sm rounded-2xl p-6">
-                    <div className="flex items-center justify-between mb-5">
-                      <h2 className="text-sm font-bold text-stone-900 flex items-center gap-2">
-                        <User className="w-4 h-4 text-stone-500" />
-                        {lang === 'zh' ? '关于我 (Who am I)' : 'Who am I'}
-                      </h2>
-                      <div className="flex items-center gap-2">
-                        <button onClick={() => navigate('/document?type=text&backTab=memory&source=whoami_doc')} className="text-[10px] font-bold bg-stone-100 text-stone-600 px-2 py-1 rounded hover:bg-stone-200 transition-colors">
-                          {lang === 'zh' ? '编辑画像' : 'Edit Profile'}
-                        </button>
-                        <button onClick={() => navigate('/document?type=text&backTab=memory&source=whoami_doc')} className="p-1 rounded-md text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-colors" title={lang === 'zh' ? '作为独立文档打开' : 'Open as Document'}>
-                          <Maximize2 className="w-4 h-4" />
-                        </button>
+                <div className="space-y-12">
+                  {/* Top: Mind Config Nodes */}
+                  <div className="grid md:grid-cols-2 gap-6 items-stretch mb-10">
+                    {/* Who am I (Core User Profile) */}
+                    <section className="h-full flex flex-col bg-white/60 backdrop-blur-2xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-2xl p-6 relative overflow-hidden group transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)]">
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50/50 rounded-bl-full -mr-16 -mt-16 transition-transform group-hover:scale-110" />
+                      <div className="flex items-center justify-between mb-5 relative z-10">
+                        <h2 className="text-sm font-bold text-stone-900 flex items-center gap-2">
+                          <User className="w-4 h-4 text-indigo-500" />
+                          {lang === 'zh' ? '关于我 (Who am I)' : 'Who am I'}
+                        </h2>
+                        <button onClick={() => { setProfileEditKey('whoami'); setProfileEditDraft(profile.whoami || ''); }} className="text-[10px] font-bold bg-stone-100 text-stone-600 px-2 py-1 rounded hover:bg-stone-200 transition-colors">
+                            {lang === 'zh' ? '编辑' : 'Edit'}
+                          </button>
                       </div>
-                    </div>
-                    <div className="space-y-3">
-                      <div onClick={() => navigate('/document?type=text&backTab=memory&source=whoami_doc')} className="bg-stone-50 rounded-xl p-3.5 border border-stone-200 hover:bg-white hover:border-stone-300 transition-all shadow-sm cursor-pointer group/card">
-                        <h4 className="text-[11px] font-semibold text-stone-500 uppercase tracking-wider mb-2 flex items-center justify-between">
-                          {lang === 'zh' ? '核心身份 (Identity)' : 'Identity'}
-                          <ExternalLink className="w-3 h-3 opacity-0 group-hover/card:opacity-100 transition-opacity" />
-                        </h4>
-                        <p className="text-xs text-stone-700 leading-relaxed font-medium">前沿科技创业者，独立产品经理。偏好极致体验和极简设计，推崇 Agent-Native 理念。</p>
+                      <div className="relative z-10 text-xs text-stone-700 leading-relaxed font-medium whitespace-pre-line cursor-pointer hover:text-stone-900 transition-colors" onClick={() => { setProfileEditKey('whoami'); setProfileEditDraft(profile.whoami || ''); }}>
+                        {whoAmIDocContent || (lang === 'zh' ? '点击编辑，描述你的身份与交互偏好...' : 'Click to edit your identity and preferences...')}
                       </div>
-                      <div onClick={() => navigate('/document?type=text&backTab=memory&source=whoami_doc')} className="bg-stone-50 rounded-xl p-3.5 border border-stone-200 hover:bg-white hover:border-stone-300 transition-all shadow-sm cursor-pointer group/card">
-                        <h4 className="text-[11px] font-semibold text-stone-500 uppercase tracking-wider mb-2 flex items-center justify-between">
-                          {lang === 'zh' ? '交互原则 (Directives)' : 'Directives'}
-                          <ExternalLink className="w-3 h-3 opacity-0 group-hover/card:opacity-100 transition-opacity" />
-                        </h4>
-                        <p className="text-xs text-stone-700 leading-relaxed font-medium">1. 沟通直入主题，拒绝废话套话。<br/>2. 代码给出完整可执行的实现。<br/>3. 分析问题遵循第一性原理。</p>
-                      </div>
-                    </div>
-                  </section>
+                    </section>
 
-                  <section className="bg-white border border-stone-200 shadow-sm rounded-2xl p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h2 className="text-sm font-bold text-stone-900 flex items-center gap-2">
-                        <Target className="w-4 h-4 text-stone-500" />
-                        {lang === 'zh' ? '当前目标 (Goal)' : 'Current Goal'}
-                      </h2>
-                      <div className="flex items-center gap-2">
-                        <button onClick={() => navigate('/document?type=text&backTab=memory&source=goal_doc')} className="text-[10px] font-bold bg-stone-100 text-stone-600 px-2 py-1 rounded hover:bg-stone-200 transition-colors">
-                          {lang === 'zh' ? '更新目标' : 'Update'}
+                    {/* Goal (Current Objectives) */}
+                    <section className="bg-white/60 backdrop-blur-2xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-2xl p-6 relative overflow-hidden group transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)]">
+                      <div className="flex items-center justify-between mb-4 relative z-10">
+                        <h2 className="text-sm font-bold text-stone-900 flex items-center gap-2">
+                          <Target className="w-4 h-4 text-orange-500" />
+                          {lang === 'zh' ? '当前目标 (Goal)' : 'Current Goal'}
+                        </h2>
+                        <button onClick={() => { setProfileEditKey('goal'); setProfileEditDraft(profile.goal || ''); }} className="text-[10px] font-bold bg-stone-100 text-stone-600 px-2 py-1 rounded hover:bg-stone-200 transition-colors">
+                            {lang === 'zh' ? '编辑' : 'Edit'}
+                          </button>
+                      </div>
+                      <div className="relative z-10 text-xs text-stone-700 leading-relaxed font-medium whitespace-pre-line cursor-pointer hover:text-stone-900 transition-colors" onClick={() => { setProfileEditKey('goal'); setProfileEditDraft(profile.goal || ''); }}>
+                        {goalDocContent || (lang === 'zh' ? '点击编辑，描述你当前的核心目标...' : 'Click to edit your current goals...')}
+                      </div>
+                    </section>
+                  </div>
+
+                  {/* Custom Memory Nodes Block */}
+                  <div className="mb-4 flex items-center justify-between">
+                    <h3 className="font-bold text-stone-900 text-[13px] flex items-center gap-2">
+                      <Brain className="w-4 h-4 text-violet-500" />
+                      {lang === 'zh' ? '自定义记忆节点 (Custom Nodes)' : 'Custom Memory Nodes'}
+                    </h3>
+                  </div>
+                  <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-stretch">
+                    {/* Custom Memory Nodes mapped as cards */}
+                    {memoryNodes.map(node => (
+                      <section key={node.id} className="h-full flex flex-col bg-white/60 backdrop-blur-2xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-2xl p-6 relative overflow-hidden group transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)]">
+                        <div className="flex items-center justify-between mb-5 relative z-10">
+                          <h2 className="text-sm font-bold text-stone-900 flex items-center gap-2 truncate pr-2">
+                            <Brain className="w-4 h-4 text-violet-500 shrink-0" />
+                            <span className="truncate">{node.title}</span>
+                          </h2>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button onClick={() => { setNodeEditId(node.id); setNodeEditTitle(node.title); setNodeEditDraft(node.content || localStorage.getItem(`mindx_raw_${node.id}`) || ''); }} className="text-[10px] font-bold bg-stone-100 text-stone-600 px-2 py-1 rounded hover:bg-stone-200 transition-colors">
+                              {lang === 'zh' ? '编辑' : 'Edit'}
+                            </button>
+                          </div>
+                        </div>
+                        <div className="relative z-10 text-xs text-stone-700 leading-relaxed font-medium whitespace-pre-line cursor-pointer hover:text-stone-900 transition-colors mt-auto" onClick={() => { setNodeEditId(node.id); setNodeEditTitle(node.title); setNodeEditDraft(node.content || localStorage.getItem(`mindx_raw_${node.id}`) || ''); }}>
+                          {(node.content || localStorage.getItem(`mindx_raw_${node.id}`)) || (lang === 'zh' ? '点击编辑...' : 'Click to edit...')}
+                        </div>
+                      </section>
+                    ))}
+
+                    {/* Add New Custom Node Card */}
+                    <section className="h-full flex flex-col justify-center bg-stone-50/40 backdrop-blur-sm border-[1.5px] border-dashed border-stone-300 rounded-2xl p-6 transition-all duration-300 hover:bg-stone-100/50 hover:border-stone-400 group relative min-h-[200px]">
+                      {isMemoryNodesExpanded ? (
+                        <div className="w-full flex justify-center">
+                          <div className="w-full space-y-3">
+                            <div className="flex items-center gap-2">
+                              <Brain className="w-4 h-4 text-violet-500" />
+                              <span className="text-xs font-semibold text-stone-700">{lang === 'zh' ? '添加自定义节点' : 'Add Custom Node'}</span>
+                            </div>
+                            <input
+                              type="text"
+                              value={memoryNodeInput}
+                              onChange={e => setMemoryNodeInput(e.target.value)}
+                              onKeyDown={e => {
+                                if (e.key === 'Enter' && memoryNodeInput.trim()) {
+                                  const newNode = { id: `mnode-${Date.now()}`, title: memoryNodeInput.trim(), content: '', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+                                  setMemoryNodes(prev => [...prev, newNode]); // append
+                                  localStorage.setItem(`mindx_raw_${newNode.id}`, '');
+                                  setMemoryNodeInput('');
+                                  setIsMemoryNodesExpanded(false);
+                                } else if (e.key === 'Escape') {
+                                  setIsMemoryNodesExpanded(false);
+                                }
+                              }}
+                              placeholder={lang === 'zh' ? '输入名称后回车...' : 'Type name and hit Enter...'}
+                              className="w-full px-3 py-2 border border-stone-200 rounded-lg text-sm focus:outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-200 bg-white shadow-sm"
+                              autoFocus
+                            />
+                            <div className="flex items-center gap-2 shrink-0">
+                               <button 
+                                 onClick={() => {
+                                  if (!memoryNodeInput.trim()) return;
+                                  const newNode = { id: `mnode-${Date.now()}`, title: memoryNodeInput.trim(), content: '', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+                                  setMemoryNodes(prev => [...prev, newNode]);
+                                  localStorage.setItem(`mindx_raw_${newNode.id}`, '');
+                                  setMemoryNodeInput('');
+                                  setIsMemoryNodesExpanded(false);
+                                 }}
+                                 className="flex-1 py-1.5 bg-stone-900 text-white rounded-lg text-xs font-medium hover:bg-stone-800 transition-colors"
+                               >
+                                 {lang === 'zh' ? '确认' : 'Confirm'}
+                               </button>
+                               <button
+                                 onClick={() => setIsMemoryNodesExpanded(false)}
+                                 className="flex-1 py-1.5 bg-white border border-stone-200 text-stone-600 rounded-lg text-xs font-medium hover:bg-stone-50 transition-colors"
+                               >
+                                 {lang === 'zh' ? '取消' : 'Cancel'}
+                               </button>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <button 
+                          onClick={() => setIsMemoryNodesExpanded(true)}
+                          className="w-full h-full flex flex-col items-center justify-center gap-2 cursor-pointer outline-none"
+                        >
+                          <div className="w-10 h-10 rounded-full bg-stone-100 flex items-center justify-center transition-transform group-hover:scale-110 group-hover:bg-stone-200">
+                            <Plus className="w-5 h-5 text-stone-500" />
+                          </div>
+                          <span className="text-sm font-semibold text-stone-500 group-hover:text-stone-700">{lang === 'zh' ? '新建记忆节点' : 'New Memory Node'}</span>
                         </button>
-                        <button onClick={() => navigate('/document?type=text&backTab=memory&source=goal_doc')} className="p-1 rounded-md text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-colors" title={lang === 'zh' ? '作为独立文档打开' : 'Open as Document'}>
-                          <Maximize2 className="w-4 h-4" />
+                      )}
+                    </section>
+                  </div>
+
+                  {/* Extracted Key Points Library */}
+                  <div className="grid lg:grid-cols-1 gap-8 items-start">
+                    {/* Key Points */}
+                    <section className="bg-white/60 backdrop-blur-2xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-2xl p-6 transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)]">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-sm font-bold text-stone-900 uppercase tracking-wider">{lang === 'zh' ? '已提炼洞察列表 (Key Points)' : 'Extracted Key Points'}</h3>
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs text-stone-400">{extractedKeyPoints.length} {lang === 'zh' ? '条' : 'items'}</span>
+                          <button onClick={() => navigate('/document?type=text&backTab=memory&source=keypoints_doc')} className="p-1 rounded-md text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-colors" title={lang === 'zh' ? '作为独立文档打开' : 'Open as Document'}>
+                            <Maximize2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                      {extractedKeyPoints.length === 0 ? (
+                        <div className="text-center py-8">
+                          <Sparkles className="w-8 h-8 text-stone-300 mx-auto mb-2" />
+                          <p className="text-sm text-stone-400 font-medium">{lang === 'zh' ? '暂无洞察' : 'No insights yet'}</p>
+                          <p className="text-[11px] text-stone-400 mt-1">{lang === 'zh' ? '上传原始资料后点击「开始萃取」，洞察会出现在这里' : 'Upload raw data and run extraction to see insights here'}</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {extractedKeyPoints.map(kp => {
+                            return (
+                              <div key={kp.id} className="flex items-center justify-between p-4 rounded-xl border border-stone-200/60 bg-white hover:bg-stone-50 hover:border-stone-200 transition-all group cursor-pointer shadow-sm">
+                                <div className="flex items-center gap-3.5 flex-1 min-w-0">
+                                  <div className="w-9 h-9 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center shrink-0">
+                                    <Sparkles className="w-4 h-4" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <h4 className="text-[13px] font-semibold text-stone-800 truncate">{kp.text}</h4>
+                                    <p className="text-[11px] text-stone-500 mt-1 flex items-center gap-1">
+                                      <LinkIcon className="w-3.5 h-3.5 shrink-0" />
+                                      {lang === 'zh' ? '源自：' : 'From: '}
+                                      <span className="hover:text-stone-700 hover:underline truncate">{kp.source}</span>
+                                    </p>
+                                  </div>
+                                </div>
+                                <button onClick={e => { e.stopPropagation(); fetch(`/api/keypoints?id=${kp.id}`, { method: 'DELETE' }).catch(() => {}); setExtractedKeyPoints(prev => prev.filter(p => p.id !== kp.id)); }} className="p-1 rounded-md text-stone-300 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100 shrink-0">
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </section>
+                  </div>
+
+
+
+                  <div className="relative flex py-2 items-center">
+                    <div className="flex-grow border-t border-stone-200"></div>
+                    <span className="shrink-0 mx-4 text-[10px] font-bold text-stone-400/80 uppercase tracking-[0.2em]">
+                      {lang === 'zh' ? '底层素材流转引擎 (Data Flow & Insight Engine)' : 'Data Flow & Insight Engine'}
+                    </span>
+                    <div className="flex-grow border-t border-stone-200"></div>
+                  </div>
+
+
+                  {/* BOTTOM PIPELINE */}
+                  <div className="space-y-8">
+                    <div className="w-full">
+                  {/* Raw Data */}
+                  <section>
+                    <div className="flex items-start justify-between mb-5">
+                      <div>
+                        <h2 className="text-sm font-bold text-stone-900 mb-2">{lang === 'zh' ? '知识库 (Knowledge Base)' : 'Knowledge Base'}</h2>
+                        <p className="text-xs text-stone-500">{lang === 'zh' ? '等待 Agent 提取、理解并蒸馏为结构化知识的原始数据。' : 'Raw materials waiting for Agent extraction and distillation into structured knowledge.'}</p>
+                      </div>
+                      <div className="relative z-50">
+                        <button 
+                          onClick={() => setIsIntegrationMenuOpen(!isIntegrationMenuOpen)}
+                          className="flex items-center gap-1.5 px-3 py-2 bg-stone-900 text-white rounded-lg text-xs font-semibold hover:bg-stone-800 transition-colors shadow-sm"
+                        >
+                          <Plus className="w-4 h-4" />
+                          {lang === 'zh' ? '新建接入' : 'New Source'}
                         </button>
+                        
+                        {/* Mega Menu Dropdown MOVED HERE */}
+                        {isIntegrationMenuOpen && (
+                          <>
+                            <div className="fixed inset-0 z-30" onClick={() => setIsIntegrationMenuOpen(false)}></div>
+                            <div className="absolute right-0 top-full mt-2 w-[760px] bg-white border border-stone-200 rounded-xl shadow-2xl z-40 overflow-hidden" onClick={e => e.stopPropagation()}>
+<div className="p-5">
+                                  <h3 className="text-sm font-bold text-stone-900 mb-4">{lang === 'zh' ? '选择你想接入的数据源' : 'Choose Data Source'}</h3>
+                                  <div className="grid grid-cols-3 gap-x-8 gap-y-6 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+                                    {/* Column 1 */}
+                                    <div className="space-y-4">
+                                      <div>
+                                        <h4 className="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-2">{lang === 'zh' ? '通用文档' : 'Documents'}</h4>
+                                        <button onClick={() => fileInputRef.current?.click()} className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-stone-50 transition-colors group">
+                                          <div className="w-8 h-8 rounded-md bg-blue-50 flex items-center justify-center shrink-0">
+                                            <FileText className="w-4 h-4 text-blue-600" />
+                                          </div>
+                                          <div className="text-left">
+                                            <div className="text-sm font-medium text-stone-800">{lang === 'zh' ? '本地文件上传' : 'Local File Upload'}</div>
+                                            <div className="text-[10px] text-stone-400 group-hover:text-stone-500 transition-colors">PDF, Word, TXT, Excel</div>
+                                          </div>
+                                        </button>
+                                        <button onClick={() => { setIsPasteModalOpen(true); setIsIntegrationMenuOpen(false); }} className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-stone-50 transition-colors group">
+                                          <div className="w-8 h-8 rounded-md bg-stone-100 flex items-center justify-center shrink-0">
+                                            <FileText className="w-4 h-4 text-stone-600" />
+                                          </div>
+                                          <div className="text-left">
+                                            <div className="text-sm font-medium text-stone-800">{lang === 'zh' ? '粘贴文本' : 'Paste Text'}</div>
+                                            <div className="text-[10px] text-stone-400 group-hover:text-stone-500 transition-colors">{lang === 'zh' ? '直接粘贴文本内容' : 'Paste text directly'}</div>
+                                          </div>
+                                        </button>
+                                      </div>
+                                      <div>
+                                        <h4 className="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-2">{lang === 'zh' ? '搜索与收藏' : 'Search & Save'}</h4>
+                                        <button className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-stone-50 transition-colors group">
+                                          <div className="w-8 h-8 rounded-md bg-emerald-50 flex items-center justify-center shrink-0">
+                                            <Globe className="w-4 h-4 text-emerald-600" />
+                                          </div>
+                                          <div className="text-left">
+                                            <div className="text-sm font-medium text-stone-800">{lang === 'zh' ? '网页剪存' : 'Web Clipper'}</div>
+                                            <div className="text-[10px] text-stone-400 group-hover:text-stone-500 transition-colors">{lang === 'zh' ? '保存并在MindX阅读网页' : 'Save and read pages in MindX'}</div>
+                                          </div>
+                                        </button>
+                                        <button className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-stone-50 transition-colors group">
+                                          <div className="w-8 h-8 rounded-md bg-green-50 flex items-center justify-center shrink-0">
+                                            <FileText className="w-4 h-4 text-green-600" />
+                                          </div>
+                                          <div className="text-left">
+                                            <div className="flex items-center gap-1.5"><div className="text-sm font-medium text-stone-800">flomo</div><span className="text-[8px] font-bold bg-stone-200 text-stone-600 px-1 py-0.5 rounded leading-none">Beta</span></div>
+                                            <div className="text-[10px] text-stone-400 group-hover:text-stone-500 transition-colors">{lang === 'zh' ? '浮墨笔记同步' : 'Sync from flomo'}</div>
+                                          </div>
+                                        </button>
+                                      </div>
+                                    </div>
+                                    {/* Column 2 */}
+                                    <div className="space-y-4">
+                                      <div>
+                                        <h4 className="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-2">{lang === 'zh' ? '云端协作' : 'Cloud Apps'}</h4>
+                                        <button className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-stone-50 transition-colors group">
+                                          <div className="w-8 h-8 rounded-md bg-blue-100 flex items-center justify-center shrink-0">
+                                            <Cloud className="w-4 h-4 text-blue-700" />
+                                          </div>
+                                          <div className="text-left w-full flex items-center justify-between pr-1">
+                                            <div>
+                                              <div className="text-sm font-medium text-stone-800">{lang === 'zh' ? '腾讯文档' : 'Tencent Docs'}</div>
+                                              <div className="text-[10px] text-stone-400 group-hover:text-stone-500 transition-colors">{lang === 'zh' ? '自动同步更新的在线文档' : 'Auto sync online docs'}</div>
+                                            </div>
+                                            <ChevronRight className="w-3.5 h-3.5 text-stone-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                          </div>
+                                        </button>
+                                        <button className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-stone-50 transition-colors group">
+                                          <div className="w-8 h-8 rounded-md bg-blue-50 flex items-center justify-center shrink-0">
+                                            <Cloud className="w-4 h-4 text-blue-600" />
+                                          </div>
+                                          <div className="text-left">
+                                            <div className="text-sm font-medium text-stone-800">{lang === 'zh' ? '微云' : 'Weiyun'}</div>
+                                            <div className="text-[10px] text-stone-400 group-hover:text-stone-500 transition-colors">{lang === 'zh' ? '导入微云文件' : 'Import Weiyun files'}</div>
+                                          </div>
+                                        </button>
+                                        <button className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-stone-50 transition-colors group">
+                                          <div className="w-8 h-8 rounded-md bg-green-50 flex items-center justify-center shrink-0">
+                                            <MessageCircle className="w-4 h-4 text-green-600" />
+                                          </div>
+                                          <div className="text-left">
+                                            <div className="text-sm font-medium text-stone-800">{lang === 'zh' ? '微信' : 'WeChat'}</div>
+                                            <div className="text-[10px] text-stone-400 group-hover:text-stone-500 transition-colors">{lang === 'zh' ? '同步微信文件通过小助手' : 'Sync via WeChat helper'}</div>
+                                          </div>
+                                        </button>
+                                        <button className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-stone-50 transition-colors group">
+                                          <div className="w-8 h-8 rounded-md bg-blue-50 flex items-center justify-center shrink-0">
+                                            <Mail className="w-4 h-4 text-blue-600" />
+                                          </div>
+                                          <div className="text-left">
+                                            <div className="text-sm font-medium text-stone-800">{lang === 'zh' ? 'QQ邮箱' : 'QQ Mail'}</div>
+                                            <div className="text-[10px] text-stone-400 group-hover:text-stone-500 transition-colors">{lang === 'zh' ? '解析邮件及其附件' : 'Parse emails and attachments'}</div>
+                                          </div>
+                                        </button>
+                                      </div>
+                                    </div>
+                                    {/* Column 3: 第三方插件同步 */}
+                                    <div className="space-y-4">
+                                      <div>
+                                        <h4 className="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-2">{lang === 'zh' ? '第三方插件同步' : 'Third-Party Sync'}</h4>
+                                        <div className="space-y-1">
+                                          {[
+                                            { name: '腾讯会议', type: 'video' },
+                                            { name: '飞书妙记', type: 'video' },
+                                            { name: '钉钉闪记', type: 'video' },
+                                            { name: 'Plaud', type: 'mic' },
+                                            { name: 'Plaudcn', type: 'mic' },
+                                            { name: 'Get笔记', type: 'mic' },
+                                            { name: '通义听悟', type: 'mic' },
+                                            { name: '千问录音', type: 'mic' },
+                                            { name: '讯飞听见', type: 'mic' },
+                                            { name: 'TicNote', type: 'mic' },
+                                          ].map((item, idx) => (
+                                            <button key={idx} className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-stone-50 transition-colors group cursor-pointer justify-between">
+                                              <div className="flex items-center gap-3">
+                                                <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center shrink-0 shadow-sm shadow-blue-500/20">
+                                                  {item.type === 'video' ? <Video className="w-3.5 h-3.5 text-white" /> : <Mic className="w-3.5 h-3.5 text-white" />}
+                                                </div>
+                                                <span className="text-[13px] font-medium text-stone-800">{item.name}</span>
+                                              </div>
+                                              <RefreshCw className="w-3.5 h-3.5 text-stone-400 group-hover:text-stone-600 transition-colors" />
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    </div>                                  </div>
+                                </div>
+
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
                     <div className="space-y-3">
-                      <div onClick={() => navigate('/document?type=text&backTab=memory&source=goal_doc')} className="flex items-start gap-3 p-3.5 rounded-xl border border-stone-200 bg-stone-50 hover:bg-white hover:border-stone-300 shadow-sm transition-all cursor-pointer group/goal">
-                        <div className="w-7 h-7 rounded-lg bg-stone-100 flex items-center justify-center shrink-0 mt-0.5">
-                          <span className="text-stone-700 font-bold text-[11px]">1</span>
+                        {/* 空间内部源 — 展开式文件列表 */}
+                        <div className="bg-white/60 border border-stone-100 rounded-xl overflow-hidden">
+                          <div 
+                            className="flex items-center justify-between px-4 py-2.5 text-xs text-stone-500"
+                          >
+                            <span>{rawDataItems.length} {lang === 'zh' ? '份资料' : 'files'}</span>
+                          </div>
+                          {rawDataItems.length > 0 && (
+                            <div className="border-t border-stone-100">
+                              {rawDataItems.slice(0, 5).map((item, idx) => (
+                                <div 
+                                  key={item.id} 
+                                  className={`flex items-center justify-between px-4 py-2.5 text-xs hover:bg-stone-50/80 transition-colors cursor-pointer ${idx < Math.min(rawDataItems.length, 5) - 1 ? 'border-b border-stone-50' : ''}`}
+                                  onClick={() => openRawDataInEditor(item)}
+                                >
+                                  <div className="flex items-center gap-2.5 min-w-0">
+                                    <FileText className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+                                    <span className="text-stone-700 font-medium truncate">{item.name}</span>
+                                  </div>
+                                  <span className="text-[10px] text-stone-400 shrink-0 ml-2">{item.type}</span>
+                                </div>
+                              ))}
+                              {rawDataItems.length > 5 && (
+                                <div 
+                                  className="px-4 py-2 text-center text-xs text-blue-600 font-semibold cursor-pointer hover:bg-blue-50/50 transition-colors border-t border-stone-100"
+                                  onClick={() => setIsRawDataModalOpen(true)}
+                                >
+                                  {lang === 'zh' ? `查看全部 ${rawDataItems.length} 份资料 →` : `View all ${rawDataItems.length} files →`}
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
-                        <div>
-                          <h4 className="text-[13px] font-semibold text-stone-800">构建 Agent-Native 记忆中枢</h4>
-                          <p className="text-[11px] text-stone-500 mt-1 flex items-center gap-2">
-                            <span>Deadline: Q2</span>
-                            <span className="w-1 h-1 rounded-full bg-stone-300"></span>
-                            <span className="text-stone-600 font-medium">Priority: High</span>
-                          </p>
+
+                        {/* 提炼引擎状态条 */}
+                        <div 
+                          className="flex items-center justify-between p-3 bg-white/40 border border-stone-100 rounded-xl cursor-pointer hover:bg-stone-50/50 transition-colors"
+                          onClick={() => setIsPricingModalOpen(true)}
+                        >
+                          <div className="flex items-center gap-2">
+                            <Sparkles className="w-4 h-4 text-stone-400" />
+                            <span className="text-xs font-medium text-stone-500">{lang === 'zh' ? '大模型提炼队列' : 'Agent Insight Engine'}</span>
+                            <span className="text-[9px] font-bold bg-stone-900 text-white px-1.5 py-0.5 rounded leading-none tracking-wider">PRO</span>
+                          </div>
+                          <span className="text-xs font-bold text-blue-600 animate-pulse">
+                            {rawDataItems.length} {lang === 'zh' ? '待处理' : 'pending'}
+                          </span>
                         </div>
-                      </div>
-                      <div onClick={() => navigate('/document?type=text&backTab=memory&source=goal_doc')} className="flex items-start gap-3 p-3.5 rounded-xl border border-stone-200 bg-stone-50 hover:bg-white hover:border-stone-300 shadow-sm transition-all cursor-pointer group/goal">
-                        <div className="w-7 h-7 rounded-lg bg-stone-100 flex items-center justify-center shrink-0 mt-0.5">
-                          <span className="text-stone-700 font-bold text-[11px]">2</span>
-                        </div>
-                        <div>
-                          <h4 className="text-[13px] font-semibold text-stone-800">完善全平台交互与多端适配体验</h4>
-                          <p className="text-[11px] text-stone-500 mt-1 flex items-center gap-2">
-                            <span>Deadline: May</span>
-                            <span className="w-1 h-1 rounded-full bg-stone-300"></span>
-                            <span className="text-stone-500 font-medium">Priority: Medium</span>
-                          </p>
-                        </div>
-                      </div>
+
+                        {/* 操作按钮 */}
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedExtractionFileIds(new Set(rawDataItems.map(i => i.id)));
+                            setShowExtractionFilePicker(true);
+                          }}
+                          disabled={extractionRunning || rawDataItems.length === 0}
+                          className={`w-full flex items-center justify-center gap-2 text-white text-sm font-semibold p-3.5 rounded-xl transition-all duration-300 shadow-md ${
+                            extractionRunning || rawDataItems.length === 0
+                              ? 'bg-stone-300 cursor-not-allowed shadow-none'
+                              : 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.98]'
+                          }`}
+                        >
+                          {extractionRunning ? (
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                              {lang === 'zh' ? '正在提取全量资料...' : 'Extracting Insights...'}
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="w-4 h-4" />
+                              {lang === 'zh' ? `开始洞察 (${rawDataItems.length} 个未处理)` : `Start Insight (${rawDataItems.length} Pending)`}
+                            </>
+                          )}
+                        </button>
                     </div>
                   </section>
 
@@ -2854,6 +3204,8 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
 
                 </div>
 
+                  </div>
+                </div>
               </motion.div>
             )}
 

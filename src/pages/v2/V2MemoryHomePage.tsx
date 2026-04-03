@@ -174,7 +174,7 @@ export default function V2MemoryHomePage() {
             {
               title: '基础记忆',
               action: '/document?type=text&backTab=memory&source=whoami_doc',
-              label: 'Base Memory',
+              label: '',
               meta: '2 项',
               editable: true,
               previewType: 'memory',
@@ -192,7 +192,7 @@ export default function V2MemoryHomePage() {
             {
               title: '我的目标',
               action: '/document?type=text&backTab=memory&source=goal_doc',
-              label: 'Goals',
+              label: '',
               meta: '2 项',
               editable: true,
               previewType: 'goals',
@@ -212,7 +212,7 @@ export default function V2MemoryHomePage() {
             {
               title: 'Knowledge',
               action: '/v2/memory/knowledge',
-              label: 'Knowledge',
+              label: '',
               meta: `${memoryAssets.length} 张卡片`,
               editable: false,
               previewType: 'knowledge',
@@ -239,7 +239,7 @@ export default function V2MemoryHomePage() {
             {
               title: 'Base memory',
               action: '/document?type=text&backTab=memory&source=whoami_doc',
-              label: 'Base Memory',
+              label: '',
               meta: '2 items',
               editable: true,
               previewType: 'memory',
@@ -257,7 +257,7 @@ export default function V2MemoryHomePage() {
             {
               title: 'My goals',
               action: '/document?type=text&backTab=memory&source=goal_doc',
-              label: 'Goals',
+              label: '',
               meta: '2 items',
               editable: true,
               previewType: 'goals',
@@ -277,7 +277,7 @@ export default function V2MemoryHomePage() {
             {
               title: 'Knowledge',
               action: '/v2/memory/knowledge',
-              label: 'Knowledge',
+              label: '',
               meta: `${memoryAssets.length} cards`,
               editable: false,
               previewType: 'knowledge',
@@ -343,9 +343,11 @@ export default function V2MemoryHomePage() {
                   </div>
                   <div>
                     <div className="text-sm font-semibold text-stone-900">{section.title}</div>
-                    <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-stone-400">
-                      {section.label}
-                    </div>
+                    {section.label ? (
+                      <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-stone-400">
+                        {section.label}
+                      </div>
+                    ) : null}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
