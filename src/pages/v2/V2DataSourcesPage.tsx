@@ -21,16 +21,28 @@ function categoryLabel(category: MemoryDataSource['category'], lang: 'zh' | 'en'
   return 'Third-party sync';
 }
 
-function statusLabel(status: MemoryDataSource['status'], lang: 'zh' | 'en') {
+function pipelineStatusLabel(
+  status: 'captured' | 'refining' | 'distilled' | 'syncing',
+  lang: 'zh' | 'en'
+) {
   if (lang === 'zh') {
-    if (status === 'ready') return '可用';
+    if (status === 'distilled') return '已沉淀';
+    if (status === 'refining') return '提炼中';
     if (status === 'syncing') return '同步中';
-    return '待整理';
+    return '待提取';
   }
 
-  if (status === 'ready') return 'Ready';
+  if (status === 'distilled') return 'Distilled';
+  if (status === 'refining') return 'Refining';
   if (status === 'syncing') return 'Syncing';
-  return 'Reviewing';
+  return 'Captured';
+}
+
+function pipelineStatusClasses(status: 'captured' | 'refining' | 'distilled' | 'syncing') {
+  if (status === 'distilled') return 'bg-emerald-50 text-emerald-700 border border-emerald-200';
+  if (status === 'refining') return 'bg-sky-50 text-sky-700 border border-sky-200';
+  if (status === 'syncing') return 'bg-stone-900 text-white border border-stone-900';
+  return 'bg-amber-50 text-amber-700 border border-amber-200';
 }
 
 function categoryIcon(category: MemoryDataSource['category']) {
@@ -40,18 +52,12 @@ function categoryIcon(category: MemoryDataSource['category']) {
   return <Waypoints className="h-4 w-4" />;
 }
 
-function statusClasses(status: MemoryDataSource['status']) {
-  if (status === 'ready') return 'bg-stone-100 text-stone-700';
-  if (status === 'syncing') return 'bg-stone-900 text-white';
-  return 'bg-stone-200 text-stone-700';
-}
-
 export default function V2DataSourcesPage() {
   const { lang } = useLanguage();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const highlightedSourceId = searchParams.get('source');
-  const { memoryDataSources } = useMindXDemo();
+  const { memoryAssets, memoryDataSources, memorySourceLinks, memoryTimeline } = useMindXDemo();
   const [categoryFilter, setCategoryFilter] = useState<MemoryDataSource['category'] | 'all'>('all');
 
   const categoryFilters = useMemo(
@@ -82,6 +88,44 @@ export default function V2DataSourcesPage() {
         return right.id.localeCompare(left.id);
       }),
     [categoryFilter, highlightedSourceId, memoryDataSources]
+  );
+
+  const sourceFlowById = useMemo(
+    () =>
+      memoryDataSources.reduce<
+        Record<
+          string,
+          {
+            assetCount: number;
+            pipelineStatus: 'captured' | 'refining' | 'distilled' | 'syncing';
+          }
+        >
+      >((accumulator, source) => {
+        const sourceLinkIds = memorySourceLinks
+          .filter(link => link.dataSourceId === source.id)
+          .map(link => link.id);
+
+        const linkedEvents = memoryTimeline.filter(event =>
+          event.sourceIds.some(sourceId => sourceLinkIds.includes(sourceId))
+        );
+        const linkedAssets = memoryAssets.filter(asset =>
+          asset.sourceIds.some(sourceId => sourceLinkIds.includes(sourceId))
+        );
+        const durableCount = linkedAssets.filter(asset => asset.status === 'durable').length;
+        const reviewOrCandidateCount = linkedAssets.filter(asset => asset.status !== 'durable').length;
+
+        let pipelineStatus: 'captured' | 'refining' | 'distilled' | 'syncing' = 'captured';
+        if (source.status === 'syncing') pipelineStatus = 'syncing';
+        else if (durableCount > 0 && reviewOrCandidateCount === 0) pipelineStatus = 'distilled';
+        else if (linkedEvents.length > 0 || linkedAssets.length > 0) pipelineStatus = 'refining';
+
+        accumulator[source.id] = {
+          assetCount: linkedAssets.length,
+          pipelineStatus,
+        };
+        return accumulator;
+      }, {}),
+    [memoryAssets, memoryDataSources, memorySourceLinks, memoryTimeline]
   );
 
   useEffect(() => {
@@ -128,7 +172,7 @@ export default function V2DataSourcesPage() {
             <tr>
               <th className="px-6 py-3 font-medium">{lang === 'zh' ? '名称' : 'Name'}</th>
               <th className="px-6 py-3 font-medium">{lang === 'zh' ? '类型' : 'Type'}</th>
-              <th className="px-6 py-3 font-medium">{lang === 'zh' ? '状态' : 'Status'}</th>
+              <th className="px-6 py-3 font-medium">{lang === 'zh' ? '处理进度' : 'Pipeline'}</th>
               <th className="px-6 py-3 font-medium">{lang === 'zh' ? '更新时间' : 'Updated'}</th>
               <th className="px-6 py-3 font-medium">{lang === 'zh' ? '标签' : 'Tags'}</th>
             </tr>
@@ -136,6 +180,10 @@ export default function V2DataSourcesPage() {
           <tbody className="divide-y divide-stone-100">
             {sortedSources.map(source => {
               const highlighted = source.id === highlightedSourceId;
+              const flow = sourceFlowById[source.id] ?? {
+                assetCount: 0,
+                pipelineStatus: source.status === 'syncing' ? 'syncing' : ('captured' as const),
+              };
 
               return (
                 <tr
@@ -144,7 +192,7 @@ export default function V2DataSourcesPage() {
                   onClick={() =>
                     navigate(`/document?source=data_source&dataSourceId=${source.id}&from=data-sources`)
                   }
-                  className={`cursor-pointer transition-colors ${
+                  className={`group cursor-pointer transition-colors ${
                     highlighted ? 'bg-stone-50' : 'hover:bg-stone-50/70'
                   }`}
                 >
@@ -154,7 +202,9 @@ export default function V2DataSourcesPage() {
                         {categoryIcon(source.category)}
                       </div>
                       <div className="min-w-0">
-                        <div className="font-medium text-stone-900">{source.name}</div>
+                        <div className="font-medium text-stone-900 transition-colors group-hover:text-stone-700 group-hover:underline underline-offset-2">
+                          {source.name}
+                        </div>
                         <div className="mt-1 line-clamp-2 text-xs leading-5 text-stone-500">
                           {source.summary}
                         </div>
@@ -164,11 +214,27 @@ export default function V2DataSourcesPage() {
                   <td className="px-6 py-4 text-stone-600">{source.typeLabel}</td>
                   <td className="px-6 py-4">
                     <span
-                      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusClasses(source.status)}`}
+                      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold ${pipelineStatusClasses(flow.pipelineStatus)}`}
                     >
-                      {source.status === 'syncing' && <RefreshCw className="h-3 w-3" />}
-                      {statusLabel(source.status, lang)}
+                      {flow.pipelineStatus === 'syncing' && <RefreshCw className="h-3 w-3" />}
+                      {pipelineStatusLabel(flow.pipelineStatus, lang)}
                     </span>
+                    {flow.pipelineStatus === 'distilled' && flow.assetCount > 0 && (
+                      <div className="mt-2">
+                        <button
+                          type="button"
+                          onClick={event => {
+                            event.stopPropagation();
+                            navigate(`/v2/memory/knowledge?source=${source.id}`);
+                          }}
+                          className="text-xs font-medium text-stone-500 transition-colors hover:text-stone-900"
+                        >
+                          {lang === 'zh'
+                            ? `产出 ${flow.assetCount} 条 Knowledge`
+                            : `${flow.assetCount} Knowledge assets`}
+                        </button>
+                      </div>
+                    )}
                   </td>
                   <td className="px-6 py-4 text-stone-500">{source.freshness}</td>
                   <td className="px-6 py-4">

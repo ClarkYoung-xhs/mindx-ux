@@ -76,12 +76,13 @@ export default function V2MemoryPage() {
   const { lang } = useLanguage();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { documents, memoryAssets, memorySourceLinks, memoryTimeline } = useMindXDemo();
+  const { documents, memoryAssets, memoryDataSources, memorySourceLinks, memoryTimeline } = useMindXDemo();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedCard, setSelectedCard] = useState<V2CardRecord | null>(null);
   const focusDocId = searchParams.get('doc');
   const focusEventId = searchParams.get('event');
   const focusAssetId = searchParams.get('asset');
+  const focusSourceId = searchParams.get('source');
 
   const timelineEntries = useMemo(
     () => buildTimelineEntries({ memoryAssets, memorySourceLinks, memoryTimeline, lang }),
@@ -145,13 +146,25 @@ export default function V2MemoryPage() {
     [documents, focusDocId]
   );
 
+  const focusedSource = useMemo(
+    () => memoryDataSources.find(source => source.id === focusSourceId) ?? null,
+    [focusSourceId, memoryDataSources]
+  );
+
   const visibleTimelineEntries = useMemo(() => {
-    if (!focusDocId) return timelineEntries;
     return timelineEntries.filter(entry => {
-      if (entry.event.docId === focusDocId) return true;
-      return entry.event.sourceIds.some(sourceId => sourceMap[sourceId]?.docId === focusDocId);
+      const matchesDoc =
+        !focusDocId ||
+        entry.event.docId === focusDocId ||
+        entry.event.sourceIds.some(sourceId => sourceMap[sourceId]?.docId === focusDocId);
+
+      const matchesSource =
+        !focusSourceId ||
+        entry.event.sourceIds.some(sourceId => sourceMap[sourceId]?.dataSourceId === focusSourceId);
+
+      return matchesDoc && matchesSource;
     });
-  }, [focusDocId, sourceMap, timelineEntries]);
+  }, [focusDocId, focusSourceId, sourceMap, timelineEntries]);
 
   const timelineGroups = useMemo(
     () =>
@@ -179,6 +192,19 @@ export default function V2MemoryPage() {
       durableMemories: visibleTimelineEntries.filter(entry => entry.event.stage === 'durable').length,
     };
   }, [visibleTimelineEntries]);
+
+  const focusedSourceAssetIds = useMemo(() => {
+    if (!focusSourceId) return [];
+    return Array.from(
+      new Set(
+        memoryAssets
+          .filter(asset =>
+            asset.sourceIds.some(sourceId => sourceMap[sourceId]?.dataSourceId === focusSourceId)
+          )
+          .map(asset => asset.id)
+      )
+    );
+  }, [focusSourceId, memoryAssets, sourceMap]);
 
   const reportText = useMemo(() => {
     if (lang === 'zh') {
@@ -347,6 +373,52 @@ export default function V2MemoryPage() {
           </section>
         )}
 
+        {focusedSource && (
+          <section className="rounded-[1.75rem] border border-stone-200 bg-[#F7F7F5] p-5 shadow-[0_10px_30px_rgba(28,25,23,0.03)]">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="space-y-3">
+                <div className="text-lg font-semibold text-stone-900">{focusedSource.name}</div>
+                <div className="flex flex-wrap gap-2">
+                  <span className="rounded-full border border-stone-200 bg-white px-3 py-1 text-xs font-medium text-stone-600">
+                    {focusedSource.typeLabel}
+                  </span>
+                  <span className="rounded-full border border-stone-200 bg-white px-3 py-1 text-xs font-medium text-stone-600">
+                    {lang === 'zh'
+                      ? `${visibleTimelineEntries.length} 条 Timeline`
+                      : `${visibleTimelineEntries.length} timeline signals`}
+                  </span>
+                  <span className="rounded-full border border-stone-200 bg-white px-3 py-1 text-xs font-medium text-stone-600">
+                    {lang === 'zh'
+                      ? `${focusedSourceAssetIds.length} 张 Knowledge`
+                      : `${focusedSourceAssetIds.length} knowledge assets`}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => navigate(`/document?source=data_source&dataSourceId=${focusedSource.id}&from=memory`)}
+                  className="rounded-full border border-stone-200 bg-white px-4 py-2 text-sm font-medium text-stone-700 transition-colors hover:bg-stone-50"
+                >
+                  {lang === 'zh' ? '打开数据源' : 'Open source'}
+                </button>
+                <button
+                  onClick={() => navigate(`/v2/memory/knowledge?source=${focusedSource.id}`)}
+                  className="rounded-full border border-stone-200 bg-white px-4 py-2 text-sm font-medium text-stone-700 transition-colors hover:bg-stone-50"
+                >
+                  {lang === 'zh' ? '查看知识资产' : 'View knowledge'}
+                </button>
+                <button
+                  onClick={() => navigate('/v2/memory/timeline')}
+                  className="rounded-full bg-stone-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-stone-800"
+                >
+                  {lang === 'zh' ? '查看全部 Timeline' : 'View full timeline'}
+                </button>
+              </div>
+            </div>
+          </section>
+        )}
+
         <section className="rounded-[1.75rem] border border-stone-200 bg-[#F7F7F5] p-6 shadow-[0_10px_30px_rgba(28,25,23,0.03)]">
           <div className="relative space-y-10 pl-6 lg:pl-8">
             <div className="absolute bottom-4 left-[10px] top-4 w-px bg-stone-200 lg:left-[12px]" />
@@ -443,6 +515,16 @@ export default function V2MemoryPage() {
                               )}
                               <span>{entry.signal.docName}</span>
                             </button>
+                            {entry.primaryAsset && (
+                              <button
+                                type="button"
+                                onClick={() => navigate(`/v2/memory/knowledge?asset=${entry.primaryAsset?.id}`)}
+                                className="inline-flex items-center gap-2 rounded-full bg-stone-100 px-4 py-2 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-200 hover:text-stone-900"
+                              >
+                                <Sparkles size={16} className="text-stone-500" />
+                                <span>{lang === 'zh' ? '查看知识资产' : 'Open knowledge'}</span>
+                              </button>
+                            )}
                           </div>
 
                           {entry.card && (
