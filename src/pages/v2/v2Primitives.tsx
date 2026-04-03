@@ -317,36 +317,48 @@ export function V2KnowledgeCard({
           )}
         </div>
 
-        <div className="flex items-center gap-2">
-          {card.sources.slice(0, 1).map(source => (
-            <div
-              key={source.id}
-              onClick={event => {
-                event.stopPropagation();
-                onSourceClick?.(source);
-              }}
-              className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-widest text-stone-400 transition-colors hover:text-stone-700"
-            >
-              {getSourceIcon(source.kind)}
-              <span>{source.label}</span>
-            </div>
-          ))}
+      <div className="flex items-center gap-2">
+        {card.sources.slice(0, 1).map(source => (
+          <div
+            key={source.id}
+            onClick={
+              onSourceClick
+                ? event => {
+                    event.stopPropagation();
+                    onSourceClick(source);
+                  }
+                : undefined
+            }
+            className={`flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-widest text-stone-400 ${
+              onSourceClick ? 'transition-colors hover:text-stone-700' : ''
+            }`}
+          >
+            {getSourceIcon(source.kind)}
+            <span>{source.label}</span>
+          </div>
+        ))}
         </div>
       </div>
 
       <div className="flex items-center justify-between pt-4">
         <div className="flex items-center gap-2">
           {card.tags.map(tag => (
-            <button
+            <span
               key={tag}
-              onClick={event => {
-                event.stopPropagation();
-                onTagClick?.(tag);
-              }}
-              className="text-[10px] font-medium uppercase tracking-widest text-stone-400 transition-colors hover:text-stone-700"
+              onClick={
+                onTagClick
+                  ? event => {
+                      event.stopPropagation();
+                      onTagClick(tag);
+                    }
+                  : undefined
+              }
+              className={`text-[10px] font-medium uppercase tracking-widest text-stone-400 ${
+                onTagClick ? 'cursor-pointer transition-colors hover:text-stone-700' : ''
+              }`}
             >
               #{tag}
-            </button>
+            </span>
           ))}
         </div>
       </div>

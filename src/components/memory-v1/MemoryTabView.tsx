@@ -1,8 +1,6 @@
 import {
   Brain,
-  Clock3,
   Database,
-  FileSearch,
   FileText,
   MessageSquareText,
   Plus,
@@ -15,6 +13,12 @@ import {
 } from 'lucide-react';
 import { useMemo, useState, type ReactNode, type RefObject } from 'react';
 import { useMindXDemo } from '../../data/mindxDemoContext';
+import {
+  V2KnowledgeCard,
+  type V2CardRecord,
+  type V2PersonRef,
+  type V2SourceRef,
+} from '../../pages/v2/v2Primitives';
 
 type MemoryNode = {
   id: string;
@@ -47,16 +51,6 @@ type ExtractionLog = {
   text: string;
   time: string;
   status: 'done' | 'running' | 'pending';
-};
-
-type SampleInsightCard = {
-  id: string;
-  title: string;
-  text: string;
-  type: string;
-  source: string;
-  createdAt: string;
-  sample: true;
 };
 
 type DataSourceRowRecord = {
@@ -283,12 +277,12 @@ export default function MemoryTabView({
   onOpenModelConfig,
   onOpenExtractionPicker,
 }: MemoryTabViewProps) {
-  const { memoryAssets, memoryDataSources, memoryTimeline } = useMindXDemo();
+  const { memoryAssets, memoryDataSources, memorySourceLinks } = useMindXDemo();
   const [memoDraft, setMemoDraft] = useState('');
+  const [isAllInsightsViewOpen, setIsAllInsightsViewOpen] = useState(false);
 
   const recentLogs = extractionLogs.slice(0, 3);
   const showSampleBaseMemory = !whoAmIDocContent.trim() && !goalDocContent.trim();
-  const showSampleInsights = extractedKeyPoints.length === 0 && rawDataItems.length === 0;
   const showSampleSources = rawDataItems.length === 0;
 
   const baseWhoAmI = whoAmIDocContent.trim()
@@ -319,28 +313,121 @@ export default function MemoryTabView({
     return extractedKeyPoints.slice(0, 2).map(point => point.title || point.text);
   }, [extractedKeyPoints, rawDataItems.length, sampleKnowledgeSummary]);
 
-  const insightCards = useMemo<Array<ExtractedKeyPoint | SampleInsightCard>>(() => {
-    if (!showSampleInsights) return extractedKeyPoints;
+  const formatAssetTypeLabel = (category: (typeof memoryAssets)[number]['libraryCategory']) => {
+    if (category === 'project-judgment') return '项目判断';
+    if (category === 'work-preference') return '工作偏好';
+    if (category === 'long-term-principle') return '长期原则';
+    if (category === 'core-anchor') return '核心锚点';
+    return '待沉淀';
+  };
 
-    return memoryTimeline
-      .filter(event => event.stage !== 'durable')
-      .slice(0, 3)
-      .map(event => ({
-        id: event.id,
-        title: memoryAssets.find(asset => asset.id === event.assetIds[0])?.title ?? event.docName,
-        text: `来自「${event.docName}」的内容已经支撑了这条洞察，可以作为当前记忆判断保留下来。`,
-        type: '洞察',
-        source: event.docName,
-        createdAt: event.occurredAt,
-        sample: true as const,
-      }));
-  }, [extractedKeyPoints, memoryAssets, memoryTimeline, showSampleInsights]);
+  const formatAssetStatusLabel = (status: (typeof memoryAssets)[number]['status']) => {
+    if (status === 'durable') return '已沉淀';
+    if (status === 'review') return '审核中';
+    return '候选';
+  };
+
+  const allInsightKnowledgeCards = useMemo<V2CardRecord[]>(() => {
+    const toPeople = (participants: string[], fallback?: V2PersonRef) => {
+      if (participants.length > 0) {
+        return participants.slice(0, 3).map(participant => ({
+          name: participant,
+          kind:
+            participant.toLowerCase().includes('assistant') ||
+            participant.toLowerCase().includes('bot') ||
+            participant.toLowerCase().includes('agent')
+              ? ('agent' as const)
+              : ('human' as const),
+        }));
+      }
+
+      return fallback ? [fallback] : [];
+    };
+
+    if (extractedKeyPoints.length > 0) {
+      return extractedKeyPoints.map(point => {
+        const linkedSource = memorySourceLinks.find(source => source.docName === point.source);
+        const relatedAsset = memoryAssets.find(asset => asset.title === point.title || asset.title === point.text);
+
+        const sourceRef: V2SourceRef = linkedSource
+          ? {
+              id: linkedSource.id,
+              label: linkedSource.docName,
+              kind: linkedSource.kind,
+              storage: linkedSource.storage,
+              docId: linkedSource.docId,
+              dataSourceId: linkedSource.dataSourceId,
+              quote: linkedSource.quote,
+            }
+          : {
+              id: `source-${point.id}`,
+              label: point.source,
+              kind: 'document',
+            };
+
+        return {
+          id: point.id,
+          timestamp: formatDateLabel(point.createdAt),
+          typeLabel: point.type?.trim() || '洞察',
+          title: point.title || point.text,
+          content: point.text,
+          tags: relatedAsset?.tags?.slice(0, 3) ?? [],
+          sources: [sourceRef],
+          people: toPeople(linkedSource?.participants ?? []),
+          relatedIds: relatedAsset?.relatedAssetIds,
+          evidence: relatedAsset?.evidence,
+          statusLabel: relatedAsset ? `${relatedAsset.layer} · 已提炼` : '已提炼',
+        };
+      });
+    }
+
+    return memoryAssets.map(asset => {
+      const linkedSources = asset.sourceIds
+        .map(sourceId => memorySourceLinks.find(source => source.id === sourceId))
+        .filter((source): source is NonNullable<typeof source> => Boolean(source));
+      const primarySource = linkedSources[0];
+
+      return {
+        id: asset.id,
+        timestamp: asset.freshness,
+        typeLabel: formatAssetTypeLabel(asset.libraryCategory),
+        title: asset.title,
+        content: asset.summary,
+        tags: asset.tags.slice(0, 3),
+        sources: primarySource
+          ? [
+              {
+                id: primarySource.id,
+                label: primarySource.docName,
+                kind: primarySource.kind,
+                storage: primarySource.storage,
+                docId: primarySource.docId,
+                dataSourceId: primarySource.dataSourceId,
+                quote: primarySource.quote,
+              },
+            ]
+          : [],
+        people: toPeople(
+          linkedSources.flatMap(source => source.participants),
+          { name: 'Me', kind: 'human' }
+        ),
+        relatedIds: asset.relatedAssetIds,
+        evidence: asset.evidence,
+        statusLabel: `${asset.layer} · ${formatAssetStatusLabel(asset.status)}`,
+      };
+    });
+  }, [extractedKeyPoints, memoryAssets, memorySourceLinks]);
+
+  const insightPreviewCards = useMemo(
+    () => allInsightKnowledgeCards.slice(0, 6),
+    [allInsightKnowledgeCards]
+  );
 
   const buildMemoReply = (query: string) => {
     const normalizedQuery = normalize(query);
 
     if (!normalizedQuery) {
-      if (showSampleInsights && showSampleSources) {
+      if (extractedKeyPoints.length === 0 && showSampleSources) {
         return '这页已经先把可能形成的记忆线索、知识摘要和数据源处理链路铺出来了，你可以先按完整叙事去判断 1.0 和 2.0 是否对齐。';
       }
 
@@ -359,8 +446,8 @@ export default function MemoryTabView({
     }
 
     if (/最近|今天|推进|progress|recent/.test(normalizedQuery)) {
-      return insightCards.length > 0
-        ? `最近最清晰的一条主线是「${insightCards[0].title}」。它现在还挂在「${insightCards[0].source}」这条来源上，说明这段记忆仍在继续形成。`
+      return allInsightKnowledgeCards.length > 0
+        ? `最近最清晰的一条资产是「${allInsightKnowledgeCards[0].title}」。当前它还挂在「${allInsightKnowledgeCards[0].sources[0]?.label ?? 'Memory'}」这条来源上。`
         : `最近的推进主线还是围绕目标在走：${baseGoals.join('；')}。`;
     }
 
@@ -384,7 +471,7 @@ export default function MemoryTabView({
     if (/洞察|timeline|形成|signal|knowledge/.test(normalizedQuery)) {
       return extractedKeyPoints.length > 0
         ? `现在已经有 ${extractedKeyPoints.length} 张洞察卡片，最近一张是「${extractedKeyPoints[0].title || extractedKeyPoints[0].text}」。`
-        : `当前还没有真实提炼出的洞察卡片，但这页已经先把洞察摘要卡的展示方式铺出来了，像「${insightCards[0]?.title ?? 'Knowledge 暂不升级为一级导航，继续归属 Memory'}」这种，就是当前更接近的呈现方式。`;
+        : `当前还没有真实提炼出的洞察卡片，但这页已经先把资产卡的展示方式铺出来了，像「${allInsightKnowledgeCards[0]?.title ?? 'Knowledge 暂不升级为一级导航，继续归属 Memory'}」这种，就是当前更接近的呈现方式。`;
     }
 
     return `我先按 “${query}” 理解你的问题。你可以继续往下看基础记忆、洞察卡片和数据源列表，它们已经按 2.0 的展示方式排好了。`;
@@ -591,8 +678,8 @@ export default function MemoryTabView({
             meta={
               extractedKeyPoints.length > 0
                 ? `${extractedKeyPoints.length} 张卡片`
-                : showSampleInsights
-                ? `${knowledgeSummary.length} 张卡片`
+                : allInsightKnowledgeCards.length > 0
+                ? `${Math.min(allInsightKnowledgeCards.length, 6)} 张卡片`
                 : '等待首批卡片'
             }
             previewType="knowledge"
@@ -706,44 +793,32 @@ export default function MemoryTabView({
           </div>
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-2">
-          {insightCards.map(point => {
-              return (
-                <div
-                  key={point.id}
-                  role="button"
-                  tabIndex={0}
-                  onClick={onOpenKeyPointsDocument}
-                  onKeyDown={event => {
-                    if (event.key === 'Enter' || event.key === ' ') {
-                      event.preventDefault();
-                      onOpenKeyPointsDocument();
-                    }
-                  }}
-                  className="cursor-pointer rounded-[1.35rem] border border-stone-200 bg-white p-5 shadow-[0_10px_24px_rgba(28,25,23,0.04)] transition-all hover:border-stone-300 hover:bg-stone-50/60"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="inline-flex items-center gap-2 rounded-full bg-stone-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-500">
-                      <Clock3 className="h-3.5 w-3.5" />
-                      {formatDateLabel(point.createdAt)}
-                    </span>
-                  </div>
-
-                  <h4 className="mt-3 text-[15px] font-semibold tracking-tight text-stone-900">
-                    {point.title || point.text}
-                  </h4>
-                  <p className="mt-2 text-sm leading-6 text-stone-600">{point.text}</p>
-
-                  <div className="mt-4 flex items-center gap-3">
-                    <div className="inline-flex min-w-0 items-center gap-2 rounded-full bg-stone-100 px-3 py-1.5 text-[11px] font-medium text-stone-500">
-                      <FileSearch className="h-3.5 w-3.5 shrink-0" />
-                      <span className="truncate">{point.source}</span>
-                    </div>
-                  </div>
+        {(isAllInsightsViewOpen ? allInsightKnowledgeCards : insightPreviewCards).length === 0 ? null : (
+          <>
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              {(isAllInsightsViewOpen ? allInsightKnowledgeCards : insightPreviewCards).map(card => (
+                <div key={card.id}>
+                  <V2KnowledgeCard
+                    card={card}
+                    onCardClick={() => onOpenKeyPointsDocument()}
+                  />
                 </div>
-              );
-            })}
-        </div>
+              ))}
+            </div>
+
+            {allInsightKnowledgeCards.length > 6 && !isAllInsightsViewOpen ? (
+              <div className="flex justify-center pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsAllInsightsViewOpen(true)}
+                  className="text-sm font-medium text-stone-500 transition-colors hover:text-stone-800"
+                >
+                  查看全部
+                </button>
+              </div>
+            ) : null}
+          </>
+        )}
       </section>
 
       <section className="space-y-4">
