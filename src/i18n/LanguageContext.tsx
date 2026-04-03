@@ -344,7 +344,8 @@ const LanguageContext = createContext<LanguageContextType>({
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [lang, setLangState] = useState<Language>(() => {
     const stored = localStorage.getItem('mindx_lang');
-    return (stored === 'zh' || stored === 'en') ? stored : 'en';
+    if (stored === 'zh' || stored === 'en') return stored;
+    return navigator.language.toLowerCase().startsWith('zh') ? 'zh' : 'en';
   });
 
   const setLang = (newLang: Language) => {
