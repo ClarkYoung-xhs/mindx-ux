@@ -1595,19 +1595,6 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
             />
           </div>
 
-          <div className="pt-4 mt-2">
-            <button
-              onClick={() => navigate('/v2/workspace')}
-              className="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3 text-left shadow-sm shadow-stone-100 transition-all hover:bg-stone-50"
-            >
-              <div className="flex items-center gap-2 text-stone-900">
-                <Sparkles className="w-4 h-4 text-indigo-600" />
-                <span className="text-sm font-semibold">
-                  {lang === 'zh' ? '切换到 2.0' : 'Switch to 2.0'}
-                </span>
-              </div>
-            </button>
-          </div>
         </div>
 
         <div className="shrink-0 border-t border-stone-200 px-3 py-2 bg-[#F7F7F5] space-y-1">
