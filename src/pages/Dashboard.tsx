@@ -76,9 +76,10 @@ const initialAgents = [
 
 const currentUser = {
   id: 'u1',
-  name: 'Me',
-  email: 'you@example.com',
+  name: localStorage.getItem('mindx_user_name') || 'Me',
+  email: localStorage.getItem('mindx_logged_in') || 'you@example.com',
 };
+const activeWorkspaceIdGlobal = localStorage.getItem('mindx_workspace_id') || 'w1';
 
 function isProfilePlaceholder(value: string) {
   const normalized = value.trim();
@@ -843,8 +844,8 @@ export default function Dashboard() {
   const fallbackDocs = isNewUser
     ? [{ id: 'welcome', workspaceId: 'w1', name: initLang === 'zh' ? '欢迎使用 MindX' : 'Welcome to MindX', type: 'Smart Doc', date: initLang === 'zh' ? '刚刚' : 'Just now', lastModified: new Date().toISOString(), lastViewed: new Date().toISOString(), labels: ['Getting Started'], creatorName: 'Agent', creatorType: 'agent' as const, size: 8192, isNew: true, isRead: false, source: 'normal' as const }]
     : initialDocuments;
-  const { documents, setDocuments, loading: docsLoading, createDoc, updateDoc, deleteDoc } = useDocuments('w1', fallbackDocs);
-  const { activities, setActivities, loading: activitiesLoading, createActivity } = useActivities('w1', isNewUser ? [] : initialActivities);
+  const { documents, setDocuments, loading: docsLoading, createDoc, updateDoc, deleteDoc } = useDocuments(activeWorkspaceIdGlobal, fallbackDocs);
+  const { activities, setActivities, loading: activitiesLoading, createActivity } = useActivities(activeWorkspaceIdGlobal, isNewUser ? [] : initialActivities);
   const [activeTab, setActiveTabState] = useState<'documents' | 'activity' | 'agents' | 'members' | 'settings' | 'labels' | 'skills' | 'memory'>(() => {
     const params = new URLSearchParams(window.location.search);
     const tab = params.get('tab');
@@ -900,7 +901,7 @@ export default function Dashboard() {
 
   // Fetch key points from DB on mount; migrate localStorage → DB if DB is empty
   useEffect(() => {
-    fetch('/api/keypoints?workspace_id=w1')
+    fetch(`/api/keypoints?workspace_id=${activeWorkspaceIdGlobal}`)
       .then(r => r.ok ? r.json() : Promise.reject())
       .then((rows: any[]) => {
         if (rows.length > 0) {
@@ -915,7 +916,7 @@ export default function Dashboard() {
             for (const kp of localKPs) {
               fetch('/api/keypoints', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ workspace_id: 'w1', id: kp.id, title: kp.title, type: kp.type, text: kp.text, source: kp.source })
+                body: JSON.stringify({ workspace_id: activeWorkspaceIdGlobal, id: kp.id, title: kp.title, type: kp.type, text: kp.text, source: kp.source })
               }).catch(() => {});
             }
           } catch {}
@@ -1007,7 +1008,7 @@ export default function Dashboard() {
           fetch('/api/keypoints', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ workspace_id: 'w1', id: kp.id, title: kp.title, type: kp.type, text: kp.text, source: kp.source })
+            body: JSON.stringify({ workspace_id: activeWorkspaceIdGlobal, id: kp.id, title: kp.title, type: kp.type, text: kp.text, source: kp.source })
           }).catch(() => {});
         }
       }
@@ -1024,7 +1025,7 @@ export default function Dashboard() {
   // Fetch raw data from DB on mount; migrate localStorage → DB if DB is empty
   useEffect(() => {
     const fetchRawData = () => {
-      fetch('/api/rawdata?workspace_id=w1')
+      fetch(`/api/rawdata?workspace_id=${activeWorkspaceIdGlobal}`)
         .then(r => r.ok ? r.json() : Promise.reject())
         .then((rows: any[]) => {
           if (rows.length > 0) {
@@ -1043,7 +1044,7 @@ export default function Dashboard() {
                   const content = localStorage.getItem(`mindx_raw_${item.id}`) || item.content || '';
                   fetch('/api/rawdata', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ workspace_id: 'w1', id: item.id, name: item.name, type: item.type, size: item.size, source: item.source, content })
+                    body: JSON.stringify({ workspace_id: activeWorkspaceIdGlobal, id: item.id, name: item.name, type: item.type, size: item.size, source: item.source, content })
                   }).catch(() => {});
                 }
               }
@@ -1075,7 +1076,7 @@ export default function Dashboard() {
   });
 
   // Database-backed profile (Who am I + Goal)
-  const { profile, updateProfile } = useProfile('w1');
+  const { profile, updateProfile } = useProfile(activeWorkspaceIdGlobal);
   const whoAmIRaw = profile.whoami || localStorage.getItem('mindx_raw_whoami_doc') || '';
   const goalRaw = profile.goal || localStorage.getItem('mindx_raw_goal_doc') || '';
   const whoAmIDocContent = isProfilePlaceholder(whoAmIRaw) ? '' : whoAmIRaw;
@@ -1120,7 +1121,7 @@ Analyze the following text strictly from the perspective of "Who am I" and to se
         // Sync to DB
         fetch('/api/rawdata', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ workspace_id: 'w1', id: newItems[i].id, name: newItems[i].name, type: newItems[i].type, size: newItems[i].size, source: 'file', content: text })
+          body: JSON.stringify({ workspace_id: activeWorkspaceIdGlobal, id: newItems[i].id, name: newItems[i].name, type: newItems[i].type, size: newItems[i].size, source: 'file', content: text })
         }).catch(() => {});
       };
       reader.readAsText(file);
@@ -1145,7 +1146,7 @@ Analyze the following text strictly from the perspective of "Who am I" and to se
     // Sync to DB
     fetch('/api/rawdata', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ workspace_id: 'w1', id: itemId, name: title, type: 'TXT', size: newItem.size, source: 'paste', content: pasteContent })
+      body: JSON.stringify({ workspace_id: activeWorkspaceIdGlobal, id: itemId, name: title, type: 'TXT', size: newItem.size, source: 'paste', content: pasteContent })
     }).catch(() => {});
     setPasteTitle('');
     setPasteContent('');
@@ -2662,8 +2663,8 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                               <h4 className="text-sm font-bold text-stone-800 mb-2">{lang === 'zh' ? '安装命令' : 'Install Command'}</h4>
                               <p className="text-xs text-stone-500 mb-3">💡 {lang === 'zh' ? '复制粘贴到 Agent 对话中即可自动安装。' : 'Copy and paste into your Agent chat to auto-install.'}</p>
                               <div className="relative">
-                                <div className="bg-stone-50 border border-stone-200 rounded-xl p-4 pr-24 text-sm font-mono text-stone-700 leading-relaxed overflow-x-auto whitespace-pre-wrap">{`Install the MindX Docs skill. API endpoints:\n- GET https://mindx-ux.vercel.app/api/documents?workspace_id=w1 (list all documents)\n- POST https://mindx-ux.vercel.app/api/documents (create document, body: {workspace_id, name, type, content, creator_name, creator_type})\n- PUT https://mindx-ux.vercel.app/api/documents (update document, body: {id, name?, content?})\n- DELETE https://mindx-ux.vercel.app/api/documents?id=uuid (delete document)`}</div>
-                                <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(`Install the MindX Docs skill. API endpoints:\n- GET https://mindx-ux.vercel.app/api/documents?workspace_id=w1 (list all documents)\n- POST https://mindx-ux.vercel.app/api/documents (create document, body: {workspace_id, name, type, content, creator_name, creator_type})\n- PUT https://mindx-ux.vercel.app/api/documents (update document, body: {id, name?, content?})\n- DELETE https://mindx-ux.vercel.app/api/documents?id=uuid (delete document)`); setCopiedStates(prev => ({ ...prev, skillInstall: true })); setTimeout(() => setCopiedStates(prev => ({ ...prev, skillInstall: false })), 2000); }} className="absolute right-3 bottom-3 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-stone-900 hover:bg-stone-800 text-white text-xs font-medium transition-colors shadow-sm">{copiedStates['skillInstall'] ? <><Check className="w-3.5 h-3.5" />{lang === 'zh' ? '已复制' : 'Copied'}</> : <><Copy className="w-3.5 h-3.5" />{lang === 'zh' ? '复制' : 'Copy'}</>}</button>
+                                <div className="bg-stone-50 border border-stone-200 rounded-xl p-4 pr-24 text-sm font-mono text-stone-700 leading-relaxed overflow-x-auto whitespace-pre-wrap">{`Install the MindX Docs skill. API endpoints:\n- GET https://mindx-ux.vercel.app/api/documents?workspace_id=${activeWorkspaceIdGlobal} (list all documents)\n- POST https://mindx-ux.vercel.app/api/documents (create document, body: {workspace_id: "${activeWorkspaceIdGlobal}", name, type, content, creator_name, creator_type})\n- PUT https://mindx-ux.vercel.app/api/documents (update document, body: {id, name?, content?})\n- DELETE https://mindx-ux.vercel.app/api/documents?id=uuid (delete document)`}</div>
+                                <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(`Install the MindX Docs skill. API endpoints:\n- GET https://mindx-ux.vercel.app/api/documents?workspace_id=${activeWorkspaceIdGlobal} (list all documents)\n- POST https://mindx-ux.vercel.app/api/documents (create document, body: {workspace_id: "${activeWorkspaceIdGlobal}", name, type, content, creator_name, creator_type})\n- PUT https://mindx-ux.vercel.app/api/documents (update document, body: {id, name?, content?})\n- DELETE https://mindx-ux.vercel.app/api/documents?id=uuid (delete document)`); setCopiedStates(prev => ({ ...prev, skillInstall: true })); setTimeout(() => setCopiedStates(prev => ({ ...prev, skillInstall: false })), 2000); }} className="absolute right-3 bottom-3 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-stone-900 hover:bg-stone-800 text-white text-xs font-medium transition-colors shadow-sm">{copiedStates['skillInstall'] ? <><Check className="w-3.5 h-3.5" />{lang === 'zh' ? '已复制' : 'Copied'}</> : <><Copy className="w-3.5 h-3.5" />{lang === 'zh' ? '复制' : 'Copy'}</>}</button>
                               </div>
                             </div>
                             {/* Step 2 */}
@@ -2752,8 +2753,8 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                               <h4 className="text-sm font-bold text-stone-800 mb-2">{lang === 'zh' ? '安装命令' : 'Install Command'}</h4>
                               <p className="text-xs text-stone-500 mb-3">💡 {lang === 'zh' ? '复制粘贴到 Agent 对话中即可自动安装。' : 'Copy and paste into your Agent chat to auto-install.'}</p>
                               <div className="relative">
-                                <div className="bg-stone-50 border border-stone-200 rounded-xl p-4 pr-24 text-sm font-mono text-stone-700 leading-relaxed overflow-x-auto whitespace-pre-wrap">{`Install the MindX Memory skill. API endpoints:\n- GET/PUT https://mindx-ux.vercel.app/api/profile?workspace_id=w1 (user profile: whoami, goal)\n- GET/POST/PUT/DELETE https://mindx-ux.vercel.app/api/rawdata?workspace_id=w1 (knowledge base raw data)\n- GET/POST/DELETE https://mindx-ux.vercel.app/api/keypoints?workspace_id=w1 (extracted insights)\n- GET/POST https://mindx-ux.vercel.app/api/activities?workspace_id=w1 (activity logs)`}</div>
-                                <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(`Install the MindX Memory skill. API endpoints:\n- GET/PUT https://mindx-ux.vercel.app/api/profile?workspace_id=w1 (user profile: whoami, goal)\n- GET/POST/PUT/DELETE https://mindx-ux.vercel.app/api/rawdata?workspace_id=w1 (knowledge base raw data)\n- GET/POST/DELETE https://mindx-ux.vercel.app/api/keypoints?workspace_id=w1 (extracted insights)\n- GET/POST https://mindx-ux.vercel.app/api/activities?workspace_id=w1 (activity logs)`); setCopiedStates(prev => ({ ...prev, memoryInstall: true })); setTimeout(() => setCopiedStates(prev => ({ ...prev, memoryInstall: false })), 2000); }} className="absolute right-3 bottom-3 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-stone-900 hover:bg-stone-800 text-white text-xs font-medium transition-colors shadow-sm">{copiedStates['memoryInstall'] ? <><Check className="w-3.5 h-3.5" />{lang === 'zh' ? '已复制' : 'Copied'}</> : <><Copy className="w-3.5 h-3.5" />{lang === 'zh' ? '复制' : 'Copy'}</>}</button>
+                                <div className="bg-stone-50 border border-stone-200 rounded-xl p-4 pr-24 text-sm font-mono text-stone-700 leading-relaxed overflow-x-auto whitespace-pre-wrap">{`Install the MindX Memory skill. API endpoints:\n- GET/PUT https://mindx-ux.vercel.app/api/profile?workspace_id=${activeWorkspaceIdGlobal} (user profile: whoami, goal)\n- GET/POST/PUT/DELETE https://mindx-ux.vercel.app/api/rawdata?workspace_id=${activeWorkspaceIdGlobal} (knowledge base raw data)\n- GET/POST/DELETE https://mindx-ux.vercel.app/api/keypoints?workspace_id=${activeWorkspaceIdGlobal} (extracted insights)\n- GET/POST https://mindx-ux.vercel.app/api/activities?workspace_id=${activeWorkspaceIdGlobal} (activity logs)`}</div>
+                                <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(`Install the MindX Memory skill. API endpoints:\n- GET/PUT https://mindx-ux.vercel.app/api/profile?workspace_id=${activeWorkspaceIdGlobal} (user profile: whoami, goal)\n- GET/POST/PUT/DELETE https://mindx-ux.vercel.app/api/rawdata?workspace_id=${activeWorkspaceIdGlobal} (knowledge base raw data)\n- GET/POST/DELETE https://mindx-ux.vercel.app/api/keypoints?workspace_id=${activeWorkspaceIdGlobal} (extracted insights)\n- GET/POST https://mindx-ux.vercel.app/api/activities?workspace_id=${activeWorkspaceIdGlobal} (activity logs)`); setCopiedStates(prev => ({ ...prev, memoryInstall: true })); setTimeout(() => setCopiedStates(prev => ({ ...prev, memoryInstall: false })), 2000); }} className="absolute right-3 bottom-3 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-stone-900 hover:bg-stone-800 text-white text-xs font-medium transition-colors shadow-sm">{copiedStates['memoryInstall'] ? <><Check className="w-3.5 h-3.5" />{lang === 'zh' ? '已复制' : 'Copied'}</> : <><Copy className="w-3.5 h-3.5" />{lang === 'zh' ? '复制' : 'Copy'}</>}</button>
                               </div>
                             </div>
                             {/* Step 2 */}

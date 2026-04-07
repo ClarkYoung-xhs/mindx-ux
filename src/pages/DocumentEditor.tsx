@@ -523,7 +523,8 @@ export default function DocumentEditor() {
   const urlSource = new URLSearchParams(window.location.search).get('source');
   const isProfileSource = urlSource === 'whoami_doc' || urlSource === 'goal_doc';
   const profileKey = urlSource === 'whoami_doc' ? 'whoami' : 'goal';
-  const { profile, loading: profileLoading, updateProfile } = useProfile('w1');
+  const editorWorkspaceId = localStorage.getItem('mindx_workspace_id') || 'w1';
+  const { profile, loading: profileLoading, updateProfile } = useProfile(editorWorkspaceId);
 
   // Sync profile data into paragraphs when loaded from DB
   useEffect(() => {

@@ -34,7 +34,14 @@ export default function LandingPage() {
   const { t } = useLanguage();
 
   const handleAuth = (email: string) => {
+    // Compute workspace_id: quick-login shares 'w1', real email gets unique id
+    const wsId = (email === 'demo@mindx.com' || email === 'google@mindx.com' || email === 'facebook@mindx.com')
+      ? 'w1'
+      : `w-${email.replace(/@/g, '-').replace(/\./g, '-')}`;
+    const userName = email === 'demo@mindx.com' ? 'Me' : email.split('@')[0];
     localStorage.setItem('mindx_logged_in', email);
+    localStorage.setItem('mindx_workspace_id', wsId);
+    localStorage.setItem('mindx_user_name', userName);
     setShowAuth(false);
     navigate('/dashboard?onboarding=true');
   };
