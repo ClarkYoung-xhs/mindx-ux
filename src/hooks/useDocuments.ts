@@ -62,6 +62,10 @@ export function useDocuments(workspaceId: string, fallbackDocs: any[]) {
 
   useEffect(() => {
     fetchDocs();
+    const interval = setInterval(fetchDocs, 30_000);
+    const onVis = () => { if (document.visibilityState === 'visible') fetchDocs(); };
+    document.addEventListener('visibilitychange', onVis);
+    return () => { clearInterval(interval); document.removeEventListener('visibilitychange', onVis); };
   }, [fetchDocs]);
 
   const createDoc = useCallback(async (doc: Partial<DocRow>) => {

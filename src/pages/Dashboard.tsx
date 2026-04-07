@@ -1019,39 +1019,48 @@ export default function Dashboard() {
 
   // Memory upload states
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [rawDataItems, setRawDataItems] = useState<{id: string; name: string; type: string; size: number; uploadedAt: string; source: 'file' | 'paste'; content?: string}[]>(() => {
-    try { const saved = localStorage.getItem('mindx_raw_data_items'); return saved ? JSON.parse(saved) : []; } catch { return []; }
-  });
+  const [rawDataItems, setRawDataItems] = useState<{id: string; name: string; type: string; size: number; uploadedAt: string; source: 'file' | 'paste'; content?: string}[]>([]);
 
   // Fetch raw data from DB on mount; migrate localStorage → DB if DB is empty
   useEffect(() => {
-    fetch('/api/rawdata?workspace_id=w1')
-      .then(r => r.ok ? r.json() : Promise.reject())
-      .then((rows: any[]) => {
-        if (rows.length > 0) {
-          setRawDataItems(rows.map(r => ({
-            id: r.id, name: r.name, type: r.type, size: r.size,
-            uploadedAt: r.created_at, source: r.source as 'file' | 'paste', content: r.content
-          })));
-        } else {
-          // DB empty — migrate localStorage items to DB
-          try {
-            const saved = localStorage.getItem('mindx_raw_data_items');
-            const localItems = saved ? JSON.parse(saved) : [];
-            for (const item of localItems) {
-              const content = localStorage.getItem(`mindx_raw_${item.id}`) || item.content || '';
-              fetch('/api/rawdata', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ workspace_id: 'w1', id: item.id, name: item.name, type: item.type, size: item.size, source: item.source, content })
-              }).catch(() => {});
-            }
-          } catch {}
-        }
-      })
-      .catch(() => {});
+    const fetchRawData = () => {
+      fetch('/api/rawdata?workspace_id=w1')
+        .then(r => r.ok ? r.json() : Promise.reject())
+        .then((rows: any[]) => {
+          if (rows.length > 0) {
+            setRawDataItems(rows.map(r => ({
+              id: r.id, name: r.name, type: r.type, size: r.size,
+              uploadedAt: r.created_at, source: r.source as 'file' | 'paste', content: r.content
+            })));
+          } else {
+            // DB empty — migrate localStorage items to DB
+            try {
+              const saved = localStorage.getItem('mindx_raw_data_items');
+              const localItems = saved ? JSON.parse(saved) : [];
+              if (localItems.length > 0) {
+                setRawDataItems(localItems);
+                for (const item of localItems) {
+                  const content = localStorage.getItem(`mindx_raw_${item.id}`) || item.content || '';
+                  fetch('/api/rawdata', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ workspace_id: 'w1', id: item.id, name: item.name, type: item.type, size: item.size, source: item.source, content })
+                  }).catch(() => {});
+                }
+              }
+            } catch {}
+          }
+        })
+        .catch(() => {});
+    };
+    fetchRawData();
+    // Poll every 30s + visibility change for external updates
+    const interval = setInterval(fetchRawData, 30_000);
+    const onVis = () => { if (document.visibilityState === 'visible') fetchRawData(); };
+    document.addEventListener('visibilitychange', onVis);
+    return () => { clearInterval(interval); document.removeEventListener('visibilitychange', onVis); };
   }, []);
 
-  // Persist rawDataItems to localStorage on change
+  // Persist rawDataItems to localStorage as cache
   useEffect(() => {
     localStorage.setItem('mindx_raw_data_items', JSON.stringify(rawDataItems.map(({ content, ...rest }) => rest)));
   }, [rawDataItems]);
