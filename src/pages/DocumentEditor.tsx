@@ -313,7 +313,7 @@ export default function DocumentEditor() {
   const [isChatLog, setIsChatLog] = useState(false);
 
   // Sidebar states
-  const [showCommentsSidebar, setShowCommentsSidebar] = useState(true);
+  const [showCommentsSidebar, setShowCommentsSidebar] = useState(false); // hidden for demo phase
   const [showVersionHistory, setShowVersionHistory] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
@@ -325,6 +325,12 @@ export default function DocumentEditor() {
 
   // Export submenu state
   const [showExportSubmenu, setShowExportSubmenu] = useState(false);
+
+  // Page editor states
+  const [pageMode, setPageMode] = useState<"preview" | "code">("preview");
+  const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
+  const [showPublishModal, setShowPublishModal] = useState(false);
+  const [publishCopied, setPublishCopied] = useState(false);
 
   const queryString = window.location.search;
   const queryParams = new URLSearchParams(queryString);
@@ -1895,6 +1901,37 @@ export default function DocumentEditor() {
             <History className="w-4 h-4" /> 版本历史
           </button>
 
+          {/* Page Publish Button */}
+          {isPageDoc && (
+            <button
+              onClick={() => {
+                if (!publishedUrl) {
+                  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+                  let randomId = "";
+                  for (let i = 0; i < 8; i++)
+                    randomId += chars[Math.floor(Math.random() * chars.length)];
+                  setPublishedUrl(`https://mindx.tencent.com/p/${randomId}`);
+                }
+                setShowPublishModal(true);
+              }}
+              className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                publishedUrl
+                  ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200"
+                  : "bg-indigo-600 text-white hover:bg-indigo-700"
+              }`}
+            >
+              {publishedUrl ? (
+                <>
+                  <Globe className="w-4 h-4" /> 已发布
+                </>
+              ) : (
+                <>
+                  <Globe className="w-4 h-4" /> 发布
+                </>
+              )}
+            </button>
+          )}
+
           {/* Notion-style Share Popover */}
           <div className="relative">
             <button
@@ -2872,7 +2909,9 @@ export default function DocumentEditor() {
           className="flex-1 overflow-y-auto p-8 lg:p-12 bg-white"
           ref={editorRef}
         >
-          <div className="max-w-3xl mx-auto space-y-6">
+          <div
+            className={`mx-auto space-y-6 ${isBlockEditorDoc ? "max-w-[960px]" : "w-full max-w-full px-4 lg:px-8"}`}
+          >
             {isBlockEditorDoc ? (
               <BlockList
                 blocks={resolvedBlocks!}
@@ -2889,10 +2928,83 @@ export default function DocumentEditor() {
                 )}
               </div>
             ) : isPageDoc ? (
-              <div className="flex flex-col items-center justify-center py-24 text-stone-400">
-                <FileText className="w-16 h-16 mb-4 opacity-30" />
-                <p className="text-lg font-medium">页面功能即将上线</p>
-                <p className="text-sm mt-1">Page feature coming soon</p>
+              <div className="w-full">
+                {/* Preview / Code Mode Switch */}
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="inline-flex rounded-lg border border-stone-200 p-0.5 bg-stone-50">
+                    <button
+                      onClick={() => setPageMode("preview")}
+                      className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                        pageMode === "preview"
+                          ? "bg-white text-stone-900 shadow-sm border border-stone-200"
+                          : "text-stone-500 hover:text-stone-700"
+                      }`}
+                    >
+                      Preview
+                    </button>
+                    <button
+                      onClick={() => setPageMode("code")}
+                      className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                        pageMode === "code"
+                          ? "bg-white text-stone-900 shadow-sm border border-stone-200"
+                          : "text-stone-500 hover:text-stone-700"
+                      }`}
+                    >
+                      Code
+                    </button>
+                  </div>
+                  {contextDoc?.boundSheets &&
+                    contextDoc.boundSheets.length > 0 && (
+                      <div className="flex items-center gap-2 ml-4 text-xs text-stone-400">
+                        <span>绑定数据源：</span>
+                        {contextDoc.boundSheets.map((sheetId) => (
+                          <span
+                            key={sheetId}
+                            className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded font-mono text-[11px]"
+                          >
+                            {sheetId}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                </div>
+
+                {/* Content Area */}
+                {pageMode === "preview" ? (
+                  contextDoc?.htmlContent ? (
+                    <iframe
+                      sandbox="allow-scripts allow-same-origin"
+                      srcDoc={contextDoc.htmlContent}
+                      className="w-full border border-stone-200 rounded-lg"
+                      style={{
+                        height: "calc(100vh - 240px)",
+                        minHeight: "500px",
+                      }}
+                      title={contextDoc.name}
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-24 text-stone-400">
+                      <FileText className="w-16 h-16 mb-4 opacity-30" />
+                      <p className="text-lg font-medium">暂无页面内容</p>
+                      <p className="text-sm mt-1">No HTML content available</p>
+                    </div>
+                  )
+                ) : (
+                  <div className="relative">
+                    <pre
+                      className="bg-stone-900 text-stone-100 rounded-lg p-6 overflow-auto text-sm leading-relaxed font-mono"
+                      style={{
+                        height: "calc(100vh - 240px)",
+                        minHeight: "500px",
+                        tabSize: 2,
+                      }}
+                    >
+                      <code>
+                        {contextDoc?.htmlContent ?? "// No HTML content"}
+                      </code>
+                    </pre>
+                  </div>
+                )}
               </div>
             ) : isChatLog ? (
               <div className="space-y-8">
@@ -3831,6 +3943,68 @@ export default function DocumentEditor() {
             setRefExpandRow(null);
           }}
         />
+      )}
+
+      {/* Page Publish Modal */}
+      {showPublishModal && publishedUrl && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/40 z-50"
+            onClick={() => {
+              setShowPublishModal(false);
+              setPublishCopied(false);
+            }}
+          />
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-white rounded-xl shadow-2xl border border-stone-200 p-6 w-[420px]">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center">
+                <Globe className="w-5 h-5 text-emerald-600" />
+              </div>
+              <div>
+                <h3 className="text-base font-semibold text-stone-900">
+                  已发布到互联网
+                </h3>
+                <p className="text-xs text-stone-500">
+                  任何拥有链接的人都可以访问此页面
+                </p>
+              </div>
+            </div>
+            <div className="bg-stone-50 border border-stone-200 rounded-lg p-3 mb-4">
+              <p className="text-sm text-stone-700 font-mono break-all">
+                {publishedUrl}
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(publishedUrl);
+                  setPublishCopied(true);
+                  setTimeout(() => setPublishCopied(false), 2000);
+                }}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
+              >
+                {publishCopied ? (
+                  <>
+                    <Check className="w-4 h-4" /> 已复制
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-4 h-4" /> 复制链接
+                  </>
+                )}
+              </button>
+              <button
+                onClick={() => {
+                  setShowPublishModal(false);
+                  setPublishCopied(false);
+                }}
+                className="px-4 py-2 bg-stone-100 text-stone-700 rounded-lg text-sm font-medium hover:bg-stone-200 transition-colors"
+              >
+                关闭
+              </button>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

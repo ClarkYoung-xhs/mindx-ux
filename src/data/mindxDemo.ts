@@ -52,6 +52,8 @@ export interface WorkspaceDoc {
   size: number;
   blocks?: Block[];
   sheetData?: SheetData;
+  htmlContent?: string; // For Page type: full HTML source code
+  boundSheets?: string[]; // For Page type: bound Smart Sheet IDs
 }
 
 export interface Activity {
@@ -482,6 +484,20 @@ export const initialActivities: Activity[] = [
     details:
       "Initialized inventory database with 3 SKUs and real-time stock tracking",
     timestamp: "2026-04-05T10:00:00Z",
+  },
+  {
+    id: "act11",
+    workspaceId: "w1",
+    userId: "a1",
+    userName: "Claude Assistant",
+    userType: "agent",
+    action: "created",
+    targetName: "华中区-星巴克加盟商订货看板",
+    targetType: "Page",
+    docId: "page-tob-client-portal",
+    details:
+      "AI Agent generated a live client portal page with dynamic catalog (bound to Inventory_DB) and order tracking (bound to Order_DB). Ready to publish as external link.",
+    timestamp: "2026-04-09T11:00:00Z",
   },
 ];
 

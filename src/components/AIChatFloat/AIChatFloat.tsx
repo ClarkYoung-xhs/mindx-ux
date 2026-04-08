@@ -15,6 +15,10 @@ import {
   matchTocPreset,
 } from "../../data/tocAiChatMockData";
 import { analysisReportBlocks } from "../../data/analysisReportBlocks";
+import {
+  tobClientPortalHtml,
+  tocWealthDashboardHtml,
+} from "../../data/pageMockData";
 import type { WorkspaceDoc } from "../../data/mindxDemo";
 
 // ---------------------------------------------------------------------------
@@ -97,6 +101,40 @@ const AIChatFloat: React.FC = () => {
         addDocument(reportDoc);
       } else if (preset.sideEffect === "addCrmRow") {
         addSheetRow("sheet-crm", shrekyanRow);
+      } else if (preset.sideEffect === "createToBPage") {
+        const pageDoc: WorkspaceDoc = {
+          id: "page-tob-client-portal",
+          workspaceId: "w1",
+          name: "华中区-星巴克加盟商订货看板",
+          type: "Page",
+          date: "Today",
+          lastModified: new Date().toISOString(),
+          lastViewed: new Date().toISOString(),
+          labels: ["Page", "B2B Portal", "Live Catalog"],
+          creatorName: "AI Agent",
+          creatorType: "agent",
+          size: 18432,
+          htmlContent: tobClientPortalHtml,
+          boundSheets: ["sheet-inventory", "sheet-crm", "sheet-orders"],
+        };
+        addDocument(pageDoc);
+      } else if (preset.sideEffect === "createToCPage") {
+        const pageDoc: WorkspaceDoc = {
+          id: "toc-page-wealth-dashboard",
+          workspaceId: "w-toc",
+          name: "财富视图",
+          type: "Page",
+          date: "Today",
+          lastModified: new Date().toISOString(),
+          lastViewed: new Date().toISOString(),
+          labels: ["Page", "Dashboard", "Widget"],
+          creatorName: "WorkBuddy",
+          creatorType: "agent",
+          size: 12288,
+          htmlContent: tocWealthDashboardHtml,
+          boundSheets: ["toc-sheet-asset-nav", "toc-sheet-alpha-sub"],
+        };
+        addDocument(pageDoc);
       } else if (preset.sideEffect === "updateAssetNav") {
         // toC scenario 3: simulate Crypto rebalance to USDC
         setDocuments((prev) =>

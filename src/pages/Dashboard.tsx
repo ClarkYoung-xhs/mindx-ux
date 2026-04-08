@@ -191,6 +191,9 @@ export default function Dashboard() {
       setActiveWorkspaceId(initialWorkspaces[0]?.id ?? "w1");
       setWorkspaces(initialWorkspaces);
     }
+    // Reset absence summary card visibility on workspace switch
+    setAbsenceSummaryDismissed(false);
+    localStorage.setItem("mindx_absence_dismissed", "false");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentWorkspaceType]);
 

@@ -18,7 +18,12 @@ export interface ChatPreset {
   fullCommand: string; // full command text sent as user message
   matchKeywords: string[]; // if user input contains any keyword → match
   mockReply: ReplySegment[]; // segments composing the AI reply
-  sideEffect?: "createAnalysisReport" | "addCrmRow" | "updateAssetNav";
+  sideEffect?:
+    | "createAnalysisReport"
+    | "addCrmRow"
+    | "updateAssetNav"
+    | "createToBPage"
+    | "createToCPage";
 }
 
 /**
@@ -59,9 +64,45 @@ const addCustomerPreset: ChatPreset = {
 };
 
 /**
+ * Preset 3: Generate client portal Page
+ */
+const clientPortalPagePreset: ChatPreset = {
+  id: "preset-client-portal-page",
+  chipLabel: "生成经销商订货看板",
+  fullCommand: "为华中区星巴克加盟商生成专属订货看板",
+  matchKeywords: ["经销商", "订货看板", "星巴克", "门户", "生成", "看板"],
+  mockReply: [
+    {
+      text: "已为您生成《华中区-星巴克加盟商订货看板》。该页面包含两个核心模块：\n\n",
+    },
+    {
+      text: "**动态商品视图**（绑定全局库存表，已预设 SKU 过滤器和专属折扣 9 折）\n",
+    },
+    {
+      text: "**履约进度视图**（绑定订单流水表，展示在途订单）\n\n",
+    },
+    {
+      text: "点击查看 → ",
+    },
+    {
+      text: "🌐 华中区-星巴克加盟商订货看板",
+      link: "/document?id=page-tob-client-portal&type=page&from=v2-workspace",
+    },
+    {
+      text: "\n\n该页面可通过右上角「发布」按钮生成对外链接，嵌入企业微信的外部联系人画册或作为独立服务号菜单使用。经销商手机端打开后，库存和价格数据会基于 CRDT 协议实时同步。",
+    },
+  ],
+  sideEffect: "createToBPage",
+};
+
+/**
  * All presets — order determines chip display order.
  */
-export const chatPresets: ChatPreset[] = [analysisPreset, addCustomerPreset];
+export const chatPresets: ChatPreset[] = [
+  analysisPreset,
+  addCustomerPreset,
+  clientPortalPagePreset,
+];
 
 /**
  * Default reply when no preset matches.

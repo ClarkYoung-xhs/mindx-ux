@@ -130,12 +130,45 @@ const cryptoRebalancePreset: ChatPreset = {
 };
 
 /**
+ * Preset 4: Generate wealth dashboard Page
+ */
+const wealthDashboardPagePreset: ChatPreset = {
+  id: "toc-preset-wealth-dashboard-page",
+  chipLabel: "生成财富视图 Dashboard",
+  fullCommand: "生成我的财富视图 Dashboard",
+  matchKeywords: ["财富视图", "Dashboard", "控制中心", "Widget", "生成"],
+  mockReply: [
+    {
+      text: "已为您生成《财富视图》。该页面嵌入两个核心 Block：\n\n",
+    },
+    {
+      text: "**资产净值分布饼图**（绑定全球资产配置总表，实时展示 Equity / Crypto / Cash / Fund 各类别 NAV 占比）\n",
+    },
+    {
+      text: "**下周续费提醒**（绑定高价值信息订阅账簿，筛选未来 7 天内到期的订阅）\n\n",
+    },
+    {
+      text: "点击查看 → ",
+    },
+    {
+      text: "🌐 财富视图",
+      link: "/document?id=toc-page-wealth-dashboard&type=page&from=v2-workspace",
+    },
+    {
+      text: "\n\n支持发布为手机桌面 Widget 或 PWA 轻应用。当持仓价格变动或记录新开销时，Widget 上的数据会基于 CRDT 协议静默刷新，保持毫秒级的全局数据一致性。",
+    },
+  ],
+  sideEffect: "createToCPage",
+};
+
+/**
  * All toC presets — order determines chip display order.
  */
 export const tocChatPresets: ChatPreset[] = [
   nvdaAlertPreset,
   macroReportPreset,
   cryptoRebalancePreset,
+  wealthDashboardPagePreset,
 ];
 
 /**

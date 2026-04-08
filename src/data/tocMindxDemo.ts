@@ -276,4 +276,18 @@ export const tocInitialActivities: Activity[] = [
       "Clipped A16Z State of Crypto 2026 report. AI extracted: DeFi TVL $200B, Lido 32% market share, AI×Crypto emerging.",
     timestamp: "2026-03-28T14:00:00Z",
   },
+  {
+    id: "toc-act11",
+    workspaceId: "w-toc",
+    userId: "a1",
+    userName: "Claude Assistant",
+    userType: "agent",
+    action: "created",
+    targetName: "财富视图",
+    targetType: "Page",
+    docId: "toc-page-wealth-dashboard",
+    details:
+      "AI Agent generated a wealth dashboard page with dynamic NAV pie chart (bound to Asset Allocation Sheet) and upcoming renewal reminders (bound to Alpha Subscription Ledger). Supports PWA widget deployment.",
+    timestamp: "2026-04-09T09:30:00Z",
+  },
 ];
