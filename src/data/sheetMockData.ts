@@ -1,6 +1,7 @@
 import type { SheetData } from "../types/sheet";
 import { BlockType } from "../types/block";
 import type { Block } from "../types/block";
+import { tocAllSheets } from "./tocSheetMockData";
 
 /**
  * Table 1: Inventory_DB — Global SKU & Dynamic Inventory
@@ -1557,4 +1558,5 @@ export const allSheets: Record<string, SheetData> = {
   "sheet-crm": crmSheet,
   "sheet-orders": ordersSheet,
   "sheet-suppliers": suppliersSheet,
+  ...tocAllSheets,
 };

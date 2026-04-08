@@ -18,7 +18,7 @@ export interface ChatPreset {
   fullCommand: string; // full command text sent as user message
   matchKeywords: string[]; // if user input contains any keyword → match
   mockReply: ReplySegment[]; // segments composing the AI reply
-  sideEffect?: "createAnalysisReport" | "addCrmRow";
+  sideEffect?: "createAnalysisReport" | "addCrmRow" | "updateAssetNav";
 }
 
 /**

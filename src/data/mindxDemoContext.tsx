@@ -33,7 +33,13 @@ import {
   type SourceLink,
   type WorkspaceDoc,
 } from "./mindxDemo";
+import { tocInitialDocuments, tocInitialActivities } from "./tocMindxDemo";
+import { tocCrossReferences } from "./tocCrossReferences";
+import { crossReferences } from "./crossReferences";
+import type { CrossReference } from "../types/crossRef";
 import type { SheetRow } from "../types/sheet";
+
+export type WorkspaceType = "toB" | "toC";
 
 interface MindXDemoContextValue {
   workspaces: DemoWorkspace[];
@@ -70,6 +76,9 @@ interface MindXDemoContextValue {
   setAgentWritebacks: React.Dispatch<React.SetStateAction<AgentWriteback[]>>;
   addDocument: (doc: WorkspaceDoc) => void;
   addSheetRow: (sheetId: string, row: SheetRow) => void;
+  currentWorkspaceType: WorkspaceType;
+  switchWorkspace: (type: WorkspaceType) => void;
+  currentCrossReferences: CrossReference[];
 }
 
 const MindXDemoContext = createContext<MindXDemoContextValue | null>(null);
@@ -83,6 +92,10 @@ export function MindXDemoProvider({ children }: { children: React.ReactNode }) {
   const [permissions, setPermissions] = useState(initialPermissions);
   const [documents, setDocuments] = useState(initialDocuments);
   const [activities, setActivities] = useState(initialActivities);
+  const [currentWorkspaceType, setCurrentWorkspaceType] =
+    useState<WorkspaceType>("toB");
+  const [currentCrossReferences, setCurrentCrossReferences] =
+    useState<CrossReference[]>(crossReferences);
   const [memoryAssets, setMemoryAssets] = useState(initialMemoryAssets);
   const [memoryDataSources, setMemoryDataSources] = useState(
     initialMemoryDataSources,
@@ -125,6 +138,19 @@ export function MindXDemoProvider({ children }: { children: React.ReactNode }) {
     );
   }, []);
 
+  const switchWorkspace = useCallback((type: WorkspaceType) => {
+    setCurrentWorkspaceType(type);
+    if (type === "toB") {
+      setDocuments(initialDocuments);
+      setActivities(initialActivities);
+      setCurrentCrossReferences(crossReferences);
+    } else {
+      setDocuments(tocInitialDocuments);
+      setActivities(tocInitialActivities);
+      setCurrentCrossReferences(tocCrossReferences);
+    }
+  }, []);
+
   const value = useMemo<MindXDemoContextValue>(
     () => ({
       workspaces,
@@ -157,12 +183,18 @@ export function MindXDemoProvider({ children }: { children: React.ReactNode }) {
       setAgentWritebacks,
       addDocument,
       addSheetRow,
+      currentWorkspaceType,
+      switchWorkspace,
+      currentCrossReferences,
     }),
     [
       activities,
       activeWorkspaceId,
       addDocument,
       addSheetRow,
+      currentWorkspaceType,
+      switchWorkspace,
+      currentCrossReferences,
       agentConnections,
       agentWritebacks,
       agents,

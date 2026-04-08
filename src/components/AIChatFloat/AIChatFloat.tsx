@@ -9,6 +9,11 @@ import {
   type ChatPreset,
   type ReplySegment,
 } from "../../data/aiChatMockData";
+import {
+  tocChatPresets,
+  tocDefaultReply,
+  matchTocPreset,
+} from "../../data/tocAiChatMockData";
 import { analysisReportBlocks } from "../../data/analysisReportBlocks";
 import type { WorkspaceDoc } from "../../data/mindxDemo";
 
@@ -34,7 +39,31 @@ const AIChatFloat: React.FC = () => {
   const executedEffects = useRef<Set<string>>(new Set());
   const listRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const { addDocument, addSheetRow } = useMindXDemo();
+  const { addDocument, addSheetRow, currentWorkspaceType, setDocuments } =
+    useMindXDemo();
+
+  // Derive workspace-aware presets
+  const activePresets =
+    currentWorkspaceType === "toC" ? tocChatPresets : chatPresets;
+  const activeDefaultReply =
+    currentWorkspaceType === "toC" ? tocDefaultReply : defaultReply;
+  const activeMatchPreset =
+    currentWorkspaceType === "toC" ? matchTocPreset : matchPreset;
+
+  // Auto-clear chat when workspace changes
+  const prevWorkspaceRef = useRef(currentWorkspaceType);
+  useEffect(() => {
+    if (prevWorkspaceRef.current !== currentWorkspaceType) {
+      prevWorkspaceRef.current = currentWorkspaceType;
+      // Clear all timers
+      clearTimeout(thinkingTimer.current);
+      clearTimeout(replyTimer.current);
+      sendingRef.current = false;
+      setSending(false);
+      setMessages([]);
+      executedEffects.current.clear();
+    }
+  }, [currentWorkspaceType]);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -68,9 +97,49 @@ const AIChatFloat: React.FC = () => {
         addDocument(reportDoc);
       } else if (preset.sideEffect === "addCrmRow") {
         addSheetRow("sheet-crm", shrekyanRow);
+      } else if (preset.sideEffect === "updateAssetNav") {
+        // toC scenario 3: simulate Crypto rebalance to USDC
+        setDocuments((prev) =>
+          prev.map((doc) => {
+            if (doc.id !== "toc-sheet-asset-nav" || !doc.sheetData) return doc;
+            return {
+              ...doc,
+              sheetData: {
+                ...doc.sheetData,
+                rows: doc.sheetData.rows.map((row) => {
+                  if (row.id === "asset-row-crypto") {
+                    return {
+                      ...row,
+                      cells: {
+                        ...row.cells,
+                        holding: "BTC 2.0, ETH 14, SOL 200",
+                        marketPrice: "$198,300",
+                        nav: "$198,300",
+                        weight: "33.2%",
+                      },
+                    };
+                  }
+                  if (row.id === "asset-row-cash") {
+                    return {
+                      ...row,
+                      cells: {
+                        ...row.cells,
+                        holding: "USD 146,000",
+                        marketPrice: "$146,000",
+                        nav: "$146,000",
+                        weight: "24.4%",
+                      },
+                    };
+                  }
+                  return row;
+                }),
+              },
+            };
+          }),
+        );
       }
     },
-    [addDocument, addSheetRow],
+    [addDocument, addSheetRow, setDocuments],
   );
 
   // Timer refs to survive StrictMode double-invoke & re-renders
@@ -99,8 +168,8 @@ const AIChatFloat: React.FC = () => {
       setInput("");
 
       // Pre-compute the matched preset & reply so the timer closure is simple
-      const matched = matchPreset(text);
-      const replySegments = matched ? matched.mockReply : defaultReply;
+      const matched = activeMatchPreset(text);
+      const replySegments = matched ? matched.mockReply : activeDefaultReply;
       const userMsg: ChatMessage = {
         id: `msg-${Date.now()}`,
         role: "user",
@@ -151,7 +220,7 @@ const AIChatFloat: React.FC = () => {
         }
       }, 1600);
     },
-    [executeSideEffect],
+    [executeSideEffect, activeMatchPreset, activeDefaultReply],
   );
 
   const handleClear = () => {
@@ -489,7 +558,7 @@ const AIChatFloat: React.FC = () => {
               flexShrink: 0,
             }}
           >
-            {chatPresets.map((preset) => (
+            {activePresets.map((preset) => (
               <button
                 key={preset.id}
                 onClick={() => sendMessage(preset.fullCommand)}

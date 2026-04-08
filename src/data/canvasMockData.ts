@@ -1,6 +1,7 @@
 import type { Block } from "../types/block";
 import { BlockType } from "../types/block";
 import { analysisReportBlocks } from "./analysisReportBlocks";
+import { tocAllCanvasBlocks } from "./tocCanvasMockData";
 
 /**
  * Document 1: Key Client Q1 Visit & Credit Adjustment Notes
@@ -621,4 +622,5 @@ export const allCanvasBlocks: Record<string, Block[]> = {
   "canvas-supply-alert": supplyAlertBlocks,
   "canvas-client-portal": clientPortalBlocks,
   "canvas-analysis-report": analysisReportBlocks,
+  ...tocAllCanvasBlocks,
 };
