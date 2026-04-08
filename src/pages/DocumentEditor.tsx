@@ -1,14 +1,20 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { motion } from 'motion/react';
-import { useNavigate } from 'react-router-dom';
-import { useProfile } from '../hooks/useProfile';
-import { useMindXDemo } from '../data/mindxDemoContext';
-import { 
-  ArrowLeft, 
-  MessageSquare, 
-  Share2, 
-  Bot, 
-  Clock, 
+import React, { useState, useEffect, useMemo, useRef } from "react";
+import { motion } from "motion/react";
+import { useNavigate } from "react-router-dom";
+import { useProfile } from "../hooks/useProfile";
+import { useMindXDemo } from "../data/mindxDemoContext";
+import BlockList from "../components/BlockRenderer/BlockList";
+import SheetView from "../components/SheetRenderer/SheetView";
+import RowExpandModal from "../components/SheetRenderer/RowExpandModal";
+import { allCanvasBlocks } from "../data/canvasMockData";
+import { allSheets } from "../data/sheetMockData";
+import type { SheetData, SheetRow } from "../types/sheet";
+import {
+  ArrowLeft,
+  MessageSquare,
+  Share2,
+  Bot,
+  Clock,
   Sparkles,
   RefreshCw,
   MoreHorizontal,
@@ -38,28 +44,28 @@ import {
   Image,
   Undo2,
   Redo2,
-  Search
-} from 'lucide-react';
+  Search,
+} from "lucide-react";
 
 interface Paragraph {
   id: string;
   text: string;
   author: string;
-  authorType: 'human' | 'agent';
+  authorType: "human" | "agent";
 }
 
 interface ChatMessage {
   id: string;
   text: string;
   sender: string;
-  senderType: 'human' | 'agent';
+  senderType: "human" | "agent";
   time: string;
 }
 
 interface VersionHistory {
   id: string;
   author: string;
-  authorType: 'human' | 'agent';
+  authorType: "human" | "agent";
   timestamp: string;
   date: string;
   changes: string;
@@ -69,24 +75,24 @@ interface VersionHistory {
 interface AgentPermission {
   agentId: string;
   agentName: string;
-  permission: 'read' | 'edit';
+  permission: "read" | "edit";
 }
 
 interface Collaborator {
   id: string;
   name: string;
-  type: 'human' | 'agent';
+  type: "human" | "agent";
   isActive: boolean;
   cursorPosition?: number; // Paragraph index where cursor is
   color: string; // For cursor flag color
 }
 
-type CommentThreadType = 'comment' | 'modify';
+type CommentThreadType = "comment" | "modify";
 
 interface CommentMessage {
   id: string;
   author: string;
-  authorType: 'human' | 'agent';
+  authorType: "human" | "agent";
   text: string;
   time: string;
 }
@@ -106,32 +112,35 @@ interface CommentThread {
 }
 
 function paragraphSnapshot(paragraphs: Paragraph[]) {
-  return JSON.stringify(paragraphs.map(paragraph => paragraph.text));
+  return JSON.stringify(paragraphs.map((paragraph) => paragraph.text));
 }
 
 function normalizeTagList(text: string) {
   return text
     .split(/[\s,，]+/)
-    .map(token => token.replace(/^#/, '').trim())
+    .map((token) => token.replace(/^#/, "").trim())
     .filter(Boolean);
 }
 
 function firstBodyParagraph(paragraphs: Paragraph[]) {
   return (
     paragraphs.find(
-      paragraph => paragraph.text.trim() && !paragraph.text.trim().startsWith('#')
-    )?.text ?? ''
+      (paragraph) =>
+        paragraph.text.trim() && !paragraph.text.trim().startsWith("#"),
+    )?.text ?? ""
   );
 }
 
 function findSectionContent(paragraphs: Paragraph[], heading: string) {
-  const headingIndex = paragraphs.findIndex(paragraph => paragraph.text.trim() === heading);
+  const headingIndex = paragraphs.findIndex(
+    (paragraph) => paragraph.text.trim() === heading,
+  );
   if (headingIndex === -1) return [];
 
   const collected: string[] = [];
   for (let index = headingIndex + 1; index < paragraphs.length; index += 1) {
     const text = paragraphs[index].text.trim();
-    if (text.startsWith('### ')) break;
+    if (text.startsWith("### ")) break;
     if (text) collected.push(text);
   }
 
@@ -140,138 +149,150 @@ function findSectionContent(paragraphs: Paragraph[], heading: string) {
 
 function splitSectionLines(paragraphs: Paragraph[], heading: string) {
   return findSectionContent(paragraphs, heading)
-    .flatMap(line => line.split('\n'))
-    .map(line => line.trim())
+    .flatMap((line) => line.split("\n"))
+    .map((line) => line.trim())
     .filter(Boolean);
 }
 
 function stripOrderedPrefix(line: string) {
-  return line.replace(/^\d+\.\s+/, '');
+  return line.replace(/^\d+\.\s+/, "");
 }
 
 function readEditableText(node: HTMLElement) {
-  const rawText = node.textContent ?? '';
-  return rawText.replace(/^(\d+\.)\s+\1\s+/gm, '$1 ');
+  const rawText = node.textContent ?? "";
+  return rawText.replace(/^(\d+\.)\s+\1\s+/gm, "$1 ");
 }
 
 function isProfileLoadingPlaceholder(value: string) {
   const normalized = value.trim();
-  return normalized === '加载中...' || normalized === 'Loading...';
+  return normalized === "加载中..." || normalized === "Loading...";
 }
 
 function paragraphStateFromDom(paragraphs: Paragraph[]) {
-  if (typeof document === 'undefined') return paragraphs;
+  if (typeof document === "undefined") return paragraphs;
 
-  return paragraphs.map(paragraph => {
-    const node = document.querySelector<HTMLElement>(`[data-paragraph-id="${paragraph.id}"]`);
+  return paragraphs.map((paragraph) => {
+    const node = document.querySelector<HTMLElement>(
+      `[data-paragraph-id="${paragraph.id}"]`,
+    );
     if (!node) return paragraph;
     return { ...paragraph, text: readEditableText(node) || paragraph.text };
   });
 }
 
-function buildAgentReply(type: CommentThreadType, highlight: string, userText: string): string[] {
-  if (type === 'modify') {
-    return [`I've reviewed the suggestion about "${highlight}". ${userText ? `Regarding your note: "${userText}" — ` : ''}I'll update the document accordingly.`];
+function buildAgentReply(
+  type: CommentThreadType,
+  highlight: string,
+  userText: string,
+): string[] {
+  if (type === "modify") {
+    return [
+      `I've reviewed the suggestion about "${highlight}". ${userText ? `Regarding your note: "${userText}" — ` : ""}I'll update the document accordingly.`,
+    ];
   }
-  return [`Thanks for the comment on "${highlight}". ${userText ? `You mentioned: "${userText}" — ` : ''}I'll take this into consideration.`];
+  return [
+    `Thanks for the comment on "${highlight}". ${userText ? `You mentioned: "${userText}" — ` : ""}I'll take this into consideration.`,
+  ];
 }
 
-function buildDefaultProjectComments(externalCollaboratorName: string): CommentThread[] {
+function buildDefaultProjectComments(
+  externalCollaboratorName: string,
+): CommentThread[] {
   return [
     {
       id: 1,
-      highlight: 'Data Service',
-      type: 'modify',
+      highlight: "Data Service",
+      type: "modify",
       resolved: false,
-      createdAtLabel: '10 mins ago',
-      draftText: '',
+      createdAtLabel: "10 mins ago",
+      draftText: "",
       isDraft: false,
       isReplying: false,
-      replyDraftText: '',
+      replyDraftText: "",
       isAwaitingReply: false,
       messages: [
         {
-          id: '1-agent-initial',
-          author: 'Claude 3.5 Sonnet',
-          authorType: 'agent',
-          text: 'I suggest we use Redis for caching to improve the performance of the Data Service.',
-          time: '10 mins ago'
-        }
-      ]
+          id: "1-agent-initial",
+          author: "Claude 3.5 Sonnet",
+          authorType: "agent",
+          text: "I suggest we use Redis for caching to improve the performance of the Data Service.",
+          time: "10 mins ago",
+        },
+      ],
     },
     {
       id: 2,
-      highlight: '### 3. Deployment',
-      type: 'comment',
+      highlight: "### 3. Deployment",
+      type: "comment",
       resolved: true,
-      createdAtLabel: '5 mins ago',
-      draftText: '',
+      createdAtLabel: "5 mins ago",
+      draftText: "",
       isDraft: false,
       isReplying: false,
-      replyDraftText: '',
+      replyDraftText: "",
       isAwaitingReply: false,
       messages: [
         {
-          id: '2-human-initial',
+          id: "2-human-initial",
           author: externalCollaboratorName,
-          authorType: 'human',
-          text: 'Please also mention the staging approval step before deployment so our review flow is clear.',
-          time: '5 mins ago'
+          authorType: "human",
+          text: "Please also mention the staging approval step before deployment so our review flow is clear.",
+          time: "5 mins ago",
         },
         {
-          id: '2-agent-initial',
-          author: 'Claude 3.5 Sonnet',
-          authorType: 'agent',
-          text: 'Makes sense. I can add a staging approval checkpoint before release so the rollout path is explicit.',
-          time: '4 mins ago'
-        }
-      ]
-    }
+          id: "2-agent-initial",
+          author: "Claude 3.5 Sonnet",
+          authorType: "agent",
+          text: "Makes sense. I can add a staging approval checkpoint before release so the rollout path is explicit.",
+          time: "4 mins ago",
+        },
+      ],
+    },
   ];
 }
 
 function buildDefaultProjectVersionHistory(
   paragraphs: Paragraph[],
   currentUserName: string,
-  externalCollaboratorName: string
+  externalCollaboratorName: string,
 ): VersionHistory[] {
   return [
     {
-      id: 'v1',
-      author: 'Claude 3.5 Sonnet',
-      authorType: 'agent',
-      timestamp: '2 mins ago',
-      date: 'Today',
-      changes: 'Updated deployment section with staging approval',
-      paragraphs: [...paragraphs]
+      id: "v1",
+      author: "Claude 3.5 Sonnet",
+      authorType: "agent",
+      timestamp: "2 mins ago",
+      date: "Today",
+      changes: "Updated deployment section with staging approval",
+      paragraphs: [...paragraphs],
     },
     {
-      id: 'v2',
+      id: "v2",
       author: externalCollaboratorName,
-      authorType: 'human',
-      timestamp: '15 mins ago',
-      date: 'Today',
-      changes: 'Added deployment requirements',
-      paragraphs: paragraphs.slice(0, -1)
+      authorType: "human",
+      timestamp: "15 mins ago",
+      date: "Today",
+      changes: "Added deployment requirements",
+      paragraphs: paragraphs.slice(0, -1),
     },
     {
-      id: 'v3',
-      author: 'Claude 3.5 Sonnet',
-      authorType: 'agent',
-      timestamp: '1 hour ago',
-      date: 'Today',
-      changes: 'Expanded database schema section',
-      paragraphs: paragraphs.slice(0, 6)
+      id: "v3",
+      author: "Claude 3.5 Sonnet",
+      authorType: "agent",
+      timestamp: "1 hour ago",
+      date: "Today",
+      changes: "Expanded database schema section",
+      paragraphs: paragraphs.slice(0, 6),
     },
     {
-      id: 'v4',
+      id: "v4",
       author: currentUserName,
-      authorType: 'human',
-      timestamp: '2 hours ago',
-      date: 'Today',
-      changes: 'Initial architecture draft',
-      paragraphs: paragraphs.slice(0, 3)
-    }
+      authorType: "human",
+      timestamp: "2 hours ago",
+      date: "Today",
+      changes: "Initial architecture draft",
+      paragraphs: paragraphs.slice(0, 3),
+    },
   ];
 }
 
@@ -287,110 +308,211 @@ export default function DocumentEditor() {
     setMemoryTimeline,
     setAgentWritebacks,
   } = useMindXDemo();
-  const currentUserName = 'You';
-  const externalCollaboratorName = 'Maya Chen';
+  const currentUserName = "You";
+  const externalCollaboratorName = "Maya Chen";
   const [isChatLog, setIsChatLog] = useState(false);
-  
+
   // Sidebar states
-  const [showCommentsSidebar, setShowCommentsSidebar] = useState(true);
+  const [showCommentsSidebar, setShowCommentsSidebar] = useState(false); // hidden for demo phase
   const [showVersionHistory, setShowVersionHistory] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
-  const [showCollaboratorsSidebar, setShowCollaboratorsSidebar] = useState(false);
-  
+  const [showCollaboratorsSidebar, setShowCollaboratorsSidebar] =
+    useState(false);
+
   // Home button with doc list popup
   const [showDocList, setShowDocList] = useState(false);
-  
+
   // Export submenu state
   const [showExportSubmenu, setShowExportSubmenu] = useState(false);
-  
+
+  // Page editor states
+  const [pageMode, setPageMode] = useState<"preview" | "code">("preview");
+  const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
+  const [showPublishModal, setShowPublishModal] = useState(false);
+  const [publishCopied, setPublishCopied] = useState(false);
+
   const queryString = window.location.search;
   const queryParams = new URLSearchParams(queryString);
-  const requestedDocId = queryParams.get('id');
-  const currentDocId = requestedDocId ?? 'd1';
-  const source = queryParams.get('source');
-  const assetId = queryParams.get('assetId');
-  const dataSourceId = queryParams.get('dataSourceId');
-  const from = queryParams.get('from');
+  const requestedDocId = queryParams.get("id");
+  const currentDocId = requestedDocId ?? "d1";
+  const source = queryParams.get("source");
+  const assetId = queryParams.get("assetId");
+  const dataSourceId = queryParams.get("dataSourceId");
+  const from = queryParams.get("from");
   const isMemoryScopedDocument =
-    source === 'memory_asset' ||
-    source === 'data_source' ||
-    source === 'whoami_doc' ||
-    source === 'goal_doc' ||
-    source === 'rawdata' ||
-    source === 'keypoints_doc';
-  const allDocs = documents.map(doc => ({ id: doc.id, name: doc.name, type: doc.type }));
-  const currentDoc = requestedDocId ? allDocs.find(doc => doc.id === requestedDocId) ?? null : null;
+    source === "memory_asset" ||
+    source === "data_source" ||
+    source === "whoami_doc" ||
+    source === "goal_doc" ||
+    source === "rawdata" ||
+    source === "keypoints_doc";
+  const allDocs = documents.map((doc) => ({
+    id: doc.id,
+    name: doc.name,
+    type: doc.type,
+  }));
+  const currentDoc = requestedDocId
+    ? (allDocs.find((doc) => doc.id === requestedDocId) ?? null)
+    : null;
+  const docType = currentDoc?.type ?? "";
+  // Prefer blocks/sheetData from context documents (reactive) over static imports
+  const contextDoc = useMemo(
+    () => documents.find((d) => d.id === currentDocId) ?? null,
+    [documents, currentDocId],
+  );
+  const resolvedBlocks =
+    contextDoc?.blocks ?? allCanvasBlocks[currentDocId] ?? null;
+  const isBlockEditorDoc = docType === "Smart Canvas" && !!resolvedBlocks;
+  const resolvedSheetData =
+    contextDoc?.sheetData ?? allSheets[currentDocId] ?? null;
+  const isSheetDoc = docType === "Smart Sheet" && !!resolvedSheetData;
+  const isPageDoc = docType === "Page";
   const memoryAssetDoc = useMemo(() => {
-    if (source !== 'memory_asset' || !assetId) return null;
+    if (source !== "memory_asset" || !assetId) return null;
 
-    const asset = memoryAssets.find(item => item.id === assetId);
+    const asset = memoryAssets.find((item) => item.id === assetId);
     if (!asset) return null;
 
     const relatedSources = asset.sourceIds
-      .map(sourceId => memorySourceLinks.find(item => item.id === sourceId))
-      .filter((item): item is (typeof memorySourceLinks)[number] => Boolean(item));
+      .map((sourceId) => memorySourceLinks.find((item) => item.id === sourceId))
+      .filter((item): item is (typeof memorySourceLinks)[number] =>
+        Boolean(item),
+      );
 
     return {
       title: asset.title,
       paragraphs: [
-        { id: 'p1', text: `## ${asset.title}`, author: currentUserName, authorType: 'human' as const },
-        { id: 'p2', text: asset.summary, author: currentUserName, authorType: 'human' as const },
-        { id: 'p3', text: '### Evidence', author: 'Research Bot', authorType: 'agent' as const },
         {
-          id: 'p4',
-          text: asset.evidence.map((line, index) => `${index + 1}. ${line}`).join('\n'),
-          author: 'Research Bot',
-          authorType: 'agent' as const,
+          id: "p1",
+          text: `## ${asset.title}`,
+          author: currentUserName,
+          authorType: "human" as const,
         },
-        { id: 'p5', text: '### Next Step', author: 'Claude Assistant', authorType: 'agent' as const },
-        { id: 'p6', text: asset.nextStep, author: 'Claude Assistant', authorType: 'agent' as const },
-        { id: 'p7', text: '### Related Tags', author: currentUserName, authorType: 'human' as const },
-        { id: 'p8', text: asset.tags.map(tag => `#${tag}`).join('  '), author: currentUserName, authorType: 'human' as const },
-        { id: 'p9', text: '### Source Trail', author: 'Research Bot', authorType: 'agent' as const },
         {
-          id: 'p10',
+          id: "p2",
+          text: asset.summary,
+          author: currentUserName,
+          authorType: "human" as const,
+        },
+        {
+          id: "p3",
+          text: "### Evidence",
+          author: "Research Bot",
+          authorType: "agent" as const,
+        },
+        {
+          id: "p4",
+          text: asset.evidence
+            .map((line, index) => `${index + 1}. ${line}`)
+            .join("\n"),
+          author: "Research Bot",
+          authorType: "agent" as const,
+        },
+        {
+          id: "p5",
+          text: "### Next Step",
+          author: "Claude Assistant",
+          authorType: "agent" as const,
+        },
+        {
+          id: "p6",
+          text: asset.nextStep,
+          author: "Claude Assistant",
+          authorType: "agent" as const,
+        },
+        {
+          id: "p7",
+          text: "### Related Tags",
+          author: currentUserName,
+          authorType: "human" as const,
+        },
+        {
+          id: "p8",
+          text: asset.tags.map((tag) => `#${tag}`).join("  "),
+          author: currentUserName,
+          authorType: "human" as const,
+        },
+        {
+          id: "p9",
+          text: "### Source Trail",
+          author: "Research Bot",
+          authorType: "agent" as const,
+        },
+        {
+          id: "p10",
           text:
             relatedSources.length > 0
-              ? relatedSources.map(item => `- ${item.docName}: ${item.quote}`).join('\n')
-              : 'No linked sources yet.',
-          author: 'Research Bot',
-          authorType: 'agent' as const,
+              ? relatedSources
+                  .map((item) => `- ${item.docName}: ${item.quote}`)
+                  .join("\n")
+              : "No linked sources yet.",
+          author: "Research Bot",
+          authorType: "agent" as const,
         },
       ],
     };
   }, [assetId, currentUserName, memoryAssets, memorySourceLinks, source]);
   const memoryDataSourceDoc = useMemo(() => {
-    if (source !== 'data_source' || !dataSourceId) return null;
+    if (source !== "data_source" || !dataSourceId) return null;
 
-    const dataSource = memoryDataSources.find(item => item.id === dataSourceId);
+    const dataSource = memoryDataSources.find(
+      (item) => item.id === dataSourceId,
+    );
     if (!dataSource) return null;
 
     return {
       title: dataSource.name,
       paragraphs: [
-        { id: 'ds1', text: `## ${dataSource.name}`, author: currentUserName, authorType: 'human' as const },
-        { id: 'ds2', text: dataSource.summary, author: currentUserName, authorType: 'human' as const },
-        { id: 'ds3', text: '### Source Profile', author: 'memo agent', authorType: 'agent' as const },
         {
-          id: 'ds4',
-          text: `Type: ${dataSource.typeLabel}\nStatus: ${dataSource.status}\nUpdated: ${dataSource.freshness}`,
-          author: 'memo agent',
-          authorType: 'agent' as const,
-        },
-        { id: 'ds5', text: '### Content Preview', author: 'memo agent', authorType: 'agent' as const },
-        {
-          id: 'ds6',
-          text: dataSource.contentPreview.map((line, index) => `${index + 1}. ${line}`).join('\n'),
-          author: 'memo agent',
-          authorType: 'agent' as const,
-        },
-        { id: 'ds7', text: '### Tags', author: currentUserName, authorType: 'human' as const },
-        {
-          id: 'ds8',
-          text: dataSource.tags.map(tag => `#${tag}`).join('  '),
+          id: "ds1",
+          text: `## ${dataSource.name}`,
           author: currentUserName,
-          authorType: 'human' as const,
+          authorType: "human" as const,
+        },
+        {
+          id: "ds2",
+          text: dataSource.summary,
+          author: currentUserName,
+          authorType: "human" as const,
+        },
+        {
+          id: "ds3",
+          text: "### Source Profile",
+          author: "memo agent",
+          authorType: "agent" as const,
+        },
+        {
+          id: "ds4",
+          text: `Type: ${dataSource.typeLabel}\nStatus: ${dataSource.status}\nUpdated: ${dataSource.freshness}`,
+          author: "memo agent",
+          authorType: "agent" as const,
+        },
+        {
+          id: "ds5",
+          text: "### Content Preview",
+          author: "memo agent",
+          authorType: "agent" as const,
+        },
+        {
+          id: "ds6",
+          text: dataSource.contentPreview
+            .map((line, index) => `${index + 1}. ${line}`)
+            .join("\n"),
+          author: "memo agent",
+          authorType: "agent" as const,
+        },
+        {
+          id: "ds7",
+          text: "### Tags",
+          author: currentUserName,
+          authorType: "human" as const,
+        },
+        {
+          id: "ds8",
+          text: dataSource.tags.map((tag) => `#${tag}`).join("  "),
+          author: currentUserName,
+          authorType: "human" as const,
         },
       ],
     };
@@ -399,439 +521,593 @@ export default function DocumentEditor() {
     () =>
       dataSourceId
         ? memorySourceLinks
-            .filter(item => item.dataSourceId === dataSourceId)
-            .map(item => item.id)
+            .filter((item) => item.dataSourceId === dataSourceId)
+            .map((item) => item.id)
         : [],
-    [dataSourceId, memorySourceLinks]
+    [dataSourceId, memorySourceLinks],
   );
   const relatedSourceAssets = useMemo(
     () =>
       relatedMemorySourceIds.length === 0
         ? []
-        : memoryAssets.filter(asset =>
-            asset.sourceIds.some(sourceId => relatedMemorySourceIds.includes(sourceId))
+        : memoryAssets.filter((asset) =>
+            asset.sourceIds.some((sourceId) =>
+              relatedMemorySourceIds.includes(sourceId),
+            ),
           ),
-    [memoryAssets, relatedMemorySourceIds]
+    [memoryAssets, relatedMemorySourceIds],
   );
-  
+
   // Modal states
   const [duplicateModalOpen, setDuplicateModalOpen] = useState(false);
   const [labelModalOpen, setLabelModalOpen] = useState(false);
-  const [agentPermissionModalOpen, setAgentPermissionModalOpen] = useState(false);
-  const [duplicateName, setDuplicateName] = useState('');
-  const [documentLabels, setDocumentLabels] = useState<string[]>(['Project Alpha', 'PRD']);
-  const [tagInput, setTagInput] = useState('');
-  const [usedTags] = useState<string[]>(['PRD', 'Data', 'Design', 'Research', 'Marketing', 'Meeting Notes', 'Finance']);
-  const [agentPermissions, setAgentPermissions] = useState<AgentPermission[]>([
-    { agentId: 'agent1', agentName: 'Claude Assistant', permission: 'edit' },
-    { agentId: 'agent2', agentName: 'Research Bot', permission: 'read' }
+  const [agentPermissionModalOpen, setAgentPermissionModalOpen] =
+    useState(false);
+  const [duplicateName, setDuplicateName] = useState("");
+  const [documentLabels, setDocumentLabels] = useState<string[]>([
+    "Project Alpha",
+    "PRD",
   ]);
-  
+  const [tagInput, setTagInput] = useState("");
+  const [usedTags] = useState<string[]>([
+    "PRD",
+    "Data",
+    "Design",
+    "Research",
+    "Marketing",
+    "Meeting Notes",
+    "Finance",
+  ]);
+  const [agentPermissions, setAgentPermissions] = useState<AgentPermission[]>([
+    { agentId: "agent1", agentName: "Claude Assistant", permission: "edit" },
+    { agentId: "agent2", agentName: "Research Bot", permission: "read" },
+  ]);
+
   // Collaborators state
   const [collaborators, setCollaborators] = useState<Collaborator[]>([
-    { id: 'user1', name: currentUserName, type: 'human', isActive: true, color: '#3b82f6' },
-    { id: 'agent1', name: 'Claude Assistant', type: 'agent', isActive: true, cursorPosition: 8, color: '#8b5cf6' },
-    { id: 'agent2', name: 'Research Bot', type: 'agent', isActive: true, cursorPosition: 15, color: '#ec4899' },
-    { id: 'agent3', name: 'Data Analyzer', type: 'agent', isActive: false, color: '#10b981' }
+    {
+      id: "user1",
+      name: currentUserName,
+      type: "human",
+      isActive: true,
+      color: "#3b82f6",
+    },
+    {
+      id: "agent1",
+      name: "Claude Assistant",
+      type: "agent",
+      isActive: true,
+      cursorPosition: 8,
+      color: "#8b5cf6",
+    },
+    {
+      id: "agent2",
+      name: "Research Bot",
+      type: "agent",
+      isActive: true,
+      cursorPosition: 15,
+      color: "#ec4899",
+    },
+    {
+      id: "agent3",
+      name: "Data Analyzer",
+      type: "agent",
+      isActive: false,
+      color: "#10b981",
+    },
   ]);
-  
+
   const [hoveredParagraph, setHoveredParagraph] = useState<number | null>(null);
-  const [focusedParagraphId, setFocusedParagraphId] = useState<string | null>(null);
-  
+  const [focusedParagraphId, setFocusedParagraphId] = useState<string | null>(
+    null,
+  );
+
   // Share settings
-  const [sharePermission, setSharePermission] = useState<'private' | 'view'>('private');
+  const [sharePermission, setSharePermission] = useState<"private" | "view">(
+    "private",
+  );
   const [allowDownload, setAllowDownload] = useState(false);
   const [allowCopy, setAllowCopy] = useState(false);
   const [allowDuplicate, setAllowDuplicate] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
-  
+
   // Version history
   const [selectedVersion, setSelectedVersion] = useState<string | null>(null);
-  const [versionFilterDate, setVersionFilterDate] = useState<string>('all');
-  const [versionFilterAuthor, setVersionFilterAuthor] = useState<string>('all');
-  
+  const [versionFilterDate, setVersionFilterDate] = useState<string>("all");
+  const [versionFilterAuthor, setVersionFilterAuthor] = useState<string>("all");
+
   const [chatMessages] = useState<ChatMessage[]>([
-    { id: 'm1', sender: externalCollaboratorName, senderType: 'human', text: 'Hey Claude, can you help me draft the architecture for Project Alpha?', time: '10:00 AM' },
-    { id: 'm2', sender: 'Claude 3.5 Sonnet', senderType: 'agent', text: 'Of course! I\'d be happy to help. What are the main requirements for the system?', time: '10:01 AM' },
-    { id: 'm3', sender: externalCollaboratorName, senderType: 'human', text: 'It needs to be a microservices-based system with an Auth Service, Data Service, and Notification Service.', time: '10:05 AM' },
-    { id: 'm4', sender: 'Claude 3.5 Sonnet', senderType: 'agent', text: 'Got it. For the Auth Service, I recommend using OAuth 2.0. The Data Service should probably use PostgreSQL for relational data.', time: '10:07 AM' },
+    {
+      id: "m1",
+      sender: externalCollaboratorName,
+      senderType: "human",
+      text: "Hey Claude, can you help me draft the architecture for Project Alpha?",
+      time: "10:00 AM",
+    },
+    {
+      id: "m2",
+      sender: "Claude 3.5 Sonnet",
+      senderType: "agent",
+      text: "Of course! I'd be happy to help. What are the main requirements for the system?",
+      time: "10:01 AM",
+    },
+    {
+      id: "m3",
+      sender: externalCollaboratorName,
+      senderType: "human",
+      text: "It needs to be a microservices-based system with an Auth Service, Data Service, and Notification Service.",
+      time: "10:05 AM",
+    },
+    {
+      id: "m4",
+      sender: "Claude 3.5 Sonnet",
+      senderType: "agent",
+      text: "Got it. For the Auth Service, I recommend using OAuth 2.0. The Data Service should probably use PostgreSQL for relational data.",
+      time: "10:07 AM",
+    },
   ]);
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [sharePublishToWeb, setSharePublishToWeb] = useState(false);
   const [shareLinkCopied, setShareLinkCopied] = useState(false);
-  const [shareAccessLevel, setShareAccessLevel] = useState<'invited' | 'view' | 'edit'>('invited');
+  const [shareAccessLevel, setShareAccessLevel] = useState<
+    "invited" | "view" | "edit"
+  >("invited");
   const [showAccessDropdown, setShowAccessDropdown] = useState(false);
   const [shareInviteMode, setShareInviteMode] = useState(false);
-  const [openMemberDropdown, setOpenMemberDropdown] = useState<string | null>(null);
-  const [invitePermission, setInvitePermission] = useState<'可编辑' | '可查看'>('可编辑');
+  const [openMemberDropdown, setOpenMemberDropdown] = useState<string | null>(
+    null,
+  );
+  const [invitePermission, setInvitePermission] = useState<"可编辑" | "可查看">(
+    "可编辑",
+  );
   const [showInvitePermDropdown, setShowInvitePermDropdown] = useState(false);
-  const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set(['owner'])); // owner 默认展开
-  const [removeConfirm, setRemoveConfirm] = useState<{ userId: string; name: string; agentCount: number } | null>(null);
+  const [expandedUsers, setExpandedUsers] = useState<Set<string>>(
+    new Set(["owner"]),
+  ); // owner 默认展开
+  const [removeConfirm, setRemoveConfirm] = useState<{
+    userId: string;
+    name: string;
+    agentCount: number;
+  } | null>(null);
   const [agentPermTooltip, setAgentPermTooltip] = useState<string | null>(null);
 
   // 权限级别顺序 (高→低)
-  const roleLevels: Record<string, number> = { '创建者': 3, '可编辑': 2, '可查看': 1 };
+  const roleLevels: Record<string, number> = {
+    创建者: 3,
+    可编辑: 2,
+    可查看: 1,
+  };
 
   const [shareMembers, setShareMembers] = useState([
     {
-      id: 'owner',
-      type: 'human' as const,
-      name: '我',
-      email: 'you@example.com',
-      color: 'bg-stone-600',
-      initials: '我',
-      role: '创建者' as string,
+      id: "owner",
+      type: "human" as const,
+      name: "我",
+      email: "you@example.com",
+      color: "bg-stone-600",
+      initials: "我",
+      role: "创建者" as string,
       agents: [
-        { id: 'claude', name: 'Claude Assistant', role: '可编辑', inheritedFromUser: true },
-        { id: 'data_analyzer', name: 'Data Analyzer', role: '可编辑', inheritedFromUser: true },
-        { id: 'research_bot', name: 'Research Bot', role: '可查看', inheritedFromUser: true },
-      ]
+        {
+          id: "claude",
+          name: "Claude Assistant",
+          role: "可编辑",
+          inheritedFromUser: true,
+        },
+        {
+          id: "data_analyzer",
+          name: "Data Analyzer",
+          role: "可编辑",
+          inheritedFromUser: true,
+        },
+        {
+          id: "research_bot",
+          name: "Research Bot",
+          role: "可查看",
+          inheritedFromUser: true,
+        },
+      ],
     },
     {
-      id: 'clark',
-      type: 'human' as const,
-      name: 'Clark',
-      email: 'clark@example.com',
-      color: 'bg-blue-600',
-      initials: 'C',
-      role: '可编辑' as string,
+      id: "clark",
+      type: "human" as const,
+      name: "Clark",
+      email: "clark@example.com",
+      color: "bg-blue-600",
+      initials: "C",
+      role: "可编辑" as string,
       agents: [
-        { id: 'agent_c1', name: 'Claude 3.5 Sonnet', role: '可编辑', inheritedFromUser: true },
-        { id: 'agent_c2', name: 'Research Bot', role: '可查看', inheritedFromUser: false },
-      ]
+        {
+          id: "agent_c1",
+          name: "Claude 3.5 Sonnet",
+          role: "可编辑",
+          inheritedFromUser: true,
+        },
+        {
+          id: "agent_c2",
+          name: "Research Bot",
+          role: "可查看",
+          inheritedFromUser: false,
+        },
+      ],
     },
     {
-      id: 'maya',
-      type: 'human' as const,
-      name: 'Maya Chen',
-      email: 'maya@example.com',
-      color: 'bg-violet-600',
-      initials: 'M',
-      role: '可编辑' as string,
+      id: "maya",
+      type: "human" as const,
+      name: "Maya Chen",
+      email: "maya@example.com",
+      color: "bg-violet-600",
+      initials: "M",
+      role: "可编辑" as string,
       agents: [
-        { id: 'agent_m1', name: 'Data Analyzer', role: '可编辑', inheritedFromUser: true },
-      ]
+        {
+          id: "agent_m1",
+          name: "Data Analyzer",
+          role: "可编辑",
+          inheritedFromUser: true,
+        },
+      ],
     },
   ]);
   useEffect(() => {
     // Simple check to simulate different document types
     const params = new URLSearchParams(window.location.search);
-    setIsChatLog(params.get('type') === 'chatlog');
+    setIsChatLog(params.get("type") === "chatlog");
   }, [queryString]);
 
   // Profile hook for whoami_doc / goal_doc persistence
-  const urlSource = new URLSearchParams(window.location.search).get('source');
-  const isProfileSource = urlSource === 'whoami_doc' || urlSource === 'goal_doc';
-  const profileKey = urlSource === 'whoami_doc' ? 'whoami' : 'goal';
-  const editorWorkspaceId = localStorage.getItem('mindx_workspace_id') || 'w1';
-  const { profile, loading: profileLoading, updateProfile } = useProfile(editorWorkspaceId);
+  const urlSource = new URLSearchParams(window.location.search).get("source");
+  const isProfileSource =
+    urlSource === "whoami_doc" || urlSource === "goal_doc";
+  const profileKey = urlSource === "whoami_doc" ? "whoami" : "goal";
+  const editorWorkspaceId = localStorage.getItem("mindx_workspace_id") || "w1";
+  const {
+    profile,
+    loading: profileLoading,
+    updateProfile,
+  } = useProfile(editorWorkspaceId);
 
   // Sync profile data into paragraphs when loaded from DB
   useEffect(() => {
     if (!isProfileSource || profileLoading) return;
     const content = profile[profileKey];
     if (content && !isProfileLoadingPlaceholder(content)) {
-      const lines = content.split('\n').filter((l: string) => l.trim());
+      const lines = content.split("\n").filter((l: string) => l.trim());
       if (lines.length > 0) {
-        setParagraphs(lines.map((text: string, i: number) => ({
-          id: `p${i + 1}`, text, author: currentUserName, authorType: 'human' as const
-        })));
+        setParagraphs(
+          lines.map((text: string, i: number) => ({
+            id: `p${i + 1}`,
+            text,
+            author: currentUserName,
+            authorType: "human" as const,
+          })),
+        );
         return;
       }
     }
-    setParagraphs([{ id: 'p1', text: '', author: currentUserName, authorType: 'human' as const }]);
+    setParagraphs([
+      {
+        id: "p1",
+        text: "",
+        author: currentUserName,
+        authorType: "human" as const,
+      },
+    ]);
   }, [profileLoading]);
 
   const [paragraphs, setParagraphs] = useState<Paragraph[]>(() => {
     const params = new URLSearchParams(window.location.search);
-    const source = params.get('source');
+    const source = params.get("source");
 
-    if (source === 'memory_asset' && memoryAssetDoc) {
+    if (source === "memory_asset" && memoryAssetDoc) {
       return memoryAssetDoc.paragraphs;
     }
 
-    if (source === 'data_source' && memoryDataSourceDoc) {
+    if (source === "data_source" && memoryDataSourceDoc) {
       return memoryDataSourceDoc.paragraphs;
     }
-    
-    if (source === 'whoami_doc' || source === 'goal_doc') {
+
+    if (source === "whoami_doc" || source === "goal_doc") {
       // Start with localStorage fallback; useEffect will fetch from DB and update
       const cached = localStorage.getItem(`mindx_raw_${source}`);
       if (cached && !isProfileLoadingPlaceholder(cached)) {
-        return cached.split('\n').filter((l: string) => l.trim()).map((text: string, i: number) => ({
-          id: `p${i + 1}`, text, author: currentUserName, authorType: 'human' as const
-        }));
+        return cached
+          .split("\n")
+          .filter((l: string) => l.trim())
+          .map((text: string, i: number) => ({
+            id: `p${i + 1}`,
+            text,
+            author: currentUserName,
+            authorType: "human" as const,
+          }));
       }
-      return [{ id: 'p1', text: '', author: currentUserName, authorType: 'human' as const }];
-    }
-    
-    if (source === 'keypoints_doc') {
       return [
         {
-          id: 'p1',
-          text: '## Q2 产品迭代计划',
+          id: "p1",
+          text: "",
           author: currentUserName,
-          authorType: 'human'
+          authorType: "human" as const,
         },
-        {
-          id: 'p2',
-          text: '5月底前完成核心UI重构，由设计部牵头',
-          author: currentUserName,
-          authorType: 'human'
-        },
-        {
-          id: 'p3',
-          text: '## 客户 A 反馈汇总',
-          author: currentUserName,
-          authorType: 'human'
-        },
-        {
-          id: 'p4',
-          text: '客户核心诉求：性能优化、数据安全、多端协同',
-          author: currentUserName,
-          authorType: 'human'
-        },
-        {
-          id: 'p5',
-          text: '## 行业竞品分析报告',
-          author: currentUserName,
-          authorType: 'human'
-        },
-        {
-          id: 'p6',
-          text: '竞品在移动端体验上更流畅，我们的差异化优势在于AI原生协作',
-          author: currentUserName,
-          authorType: 'human'
-        }
       ];
     }
 
-    if (source === 'rawdata') {
-      const rawId = params.get('rawId');
-      const title = params.get('title') || (rawId ? 'Raw Data' : 'Untitled');
-      const storedContent = rawId ? localStorage.getItem(`mindx_raw_${rawId}`) : null;
-      const contentLines = storedContent ? storedContent.split('\n').filter((l: string) => l.trim()) : [];
+    if (source === "keypoints_doc") {
       return [
         {
-          id: 'p1',
+          id: "p1",
+          text: "## Q2 产品迭代计划",
+          author: currentUserName,
+          authorType: "human",
+        },
+        {
+          id: "p2",
+          text: "5月底前完成核心UI重构，由设计部牵头",
+          author: currentUserName,
+          authorType: "human",
+        },
+        {
+          id: "p3",
+          text: "## 客户 A 反馈汇总",
+          author: currentUserName,
+          authorType: "human",
+        },
+        {
+          id: "p4",
+          text: "客户核心诉求：性能优化、数据安全、多端协同",
+          author: currentUserName,
+          authorType: "human",
+        },
+        {
+          id: "p5",
+          text: "## 行业竞品分析报告",
+          author: currentUserName,
+          authorType: "human",
+        },
+        {
+          id: "p6",
+          text: "竞品在移动端体验上更流畅，我们的差异化优势在于AI原生协作",
+          author: currentUserName,
+          authorType: "human",
+        },
+      ];
+    }
+
+    if (source === "rawdata") {
+      const rawId = params.get("rawId");
+      const title = params.get("title") || (rawId ? "Raw Data" : "Untitled");
+      const storedContent = rawId
+        ? localStorage.getItem(`mindx_raw_${rawId}`)
+        : null;
+      const contentLines = storedContent
+        ? storedContent.split("\n").filter((l: string) => l.trim())
+        : [];
+      return [
+        {
+          id: "p1",
           text: `## ${title}`,
           author: currentUserName,
-          authorType: 'human'
+          authorType: "human",
         },
         ...(contentLines.length > 0
           ? contentLines.map((line: string, i: number) => ({
               id: `p${i + 2}`,
               text: line,
               author: currentUserName,
-              authorType: 'human' as const
+              authorType: "human" as const,
             }))
-          : [{
-              id: 'p2',
-              text: storedContent || '',
-              author: currentUserName,
-              authorType: 'human' as const
-            }]
-        )
+          : [
+              {
+                id: "p2",
+                text: storedContent || "",
+                author: currentUserName,
+                authorType: "human" as const,
+              },
+            ]),
       ];
     }
 
     return [
-    {
-      id: 'p1',
-      text: '## Project Alpha Architecture',
-      author: currentUserName,
-      authorType: 'human'
-    },
-    {
-      id: 'p2',
-      text: 'This document outlines the core architecture for Project Alpha.',
-      author: currentUserName,
-      authorType: 'human'
-    },
-    {
-      id: 'p3',
-      text: '### 1. Overview',
-      author: currentUserName,
-      authorType: 'human'
-    },
-    {
-      id: 'p4',
-      text: 'The system is composed of three main microservices:\n- **Auth Service**: Handles user authentication and authorization.\n- **Data Service**: Manages the core business data and database interactions.\n- **Notification Service**: Sends emails and push notifications.',
-      author: 'Claude 3.5 Sonnet',
-      authorType: 'agent'
-    },
-    {
-      id: 'p5',
-      text: 'Each service is independently deployable and communicates through well-defined APIs. This architecture allows for better scalability and maintainability.',
-      author: currentUserName,
-      authorType: 'human'
-    },
-    {
-      id: 'p6',
-      text: '### 2. Auth Service Details',
-      author: currentUserName,
-      authorType: 'human'
-    },
-    {
-      id: 'p7',
-      text: 'The Auth Service implements JWT-based authentication with refresh token rotation. It supports OAuth2.0 for third-party integrations including Google, GitHub, and Microsoft.',
-      author: 'Claude 3.5 Sonnet',
-      authorType: 'agent'
-    },
-    {
-      id: 'p8',
-      text: 'Security features include:\n- Rate limiting on login attempts\n- Multi-factor authentication support\n- Session management with Redis\n- Password hashing using bcrypt with salt rounds of 12',
-      author: 'Claude 3.5 Sonnet',
-      authorType: 'agent'
-    },
-    {
-      id: 'p9',
-      text: '### 3. Data Service Architecture',
-      author: currentUserName,
-      authorType: 'human'
-    },
-    {
-      id: 'p10',
-      text: 'The Data Service handles all business logic and database operations. It implements the repository pattern for data access and uses TypeORM as the ORM layer.',
-      author: currentUserName,
-      authorType: 'human'
-    },
-    {
-      id: 'p11',
-      text: '#### 3.1 Database Schema',
-      author: currentUserName,
-      authorType: 'human'
-    },
-    {
-      id: 'p12',
-      text: 'We will use PostgreSQL for the primary database. We will use Redis for caching to improve performance. The schema is designed to be highly normalized to ensure data integrity.',
-      author: 'Claude 3.5 Sonnet',
-      authorType: 'agent'
-    },
-    {
-      id: 'p13',
-      text: 'Key tables include:\n- **users**: Store user profiles and credentials\n- **workspaces**: Organize user documents and projects\n- **documents**: Store document metadata and content\n- **permissions**: Handle access control and sharing',
-      author: 'Claude 3.5 Sonnet',
-      authorType: 'agent'
-    },
-    {
-      id: 'p14',
-      text: '#### 3.2 Caching Strategy',
-      author: currentUserName,
-      authorType: 'human'
-    },
-    {
-      id: 'p15',
-      text: 'Redis is used for caching frequently accessed data with TTL-based expiration. Cache invalidation follows a write-through pattern to ensure consistency.',
-      author: 'Claude 3.5 Sonnet',
-      authorType: 'agent'
-    },
-    {
-      id: 'p16',
-      text: '### 4. Notification Service',
-      author: currentUserName,
-      authorType: 'human'
-    },
-    {
-      id: 'p17',
-      text: 'The Notification Service manages all outbound communications including emails, SMS, and push notifications. It uses a message queue (RabbitMQ) for reliable delivery.',
-      author: 'Claude 3.5 Sonnet',
-      authorType: 'agent'
-    },
-    {
-      id: 'p18',
-      text: 'Notification templates are stored in the database and support internationalization. The service tracks delivery status and provides retry mechanisms for failed notifications.',
-      author: 'Claude 3.5 Sonnet',
-      authorType: 'agent'
-    },
-    {
-      id: 'p19',
-      text: '### 5. API Gateway',
-      author: currentUserName,
-      authorType: 'human'
-    },
-    {
-      id: 'p20',
-      text: 'An API Gateway sits in front of all microservices to handle routing, rate limiting, and authentication. It uses Kong for its robust plugin ecosystem.',
-      author: currentUserName,
-      authorType: 'human'
-    },
-    {
-      id: 'p21',
-      text: '### 6. Deployment',
-      author: currentUserName,
-      authorType: 'human'
-    },
-    {
-      id: 'p22',
-      text: 'The application will be containerized using Docker and deployed to a Kubernetes cluster. Maya also wants staging approval checkpoints called out before the release section.',
-      author: externalCollaboratorName,
-      authorType: 'human'
-    },
-    {
-      id: 'p23',
-      text: '#### 6.1 CI/CD Pipeline',
-      author: currentUserName,
-      authorType: 'human'
-    },
-    {
-      id: 'p24',
-      text: 'The CI/CD pipeline uses GitHub Actions for automated testing and deployment:\n1. Code push triggers automated tests\n2. Successful tests build Docker images\n3. Images are pushed to container registry\n4. Staging environment is automatically updated\n5. After approval, production deployment is triggered',
-      author: 'Claude 3.5 Sonnet',
-      authorType: 'agent'
-    },
-    {
-      id: 'p25',
-      text: '### 7. Monitoring and Observability',
-      author: currentUserName,
-      authorType: 'human'
-    },
-    {
-      id: 'p26',
-      text: 'We use Prometheus for metrics collection, Grafana for visualization, and ELK stack for log aggregation. Distributed tracing is implemented using Jaeger.',
-      author: 'Claude 3.5 Sonnet',
-      authorType: 'agent'
-    }
+      {
+        id: "p1",
+        text: "## Project Alpha Architecture",
+        author: currentUserName,
+        authorType: "human",
+      },
+      {
+        id: "p2",
+        text: "This document outlines the core architecture for Project Alpha.",
+        author: currentUserName,
+        authorType: "human",
+      },
+      {
+        id: "p3",
+        text: "### 1. Overview",
+        author: currentUserName,
+        authorType: "human",
+      },
+      {
+        id: "p4",
+        text: "The system is composed of three main microservices:\n- **Auth Service**: Handles user authentication and authorization.\n- **Data Service**: Manages the core business data and database interactions.\n- **Notification Service**: Sends emails and push notifications.",
+        author: "Claude 3.5 Sonnet",
+        authorType: "agent",
+      },
+      {
+        id: "p5",
+        text: "Each service is independently deployable and communicates through well-defined APIs. This architecture allows for better scalability and maintainability.",
+        author: currentUserName,
+        authorType: "human",
+      },
+      {
+        id: "p6",
+        text: "### 2. Auth Service Details",
+        author: currentUserName,
+        authorType: "human",
+      },
+      {
+        id: "p7",
+        text: "The Auth Service implements JWT-based authentication with refresh token rotation. It supports OAuth2.0 for third-party integrations including Google, GitHub, and Microsoft.",
+        author: "Claude 3.5 Sonnet",
+        authorType: "agent",
+      },
+      {
+        id: "p8",
+        text: "Security features include:\n- Rate limiting on login attempts\n- Multi-factor authentication support\n- Session management with Redis\n- Password hashing using bcrypt with salt rounds of 12",
+        author: "Claude 3.5 Sonnet",
+        authorType: "agent",
+      },
+      {
+        id: "p9",
+        text: "### 3. Data Service Architecture",
+        author: currentUserName,
+        authorType: "human",
+      },
+      {
+        id: "p10",
+        text: "The Data Service handles all business logic and database operations. It implements the repository pattern for data access and uses TypeORM as the ORM layer.",
+        author: currentUserName,
+        authorType: "human",
+      },
+      {
+        id: "p11",
+        text: "#### 3.1 Database Schema",
+        author: currentUserName,
+        authorType: "human",
+      },
+      {
+        id: "p12",
+        text: "We will use PostgreSQL for the primary database. We will use Redis for caching to improve performance. The schema is designed to be highly normalized to ensure data integrity.",
+        author: "Claude 3.5 Sonnet",
+        authorType: "agent",
+      },
+      {
+        id: "p13",
+        text: "Key tables include:\n- **users**: Store user profiles and credentials\n- **workspaces**: Organize user documents and projects\n- **documents**: Store document metadata and content\n- **permissions**: Handle access control and sharing",
+        author: "Claude 3.5 Sonnet",
+        authorType: "agent",
+      },
+      {
+        id: "p14",
+        text: "#### 3.2 Caching Strategy",
+        author: currentUserName,
+        authorType: "human",
+      },
+      {
+        id: "p15",
+        text: "Redis is used for caching frequently accessed data with TTL-based expiration. Cache invalidation follows a write-through pattern to ensure consistency.",
+        author: "Claude 3.5 Sonnet",
+        authorType: "agent",
+      },
+      {
+        id: "p16",
+        text: "### 4. Notification Service",
+        author: currentUserName,
+        authorType: "human",
+      },
+      {
+        id: "p17",
+        text: "The Notification Service manages all outbound communications including emails, SMS, and push notifications. It uses a message queue (RabbitMQ) for reliable delivery.",
+        author: "Claude 3.5 Sonnet",
+        authorType: "agent",
+      },
+      {
+        id: "p18",
+        text: "Notification templates are stored in the database and support internationalization. The service tracks delivery status and provides retry mechanisms for failed notifications.",
+        author: "Claude 3.5 Sonnet",
+        authorType: "agent",
+      },
+      {
+        id: "p19",
+        text: "### 5. API Gateway",
+        author: currentUserName,
+        authorType: "human",
+      },
+      {
+        id: "p20",
+        text: "An API Gateway sits in front of all microservices to handle routing, rate limiting, and authentication. It uses Kong for its robust plugin ecosystem.",
+        author: currentUserName,
+        authorType: "human",
+      },
+      {
+        id: "p21",
+        text: "### 6. Deployment",
+        author: currentUserName,
+        authorType: "human",
+      },
+      {
+        id: "p22",
+        text: "The application will be containerized using Docker and deployed to a Kubernetes cluster. Maya also wants staging approval checkpoints called out before the release section.",
+        author: externalCollaboratorName,
+        authorType: "human",
+      },
+      {
+        id: "p23",
+        text: "#### 6.1 CI/CD Pipeline",
+        author: currentUserName,
+        authorType: "human",
+      },
+      {
+        id: "p24",
+        text: "The CI/CD pipeline uses GitHub Actions for automated testing and deployment:\n1. Code push triggers automated tests\n2. Successful tests build Docker images\n3. Images are pushed to container registry\n4. Staging environment is automatically updated\n5. After approval, production deployment is triggered",
+        author: "Claude 3.5 Sonnet",
+        authorType: "agent",
+      },
+      {
+        id: "p25",
+        text: "### 7. Monitoring and Observability",
+        author: currentUserName,
+        authorType: "human",
+      },
+      {
+        id: "p26",
+        text: "We use Prometheus for metrics collection, Grafana for visualization, and ELK stack for log aggregation. Distributed tracing is implemented using Jaeger.",
+        author: "Claude 3.5 Sonnet",
+        authorType: "agent",
+      },
     ];
   });
-  const memorySyncSnapshotRef = useRef('');
-  const [memoryWritebackState, setMemoryWritebackState] = useState<'clean' | 'dirty' | 'syncing'>('clean');
+  const memorySyncSnapshotRef = useRef("");
+  const [memoryWritebackState, setMemoryWritebackState] = useState<
+    "clean" | "dirty" | "syncing"
+  >("clean");
   const [memoryWritebackLabel, setMemoryWritebackLabel] = useState<string>(
-    source === 'memory_asset'
-      ? '这张知识卡已和文档保持同步'
-      : source === 'data_source'
-        ? '这份数据源当前没有待处理改动'
-        : ''
+    source === "memory_asset"
+      ? "这张知识卡已和文档保持同步"
+      : source === "data_source"
+        ? "这份数据源当前没有待处理改动"
+        : "",
   );
 
   // Auto-save mechanism for rawdata / custom memory nodes
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const source = params.get('source');
-    const rawId = params.get('rawId');
+    const source = params.get("source");
+    const rawId = params.get("rawId");
 
-    if (source === 'rawdata' && rawId && paragraphs.length > 0) {
+    if (source === "rawdata" && rawId && paragraphs.length > 0) {
       // Exclude title (p1), store the rest
-      const content = paragraphs.slice(1).map(p => p.text).join('\n');
+      const content = paragraphs
+        .slice(1)
+        .map((p) => p.text)
+        .join("\n");
       localStorage.setItem(`mindx_raw_${rawId}`, content);
 
       try {
-        const nodesStr = localStorage.getItem('mindx_memory_nodes');
+        const nodesStr = localStorage.getItem("mindx_memory_nodes");
         if (nodesStr) {
           const nodes = JSON.parse(nodesStr);
           const nodeIndex = nodes.findIndex((n: any) => n.id === rawId);
           if (nodeIndex !== -1) {
-            nodes[nodeIndex].content = content; 
+            nodes[nodeIndex].content = content;
             nodes[nodeIndex].updatedAt = new Date().toISOString();
-            localStorage.setItem('mindx_memory_nodes', JSON.stringify(nodes));
+            localStorage.setItem("mindx_memory_nodes", JSON.stringify(nodes));
           }
         }
-      } catch(e) {}
+      } catch (e) {}
     }
 
     // Auto-save for whoami_doc and goal_doc
     if (isProfileSource && paragraphs.length > 0 && !profileLoading) {
-      const content = paragraphs.map(p => p.text).join('\n');
+      const content = paragraphs.map((p) => p.text).join("\n");
       if (isProfileLoadingPlaceholder(content)) return;
       // Debounced save to DB via useProfile
       clearTimeout((window as any).__profileSaveTimer);
@@ -842,37 +1118,37 @@ export default function DocumentEditor() {
   }, [paragraphs, isProfileSource, profileLoading, profileKey, updateProfile]);
 
   useEffect(() => {
-    if (source === 'memory_asset' && memoryAssetDoc) {
+    if (source === "memory_asset" && memoryAssetDoc) {
       setParagraphs(memoryAssetDoc.paragraphs);
     }
-    if (source === 'data_source' && memoryDataSourceDoc) {
+    if (source === "data_source" && memoryDataSourceDoc) {
       setParagraphs(memoryDataSourceDoc.paragraphs);
     }
   }, [memoryAssetDoc, memoryDataSourceDoc, source]);
 
   useEffect(() => {
-    if (source !== 'memory_asset' && source !== 'data_source') return;
+    if (source !== "memory_asset" && source !== "data_source") return;
     const snapshot = paragraphSnapshot(paragraphs);
     memorySyncSnapshotRef.current = snapshot;
-    setMemoryWritebackState('clean');
+    setMemoryWritebackState("clean");
     setMemoryWritebackLabel(
-      source === 'memory_asset'
-        ? '这张知识卡已和文档保持同步'
-        : '这份数据源当前没有待处理改动'
+      source === "memory_asset"
+        ? "这张知识卡已和文档保持同步"
+        : "这份数据源当前没有待处理改动",
     );
   }, [assetId, dataSourceId, memoryAssetDoc, memoryDataSourceDoc, source]);
 
   useEffect(() => {
-    if (source !== 'memory_asset' && source !== 'data_source') return;
+    if (source !== "memory_asset" && source !== "data_source") return;
     if (!memorySyncSnapshotRef.current) return;
     const nextSnapshot = paragraphSnapshot(paragraphs);
     const isDirty = nextSnapshot !== memorySyncSnapshotRef.current;
-    setMemoryWritebackState(isDirty ? 'dirty' : 'clean');
+    setMemoryWritebackState(isDirty ? "dirty" : "clean");
     if (isDirty) {
       setMemoryWritebackLabel(
-        source === 'memory_asset'
-          ? '文档改动待回写到知识资产'
-          : '文档改动待重新提炼这份数据源'
+        source === "memory_asset"
+          ? "文档改动待回写到知识资产"
+          : "文档改动待重新提炼这份数据源",
       );
     }
   }, [paragraphs, source]);
@@ -880,28 +1156,40 @@ export default function DocumentEditor() {
   useEffect(() => {
     if (!isMemoryScopedDocument) {
       setComments(buildDefaultProjectComments(externalCollaboratorName));
-      setVersionHistory(buildDefaultProjectVersionHistory(paragraphs, currentUserName, externalCollaboratorName));
+      setVersionHistory(
+        buildDefaultProjectVersionHistory(
+          paragraphs,
+          currentUserName,
+          externalCollaboratorName,
+        ),
+      );
       return;
     }
 
     setComments([]);
     setVersionHistory([
       {
-        id: 'v1',
-        author: source === 'memory_asset' || source === 'data_source' ? 'memo agent' : currentUserName,
-        authorType: source === 'memory_asset' || source === 'data_source' ? 'agent' : 'human',
-        timestamp: 'Just now',
-        date: 'Today',
+        id: "v1",
+        author:
+          source === "memory_asset" || source === "data_source"
+            ? "memo agent"
+            : currentUserName,
+        authorType:
+          source === "memory_asset" || source === "data_source"
+            ? "agent"
+            : "human",
+        timestamp: "Just now",
+        date: "Today",
         changes:
-          source === 'memory_asset'
-            ? 'Prepared this knowledge asset for document editing'
-            : source === 'data_source'
-              ? 'Prepared this data source for manual review'
-              : 'Opened this memory document for editing',
+          source === "memory_asset"
+            ? "Prepared this knowledge asset for document editing"
+            : source === "data_source"
+              ? "Prepared this data source for manual review"
+              : "Opened this memory document for editing",
         paragraphs:
-          source === 'memory_asset' && memoryAssetDoc
+          source === "memory_asset" && memoryAssetDoc
             ? memoryAssetDoc.paragraphs
-            : source === 'data_source' && memoryDataSourceDoc
+            : source === "data_source" && memoryDataSourceDoc
               ? memoryDataSourceDoc.paragraphs
               : [...paragraphs],
       },
@@ -918,38 +1206,64 @@ export default function DocumentEditor() {
   ]);
 
   const [comments, setComments] = useState<CommentThread[]>(() =>
-    isMemoryScopedDocument ? [] : buildDefaultProjectComments(externalCollaboratorName)
+    isMemoryScopedDocument
+      ? []
+      : buildDefaultProjectComments(externalCollaboratorName),
   );
 
   const [versionHistory, setVersionHistory] = useState<VersionHistory[]>(() =>
     isMemoryScopedDocument
       ? [
           {
-            id: 'v1',
-            author: source === 'memory_asset' || source === 'data_source' ? 'memo agent' : currentUserName,
-            authorType: source === 'memory_asset' || source === 'data_source' ? 'agent' : 'human',
-            timestamp: 'Just now',
-            date: 'Today',
+            id: "v1",
+            author:
+              source === "memory_asset" || source === "data_source"
+                ? "memo agent"
+                : currentUserName,
+            authorType:
+              source === "memory_asset" || source === "data_source"
+                ? "agent"
+                : "human",
+            timestamp: "Just now",
+            date: "Today",
             changes:
-              source === 'memory_asset'
-                ? 'Prepared this knowledge asset for document editing'
-                : source === 'data_source'
-                  ? 'Prepared this data source for manual review'
-                  : 'Opened this memory document for editing',
-            paragraphs: [...paragraphs]
-          }
+              source === "memory_asset"
+                ? "Prepared this knowledge asset for document editing"
+                : source === "data_source"
+                  ? "Prepared this data source for manual review"
+                  : "Opened this memory document for editing",
+            paragraphs: [...paragraphs],
+          },
         ]
-      : buildDefaultProjectVersionHistory(paragraphs, currentUserName, externalCollaboratorName)
+      : buildDefaultProjectVersionHistory(
+          paragraphs,
+          currentUserName,
+          externalCollaboratorName,
+        ),
   );
 
+  // Row expand modal state for @ref token clicks in canvas documents
+  const [refExpandSheet, setRefExpandSheet] = useState<SheetData | null>(null);
+  const [refExpandRow, setRefExpandRow] = useState<SheetRow | null>(null);
+  const handleRefRowExpand = (sheetData: SheetData, row: SheetRow) => {
+    setRefExpandSheet(sheetData);
+    setRefExpandRow(row);
+  };
+
   const [activeCommentId, setActiveCommentId] = useState<number | null>(null);
-  const [selectionMenu, setSelectionMenu] = useState<{ x: number, y: number, text: string } | null>(null);
+  const [selectionMenu, setSelectionMenu] = useState<{
+    x: number;
+    y: number;
+    text: string;
+  } | null>(null);
   const commentRefs = useRef<Map<number, HTMLDivElement>>(new Map());
-  const replyTimeoutsRef = useRef<Array<ReturnType<typeof window.setTimeout>>>([]);
+  const replyTimeoutsRef = useRef<Array<ReturnType<typeof window.setTimeout>>>(
+    [],
+  );
   const editorRef = useRef<HTMLDivElement>(null);
 
   const createTimeLabel = () =>
-    new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
   const handleMouseUp = () => {
     const selection = window.getSelection();
@@ -960,15 +1274,15 @@ export default function DocumentEditor() {
 
     const range = selection.getRangeAt(0);
     const rect = range.getBoundingClientRect();
-    
+
     setSelectionMenu({
       x: rect.left + rect.width / 2,
       y: rect.top - 10,
-      text: selection.toString()
+      text: selection.toString(),
     });
   };
 
-  const addNewComment = (type: CommentThreadType = 'comment') => {
+  const addNewComment = (type: CommentThreadType = "comment") => {
     if (!selectionMenu) return;
 
     const newComment: CommentThread = {
@@ -976,16 +1290,16 @@ export default function DocumentEditor() {
       highlight: selectionMenu.text,
       resolved: false,
       type,
-      createdAtLabel: 'Just now',
+      createdAtLabel: "Just now",
       messages: [],
-      draftText: '',
+      draftText: "",
       isDraft: true,
       isReplying: false,
-      replyDraftText: '',
-      isAwaitingReply: false
+      replyDraftText: "",
+      isAwaitingReply: false,
     };
 
-    setComments(prev => [newComment, ...prev]);
+    setComments((prev) => [newComment, ...prev]);
     setActiveCommentId(newComment.id);
     setSelectionMenu(null);
 
@@ -997,76 +1311,88 @@ export default function DocumentEditor() {
     if (activeCommentId) {
       const card = commentRefs.current.get(activeCommentId);
       if (card) {
-        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        card.scrollIntoView({ behavior: "smooth", block: "center" });
       }
     }
   }, [activeCommentId, comments]);
 
   useEffect(() => {
     return () => {
-      replyTimeoutsRef.current.forEach(timeoutId => window.clearTimeout(timeoutId));
+      replyTimeoutsRef.current.forEach((timeoutId) =>
+        window.clearTimeout(timeoutId),
+      );
     };
   }, []);
 
   const updateDraftText = (commentId: number, draftText: string) => {
-    setComments(prev =>
-      prev.map(comment =>
-        comment.id === commentId ? { ...comment, draftText } : comment
-      )
+    setComments((prev) =>
+      prev.map((comment) =>
+        comment.id === commentId ? { ...comment, draftText } : comment,
+      ),
     );
   };
 
   const cancelDraftComment = (commentId: number) => {
-    setComments(prev =>
-      prev.filter(comment => !(comment.id === commentId && comment.isDraft))
+    setComments((prev) =>
+      prev.filter((comment) => !(comment.id === commentId && comment.isDraft)),
     );
-    setActiveCommentId(prev => (prev === commentId ? null : prev));
+    setActiveCommentId((prev) => (prev === commentId ? null : prev));
   };
 
   const markCommentResolved = (commentId: number) => {
-    setComments(prev =>
-      prev.map(comment =>
+    setComments((prev) =>
+      prev.map((comment) =>
         comment.id === commentId
-          ? { ...comment, resolved: true, isAwaitingReply: false, isReplying: false, replyDraftText: '' }
-          : comment
-      )
+          ? {
+              ...comment,
+              resolved: true,
+              isAwaitingReply: false,
+              isReplying: false,
+              replyDraftText: "",
+            }
+          : comment,
+      ),
     );
   };
 
   const openReplyComposer = (commentId: number) => {
-    setComments(prev =>
-      prev.map(comment =>
+    setComments((prev) =>
+      prev.map((comment) =>
         comment.id === commentId
           ? { ...comment, isReplying: true }
-          : { ...comment, isReplying: false }
-      )
+          : { ...comment, isReplying: false },
+      ),
     );
     setActiveCommentId(commentId);
   };
 
   const updateReplyDraftText = (commentId: number, replyDraftText: string) => {
-    setComments(prev =>
-      prev.map(comment =>
-        comment.id === commentId ? { ...comment, replyDraftText } : comment
-      )
+    setComments((prev) =>
+      prev.map((comment) =>
+        comment.id === commentId ? { ...comment, replyDraftText } : comment,
+      ),
     );
   };
 
   const cancelReplyDraft = (commentId: number) => {
-    setComments(prev =>
-      prev.map(comment =>
+    setComments((prev) =>
+      prev.map((comment) =>
         comment.id === commentId
-          ? { ...comment, isReplying: false, replyDraftText: '' }
-          : comment
-      )
+          ? { ...comment, isReplying: false, replyDraftText: "" }
+          : comment,
+      ),
     );
   };
 
-  const submitCommentMessage = (commentId: number, source: 'draft' | 'reply') => {
-    const comment = comments.find(item => item.id === commentId);
-    const draftText = source === 'draft'
-      ? comment?.draftText.trim()
-      : comment?.replyDraftText.trim();
+  const submitCommentMessage = (
+    commentId: number,
+    source: "draft" | "reply",
+  ) => {
+    const comment = comments.find((item) => item.id === commentId);
+    const draftText =
+      source === "draft"
+        ? comment?.draftText.trim()
+        : comment?.replyDraftText.trim();
 
     if (!comment || !draftText) return;
 
@@ -1074,33 +1400,37 @@ export default function DocumentEditor() {
     const submittedMessage: CommentMessage = {
       id: `${commentId}-human-${Date.now()}`,
       author: currentUserName,
-      authorType: 'human',
+      authorType: "human",
       text: draftText,
-      time: submittedAt
+      time: submittedAt,
     };
-    const agentReplyTexts = buildAgentReply(comment.type, comment.highlight, draftText);
+    const agentReplyTexts = buildAgentReply(
+      comment.type,
+      comment.highlight,
+      draftText,
+    );
 
-    setComments(prev =>
-      prev.map(item =>
+    setComments((prev) =>
+      prev.map((item) =>
         item.id === commentId
           ? {
               ...item,
-              createdAtLabel: 'Just now',
+              createdAtLabel: "Just now",
               messages: [...item.messages, submittedMessage],
-              draftText: '',
+              draftText: "",
               isDraft: false,
               isReplying: false,
-              replyDraftText: '',
-              isAwaitingReply: true
+              replyDraftText: "",
+              isAwaitingReply: true,
             }
-          : item
-      )
+          : item,
+      ),
     );
     setActiveCommentId(commentId);
 
     const replyTimeoutId = window.setTimeout(() => {
-      setComments(prev =>
-        prev.map(item => {
+      setComments((prev) =>
+        prev.map((item) => {
           if (item.id !== commentId || !item.isAwaitingReply) {
             return item;
           }
@@ -1112,32 +1442,37 @@ export default function DocumentEditor() {
               ...item.messages,
               ...agentReplyTexts.map((text, index) => ({
                 id: `${commentId}-agent-${Date.now()}-${index}`,
-                author: 'Claude 3.5 Sonnet',
-                authorType: 'agent' as const,
+                author: "Claude 3.5 Sonnet",
+                authorType: "agent" as const,
                 text,
-                time: 'Just now'
-              }))
-            ]
+                time: "Just now",
+              })),
+            ],
           };
-        })
+        }),
       );
-      replyTimeoutsRef.current = replyTimeoutsRef.current.filter(id => id !== replyTimeoutId);
+      replyTimeoutsRef.current = replyTimeoutsRef.current.filter(
+        (id) => id !== replyTimeoutId,
+      );
     }, 900);
 
     replyTimeoutsRef.current.push(replyTimeoutId);
   };
 
   const isCurrentUserMessage = (message: CommentMessage) =>
-    message.authorType === 'human' && message.author === currentUserName;
+    message.authorType === "human" && message.author === currentUserName;
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (showShareMenu && !(e.target as Element).closest('.share-menu-container')) {
+      if (
+        showShareMenu &&
+        !(e.target as Element).closest(".share-menu-container")
+      ) {
         setShowShareMenu(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showShareMenu]);
 
   const handleCopyLink = () => {
@@ -1147,7 +1482,7 @@ export default function DocumentEditor() {
   };
 
   const handleRestoreVersion = (versionId: string) => {
-    const version = versionHistory.find(v => v.id === versionId);
+    const version = versionHistory.find((v) => v.id === versionId);
     if (version) {
       setParagraphs([...version.paragraphs]);
       setShowVersionHistory(false);
@@ -1156,7 +1491,10 @@ export default function DocumentEditor() {
   };
 
   const handleSyncToMemory = () => {
-    if ((source !== 'memory_asset' && source !== 'data_source') || memoryWritebackState !== 'dirty') {
+    if (
+      (source !== "memory_asset" && source !== "data_source") ||
+      memoryWritebackState !== "dirty"
+    ) {
       return;
     }
 
@@ -1167,52 +1505,67 @@ export default function DocumentEditor() {
 
     const now = new Date();
     const nowIso = now.toISOString();
-    const nowLabel = 'Just now';
-    const timeLabel = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const nowLabel = "Just now";
+    const timeLabel = now.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
     const summary = firstBodyParagraph(liveParagraphs);
-    const relatedTags = normalizeTagList(findSectionContent(liveParagraphs, '### Related Tags').join(' '));
-    const sectionTags = normalizeTagList(findSectionContent(liveParagraphs, '### Tags').join(' '));
+    const relatedTags = normalizeTagList(
+      findSectionContent(liveParagraphs, "### Related Tags").join(" "),
+    );
+    const sectionTags = normalizeTagList(
+      findSectionContent(liveParagraphs, "### Tags").join(" "),
+    );
     const tagsFromDoc = relatedTags.length > 0 ? relatedTags : sectionTags;
 
-    setMemoryWritebackState('syncing');
+    setMemoryWritebackState("syncing");
 
-    if (source === 'memory_asset' && assetId) {
-      const editedEvidence = splitSectionLines(liveParagraphs, '### Evidence').map(stripOrderedPrefix);
-      const editedNextStep = findSectionContent(liveParagraphs, '### Next Step').join('\n');
-      const targetAsset = memoryAssets.find(asset => asset.id === assetId);
+    if (source === "memory_asset" && assetId) {
+      const editedEvidence = splitSectionLines(
+        liveParagraphs,
+        "### Evidence",
+      ).map(stripOrderedPrefix);
+      const editedNextStep = findSectionContent(
+        liveParagraphs,
+        "### Next Step",
+      ).join("\n");
+      const targetAsset = memoryAssets.find((asset) => asset.id === assetId);
       if (!targetAsset) return;
 
-      setMemoryAssets(prev =>
-        prev.map(asset =>
+      setMemoryAssets((prev) =>
+        prev.map((asset) =>
           asset.id === assetId
             ? {
                 ...asset,
                 summary: summary || asset.summary,
-                evidence: editedEvidence.length > 0 ? editedEvidence : asset.evidence,
+                evidence:
+                  editedEvidence.length > 0 ? editedEvidence : asset.evidence,
                 nextStep: editedNextStep || asset.nextStep,
                 tags: tagsFromDoc.length > 0 ? tagsFromDoc : asset.tags,
-                freshness: '刚刚手动更新',
-                status: 'review',
+                freshness: "刚刚手动更新",
+                status: "review",
               }
-            : asset
-        )
+            : asset,
+        ),
       );
 
-      setMemoryTimeline(prev => [
+      setMemoryTimeline((prev) => [
         {
           id: `evt${Date.now()}`,
-          dayLabel: 'Today',
+          dayLabel: "Today",
           timeLabel,
           occurredAt: nowIso,
-          stage: 'candidate',
-          lane: 'refine',
-          title: 'Knowledge card was manually revised in document view',
+          stage: "candidate",
+          lane: "refine",
+          title: "Knowledge card was manually revised in document view",
           summary:
-            summary || 'The backing document changed, so this knowledge asset is back in active review.',
+            summary ||
+            "The backing document changed, so this knowledge asset is back in active review.",
           docId: targetAsset.docIds[0] ?? currentDocId,
           docName: targetAsset.title,
           actorName: currentUserName,
-          actorType: 'human',
+          actorType: "human",
           sourceIds: targetAsset.sourceIds,
           assetIds: [targetAsset.id],
           tags: tagsFromDoc.length > 0 ? tagsFromDoc : targetAsset.tags,
@@ -1220,11 +1573,12 @@ export default function DocumentEditor() {
         ...prev,
       ]);
 
-      setAgentWritebacks(prev => [
+      setAgentWritebacks((prev) => [
         {
           id: `wb${Date.now()}`,
-          title: 'Manual edit pushed a knowledge card back into review',
-          detail: 'The backing document changed, so memo agent queued a fresh refinement pass.',
+          title: "Manual edit pushed a knowledge card back into review",
+          detail:
+            "The backing document changed, so memo agent queued a fresh refinement pass.",
           assetId: targetAsset.id,
           docId: targetAsset.docIds[0] ?? currentDocId,
           docName: targetAsset.title,
@@ -1232,86 +1586,98 @@ export default function DocumentEditor() {
         ...prev,
       ]);
 
-      setVersionHistory(prev => [
+      setVersionHistory((prev) => [
         {
           id: `v-memory-sync-${Date.now()}`,
           author: currentUserName,
-          authorType: 'human',
+          authorType: "human",
           timestamp: nowLabel,
-          date: 'Today',
-          changes: 'Synced manual edits back into the knowledge asset',
+          date: "Today",
+          changes: "Synced manual edits back into the knowledge asset",
           paragraphs: [...liveParagraphs],
         },
         ...prev,
       ]);
 
       memorySyncSnapshotRef.current = paragraphSnapshot(liveParagraphs);
-      setMemoryWritebackState('clean');
-      setMemoryWritebackLabel('这张知识卡已回写，并重新进入提炼流程');
+      setMemoryWritebackState("clean");
+      setMemoryWritebackLabel("这张知识卡已回写，并重新进入提炼流程");
       return;
     }
 
-    if (source === 'data_source' && dataSourceId) {
-      const previewLines = splitSectionLines(liveParagraphs, '### Content Preview').map(stripOrderedPrefix);
-      const targetSource = memoryDataSources.find(item => item.id === dataSourceId);
+    if (source === "data_source" && dataSourceId) {
+      const previewLines = splitSectionLines(
+        liveParagraphs,
+        "### Content Preview",
+      ).map(stripOrderedPrefix);
+      const targetSource = memoryDataSources.find(
+        (item) => item.id === dataSourceId,
+      );
       if (!targetSource) return;
-      const relatedAssetIds = new Set(relatedSourceAssets.map(asset => asset.id));
+      const relatedAssetIds = new Set(
+        relatedSourceAssets.map((asset) => asset.id),
+      );
 
-      setMemoryDataSources(prev =>
-        prev.map(item =>
+      setMemoryDataSources((prev) =>
+        prev.map((item) =>
           item.id === dataSourceId
             ? {
                 ...item,
                 summary: summary || item.summary,
-                contentPreview: previewLines.length > 0 ? previewLines.slice(0, 3) : item.contentPreview,
+                contentPreview:
+                  previewLines.length > 0
+                    ? previewLines.slice(0, 3)
+                    : item.contentPreview,
                 tags: tagsFromDoc.length > 0 ? tagsFromDoc : item.tags,
-                freshness: '刚刚手动更新',
-                status: 'reviewing',
+                freshness: "刚刚手动更新",
+                status: "reviewing",
               }
-            : item
-        )
+            : item,
+        ),
       );
 
-      setMemoryAssets(prev =>
-        prev.map(asset =>
+      setMemoryAssets((prev) =>
+        prev.map((asset) =>
           relatedAssetIds.has(asset.id)
             ? {
                 ...asset,
-                freshness: '刚刚补充证据',
-                status: asset.status === 'durable' ? 'review' : asset.status,
+                freshness: "刚刚补充证据",
+                status: asset.status === "durable" ? "review" : asset.status,
               }
-            : asset
-        )
+            : asset,
+        ),
       );
 
-      setMemoryTimeline(prev => [
+      setMemoryTimeline((prev) => [
         {
           id: `evt${Date.now()}`,
-          dayLabel: 'Today',
+          dayLabel: "Today",
           timeLabel,
           occurredAt: nowIso,
-          stage: 'candidate',
-          lane: 'extract',
-          title: 'Manual review updated a memory data source',
+          stage: "candidate",
+          lane: "extract",
+          title: "Manual review updated a memory data source",
           summary:
-            summary || 'This source was manually revised and the linked memories need a fresh extraction pass.',
+            summary ||
+            "This source was manually revised and the linked memories need a fresh extraction pass.",
           docId: dataSourceId,
           docName: targetSource.name,
           actorName: currentUserName,
-          actorType: 'human',
+          actorType: "human",
           sourceIds: relatedMemorySourceIds,
-          assetIds: relatedSourceAssets.map(asset => asset.id),
+          assetIds: relatedSourceAssets.map((asset) => asset.id),
           tags: tagsFromDoc.length > 0 ? tagsFromDoc : targetSource.tags,
         },
         ...prev,
       ]);
 
       if (relatedSourceAssets[0]) {
-        setAgentWritebacks(prev => [
+        setAgentWritebacks((prev) => [
           {
             id: `wb${Date.now()}`,
-            title: 'Manual source edits queued a new extraction pass',
-            detail: 'memo agent needs to revisit the linked knowledge after this data source changed.',
+            title: "Manual source edits queued a new extraction pass",
+            detail:
+              "memo agent needs to revisit the linked knowledge after this data source changed.",
             assetId: relatedSourceAssets[0].id,
             docId: dataSourceId,
             docName: targetSource.name,
@@ -1320,40 +1686,41 @@ export default function DocumentEditor() {
         ]);
       }
 
-      setVersionHistory(prev => [
+      setVersionHistory((prev) => [
         {
           id: `v-source-sync-${Date.now()}`,
           author: currentUserName,
-          authorType: 'human',
+          authorType: "human",
           timestamp: nowLabel,
-          date: 'Today',
-          changes: 'Synced manual edits back into the memory data source',
+          date: "Today",
+          changes: "Synced manual edits back into the memory data source",
           paragraphs: [...liveParagraphs],
         },
         ...prev,
       ]);
 
       memorySyncSnapshotRef.current = paragraphSnapshot(liveParagraphs);
-      setMemoryWritebackState('clean');
-      setMemoryWritebackLabel('这份数据源已更新，并重新进入提炼流程');
+      setMemoryWritebackState("clean");
+      setMemoryWritebackLabel("这份数据源已更新，并重新进入提炼流程");
     }
   };
 
   const scrollToCollaborator = (collaboratorId: string) => {
-    const collaborator = collaborators.find(c => c.id === collaboratorId);
+    const collaborator = collaborators.find((c) => c.id === collaboratorId);
     if (collaborator && collaborator.cursorPosition !== undefined) {
-      const paragraphElements = editorRef.current?.querySelectorAll('.paragraph-item');
+      const paragraphElements =
+        editorRef.current?.querySelectorAll(".paragraph-item");
       if (paragraphElements && paragraphElements[collaborator.cursorPosition]) {
-        paragraphElements[collaborator.cursorPosition].scrollIntoView({ 
-          behavior: 'smooth', 
-          block: 'center' 
+        paragraphElements[collaborator.cursorPosition].scrollIntoView({
+          behavior: "smooth",
+          block: "center",
         });
       }
     }
   };
 
   const handleBackNavigation = () => {
-    if (from === 'knowledge') {
+    if (from === "knowledge") {
       if (assetId) {
         navigate(`/v2/memory/knowledge?asset=${assetId}`);
         return;
@@ -1362,16 +1729,20 @@ export default function DocumentEditor() {
         navigate(`/v2/memory/knowledge?source=${dataSourceId}`);
         return;
       }
-      navigate('/v2/memory/knowledge');
+      navigate("/v2/memory/knowledge");
       return;
     }
 
-    if (from === 'data-sources') {
-      navigate(dataSourceId ? `/v2/memory/sources?source=${dataSourceId}` : '/v2/memory/sources');
+    if (from === "data-sources") {
+      navigate(
+        dataSourceId
+          ? `/v2/memory/sources?source=${dataSourceId}`
+          : "/v2/memory/sources",
+      );
       return;
     }
 
-    if (from === 'memory') {
+    if (from === "memory") {
       if (dataSourceId) {
         navigate(`/v2/memory/timeline?source=${dataSourceId}`);
         return;
@@ -1380,37 +1751,46 @@ export default function DocumentEditor() {
         navigate(`/v2/memory/timeline?asset=${assetId}`);
         return;
       }
-      navigate('/v2/memory/timeline');
+      navigate("/v2/memory/timeline");
       return;
     }
 
-    if (from === 'v2-workspace') {
-      navigate(requestedDocId ? `/v2/workspace?doc=${requestedDocId}` : '/v2/workspace');
+    if (from === "v2-workspace") {
+      navigate(
+        requestedDocId
+          ? `/v2/workspace?doc=${requestedDocId}`
+          : "/v2/workspace",
+      );
       return;
     }
 
     const params = new URLSearchParams(window.location.search);
-    const backTab = params.get('backTab');
+    const backTab = params.get("backTab");
     if (backTab) {
       navigate(`/dashboard?tab=${backTab}`);
       return;
     }
-    navigate('/dashboard');
+    navigate("/dashboard");
   };
 
-  const displayedParagraphs = selectedVersion 
-    ? versionHistory.find(v => v.id === selectedVersion)?.paragraphs || paragraphs
+  const displayedParagraphs = selectedVersion
+    ? versionHistory.find((v) => v.id === selectedVersion)?.paragraphs ||
+      paragraphs
     : paragraphs;
-  const versionAuthors = Array.from(new Set(versionHistory.map(version => version.author)));
+  const versionAuthors = Array.from(
+    new Set(versionHistory.map((version) => version.author)),
+  );
   const lastEditedAuthor = isMemoryScopedDocument
-    ? source === 'memory_asset' || source === 'data_source'
-      ? 'memo agent'
+    ? source === "memory_asset" || source === "data_source"
+      ? "memo agent"
       : currentUserName
-    : 'Claude';
+    : "Claude";
 
-  const filteredVersions = versionHistory.filter(v => {
-    if (versionFilterAuthor !== 'all' && v.author !== versionFilterAuthor) return false;
-    if (versionFilterDate !== 'all' && v.date !== versionFilterDate) return false;
+  const filteredVersions = versionHistory.filter((v) => {
+    if (versionFilterAuthor !== "all" && v.author !== versionFilterAuthor)
+      return false;
+    if (versionFilterDate !== "all" && v.date !== versionFilterDate)
+      return false;
     return true;
   });
 
@@ -1420,8 +1800,8 @@ export default function DocumentEditor() {
       <header className="h-14 flex items-center justify-between px-4 border-b border-stone-200 bg-white/80 backdrop-blur-md sticky top-0 z-10">
         <div className="flex items-center gap-4">
           <div className="relative">
-            <button 
-              onClick={handleBackNavigation} 
+            <button
+              onClick={handleBackNavigation}
               className="p-2 rounded-md hover:bg-stone-100 text-stone-500 transition-colors"
               title="返回"
             >
@@ -1430,59 +1810,65 @@ export default function DocumentEditor() {
           </div>
           <div className="flex items-center gap-2">
             <h1 className="text-sm font-medium text-stone-900">
-              {isChatLog ? currentDoc?.name ?? 'Claude & Maya: Feature Discussion' : (
-                (() => {
-                  const params = new URLSearchParams(window.location.search);
-                  const source = params.get('source');
-                  if (source === 'memory_asset') return memoryAssetDoc?.title ?? 'Memory Asset';
-                  if (source === 'data_source') return memoryDataSourceDoc?.title ?? 'Data Source';
-                  if (currentDoc?.name) return currentDoc.name;
-                  if (source === 'whoami_doc') return '关于我 (Who am I)';
-                  if (source === 'goal_doc') return '当前目标 (Goal)';
-                  if (source === 'keypoints_doc') return '已提炼洞察列表 (Key Points)';
-                  if (source === 'rawdata') return params.get('title') || '原始资料';
-                  return 'Project Alpha Architecture';
-                })()
-              )}
+              {isChatLog
+                ? (currentDoc?.name ?? "Claude & Maya: Feature Discussion")
+                : (() => {
+                    const params = new URLSearchParams(window.location.search);
+                    const source = params.get("source");
+                    if (source === "memory_asset")
+                      return memoryAssetDoc?.title ?? "Memory Asset";
+                    if (source === "data_source")
+                      return memoryDataSourceDoc?.title ?? "Data Source";
+                    if (currentDoc?.name) return currentDoc.name;
+                    if (source === "whoami_doc") return "关于我 (Who am I)";
+                    if (source === "goal_doc") return "当前目标 (Goal)";
+                    if (source === "keypoints_doc")
+                      return "已提炼洞察列表 (Key Points)";
+                    if (source === "rawdata")
+                      return params.get("title") || "原始资料";
+                    return "Project Alpha Architecture";
+                  })()}
             </h1>
           </div>
         </div>
-        
-          <div className="flex items-center gap-3">
+
+        <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 text-xs text-stone-500 mr-4">
             <Clock className="w-3 h-3" />
             {`Last edited 2 mins ago by ${lastEditedAuthor}`}
           </div>
 
-          {(source === 'memory_asset' || source === 'data_source') && (
+          {(source === "memory_asset" || source === "data_source") && (
             <>
               <div
                 className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium ${
-                  memoryWritebackState === 'dirty'
-                    ? 'bg-amber-50 text-amber-700'
-                    : memoryWritebackState === 'syncing'
-                      ? 'bg-stone-900 text-white'
-                      : 'bg-stone-100 text-stone-600'
+                  memoryWritebackState === "dirty"
+                    ? "bg-amber-50 text-amber-700"
+                    : memoryWritebackState === "syncing"
+                      ? "bg-stone-900 text-white"
+                      : "bg-stone-100 text-stone-600"
                 }`}
               >
-                <RefreshCw className={`w-3 h-3 ${memoryWritebackState === 'syncing' ? 'animate-spin' : ''}`} />
+                <RefreshCw
+                  className={`w-3 h-3 ${memoryWritebackState === "syncing" ? "animate-spin" : ""}`}
+                />
                 {memoryWritebackLabel}
               </div>
               <button
                 onClick={handleSyncToMemory}
-                disabled={memoryWritebackState !== 'dirty'}
+                disabled={memoryWritebackState !== "dirty"}
                 className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                  memoryWritebackState === 'dirty'
-                    ? 'bg-stone-900 text-white hover:bg-stone-800'
-                    : 'bg-stone-100 text-stone-400 cursor-not-allowed'
+                  memoryWritebackState === "dirty"
+                    ? "bg-stone-900 text-white hover:bg-stone-800"
+                    : "bg-stone-100 text-stone-400 cursor-not-allowed"
                 }`}
               >
                 同步到 Memory
               </button>
             </>
           )}
-          
-          <button 
+
+          <button
             onClick={() => {
               setShowCollaboratorsSidebar(!showCollaboratorsSidebar);
               setShowCommentsSidebar(false);
@@ -1498,26 +1884,57 @@ export default function DocumentEditor() {
               className="w-6 h-6 rounded-full bg-stone-200 flex items-center justify-center text-[10px] text-stone-700 border border-white z-20"
               title={isChatLog ? externalCollaboratorName : currentUserName}
             >
-              {(isChatLog ? externalCollaboratorName : currentUserName).charAt(0)}
+              {(isChatLog ? externalCollaboratorName : currentUserName).charAt(
+                0,
+              )}
             </div>
           </button>
 
-
-
           {/* Version History Button */}
-          <button 
+          <button
             onClick={() => {
               setShowVersionHistory(!showVersionHistory);
               setShowCommentsSidebar(false);
             }}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-stone-100 text-sm font-medium transition-colors ${showVersionHistory ? 'bg-stone-100 text-stone-900' : 'text-stone-600'}`}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-stone-100 text-sm font-medium transition-colors ${showVersionHistory ? "bg-stone-100 text-stone-900" : "text-stone-600"}`}
           >
             <History className="w-4 h-4" /> 版本历史
           </button>
 
+          {/* Page Publish Button */}
+          {isPageDoc && (
+            <button
+              onClick={() => {
+                if (!publishedUrl) {
+                  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+                  let randomId = "";
+                  for (let i = 0; i < 8; i++)
+                    randomId += chars[Math.floor(Math.random() * chars.length)];
+                  setPublishedUrl(`https://mindx.tencent.com/p/${randomId}`);
+                }
+                setShowPublishModal(true);
+              }}
+              className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                publishedUrl
+                  ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200"
+                  : "bg-indigo-600 text-white hover:bg-indigo-700"
+              }`}
+            >
+              {publishedUrl ? (
+                <>
+                  <Globe className="w-4 h-4" /> 已发布
+                </>
+              ) : (
+                <>
+                  <Globe className="w-4 h-4" /> 发布
+                </>
+              )}
+            </button>
+          )}
+
           {/* Notion-style Share Popover */}
           <div className="relative">
-            <button 
+            <button
               onClick={() => setIsShareOpen(!isShareOpen)}
               className="flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-stone-100 text-sm font-medium text-stone-600 transition-colors"
             >
@@ -1526,34 +1943,54 @@ export default function DocumentEditor() {
 
             {isShareOpen && (
               <>
-                <div className="fixed inset-0 z-30" onClick={() => { setIsShareOpen(false); setShareInviteMode(false); setOpenMemberDropdown(null); setShowInvitePermDropdown(false); setRemoveConfirm(null); setAgentPermTooltip(null); }} />
-                <div className="absolute right-0 top-full mt-2 w-[420px] bg-white border border-stone-200 rounded-xl shadow-2xl z-40 overflow-hidden" onClick={(e) => e.stopPropagation()}>
-                  
+                <div
+                  className="fixed inset-0 z-30"
+                  onClick={() => {
+                    setIsShareOpen(false);
+                    setShareInviteMode(false);
+                    setOpenMemberDropdown(null);
+                    setShowInvitePermDropdown(false);
+                    setRemoveConfirm(null);
+                    setAgentPermTooltip(null);
+                  }}
+                />
+                <div
+                  className="absolute right-0 top-full mt-2 w-[420px] bg-white border border-stone-200 rounded-xl shadow-2xl z-40 overflow-hidden"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   {shareInviteMode ? (
                     <>
                       {/* Invite sub-page header */}
                       <div className="flex items-center gap-2 px-4 pt-4 pb-2">
-                        <button 
+                        <button
                           onClick={() => setShareInviteMode(false)}
                           className="p-1 rounded-md hover:bg-stone-100 transition-colors"
                         >
                           <ArrowLeft className="w-4 h-4 text-stone-500" />
                         </button>
-                        <span className="text-sm font-semibold text-stone-900">邀请</span>
+                        <span className="text-sm font-semibold text-stone-900">
+                          邀请
+                        </span>
                       </div>
                       {/* Invite input */}
                       <div className="px-4 pb-4">
                         <div className="flex items-center gap-2">
                           <div className="flex-1 relative flex items-center bg-white border-2 border-stone-900 rounded-lg">
-                            <input 
-                              type="text" 
-                              placeholder="Agent 名称或邮件地址，以逗号分隔" 
+                            <input
+                              type="text"
+                              placeholder="Agent 名称或邮件地址，以逗号分隔"
                               autoFocus
                               className="flex-1 min-w-0 px-3 py-2 text-sm focus:outline-none placeholder:text-stone-400 bg-transparent rounded-lg"
                             />
                             <div className="shrink-0 mr-1.5">
                               <button
-                                onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); setShowInvitePermDropdown(!showInvitePermDropdown); }}
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setShowInvitePermDropdown(
+                                    !showInvitePermDropdown,
+                                  );
+                                }}
                                 className="flex items-center gap-0.5 px-2 py-1 text-xs text-stone-500 hover:text-stone-700 hover:bg-stone-100 rounded-md transition-colors font-medium cursor-pointer select-none"
                               >
                                 {invitePermission}
@@ -1562,13 +1999,20 @@ export default function DocumentEditor() {
                             </div>
                             {showInvitePermDropdown && (
                               <>
-                                <div className="fixed inset-0 z-[60]" onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); setShowInvitePermDropdown(false); }} />
+                                <div
+                                  className="fixed inset-0 z-[60]"
+                                  onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    setShowInvitePermDropdown(false);
+                                  }}
+                                />
                                 <div className="absolute right-0 top-full mt-1 w-32 bg-white rounded-lg shadow-lg border border-stone-200 py-1 z-[70]">
                                   <button
                                     onMouseDown={(e) => {
                                       e.preventDefault();
                                       e.stopPropagation();
-                                      setInvitePermission('可编辑');
+                                      setInvitePermission("可编辑");
                                       setShowInvitePermDropdown(false);
                                     }}
                                     className="w-full flex items-center justify-between px-3 py-1.5 text-xs text-stone-700 hover:bg-stone-50 transition-colors"
@@ -1577,13 +2021,15 @@ export default function DocumentEditor() {
                                       <Pencil className="w-3 h-3 text-stone-400" />
                                       可编辑
                                     </div>
-                                    {invitePermission === '可编辑' && <Check className="w-3 h-3 text-stone-900" />}
+                                    {invitePermission === "可编辑" && (
+                                      <Check className="w-3 h-3 text-stone-900" />
+                                    )}
                                   </button>
                                   <button
                                     onMouseDown={(e) => {
                                       e.preventDefault();
                                       e.stopPropagation();
-                                      setInvitePermission('可查看');
+                                      setInvitePermission("可查看");
                                       setShowInvitePermDropdown(false);
                                     }}
                                     className="w-full flex items-center justify-between px-3 py-1.5 text-xs text-stone-700 hover:bg-stone-50 transition-colors"
@@ -1592,7 +2038,9 @@ export default function DocumentEditor() {
                                       <Eye className="w-3 h-3 text-stone-400" />
                                       可查看
                                     </div>
-                                    {invitePermission === '可查看' && <Check className="w-3 h-3 text-stone-900" />}
+                                    {invitePermission === "可查看" && (
+                                      <Check className="w-3 h-3 text-stone-900" />
+                                    )}
                                   </button>
                                 </div>
                               </>
@@ -1608,19 +2056,31 @@ export default function DocumentEditor() {
                         <div className="flex items-center gap-4 mb-4">
                           {/* WeChat icon */}
                           <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity">
-                            <svg viewBox="0 0 24 24" className="w-5 h-5 text-white" fill="currentColor">
-                              <path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 0 1 .213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.29.295a.326.326 0 0 0 .167-.054l1.903-1.114a.864.864 0 0 1 .717-.098 10.16 10.16 0 0 0 2.837.403c.276 0 .543-.027.811-.05-.857-2.578.157-4.972 1.932-6.446 1.703-1.415 3.882-1.98 5.853-1.838-.576-3.583-4.196-6.348-8.596-6.348zM5.785 5.991c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 0 1-1.162 1.178A1.17 1.17 0 0 1 4.623 7.17c0-.651.52-1.18 1.162-1.18zm5.813 0c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 0 1-1.162 1.178 1.17 1.17 0 0 1-1.162-1.178c0-.651.52-1.18 1.162-1.18zm3.21 4.127c-3.894 0-7.164 2.58-7.164 5.638 0 3.06 3.27 5.64 7.164 5.64.867 0 1.703-.142 2.478-.4a.712.712 0 0 1 .59.08l1.563.924a.266.266 0 0 0 .136.045c.131 0 .237-.108.237-.241 0-.06-.023-.117-.039-.174l-.32-1.217a.481.481 0 0 1 .176-.546C21.096 19.158 22 17.486 22 15.756c0-3.059-3.27-5.638-7.192-5.638zm-2.335 2.934c.528 0 .956.434.956.97a.963.963 0 0 1-.956.97.963.963 0 0 1-.957-.97c0-.536.428-.97.957-.97zm4.672 0c.528 0 .956.434.956.97a.963.963 0 0 1-.956.97.963.963 0 0 1-.957-.97c0-.536.428-.97.957-.97z"/>
+                            <svg
+                              viewBox="0 0 24 24"
+                              className="w-5 h-5 text-white"
+                              fill="currentColor"
+                            >
+                              <path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 0 1 .213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.29.295a.326.326 0 0 0 .167-.054l1.903-1.114a.864.864 0 0 1 .717-.098 10.16 10.16 0 0 0 2.837.403c.276 0 .543-.027.811-.05-.857-2.578.157-4.972 1.932-6.446 1.703-1.415 3.882-1.98 5.853-1.838-.576-3.583-4.196-6.348-8.596-6.348zM5.785 5.991c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 0 1-1.162 1.178A1.17 1.17 0 0 1 4.623 7.17c0-.651.52-1.18 1.162-1.18zm5.813 0c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 0 1-1.162 1.178 1.17 1.17 0 0 1-1.162-1.178c0-.651.52-1.18 1.162-1.18zm3.21 4.127c-3.894 0-7.164 2.58-7.164 5.638 0 3.06 3.27 5.64 7.164 5.64.867 0 1.703-.142 2.478-.4a.712.712 0 0 1 .59.08l1.563.924a.266.266 0 0 0 .136.045c.131 0 .237-.108.237-.241 0-.06-.023-.117-.039-.174l-.32-1.217a.481.481 0 0 1 .176-.546C21.096 19.158 22 17.486 22 15.756c0-3.059-3.27-5.638-7.192-5.638zm-2.335 2.934c.528 0 .956.434.956.97a.963.963 0 0 1-.956.97.963.963 0 0 1-.957-.97c0-.536.428-.97.957-.97zm4.672 0c.528 0 .956.434.956.97a.963.963 0 0 1-.956.97.963.963 0 0 1-.957-.97c0-.536.428-.97.957-.97z" />
                             </svg>
                           </div>
                           {/* QQ icon */}
                           <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity">
-                            <svg viewBox="0 0 24 24" className="w-5 h-5 text-white" fill="currentColor">
-                              <path d="M21.395 15.035a39.548 39.548 0 0 0-1.066-2.158c-.09-.17-.178-.336-.263-.5a13.157 13.157 0 0 0 .064-1.274c0-4.545-2.558-8.23-5.714-8.23h-.002c-.324 0-.643.039-.955.107A4.357 4.357 0 0 0 12 2.467a4.357 4.357 0 0 0-1.459.513c-.312-.068-.631-.107-.955-.107h-.002c-3.156 0-5.714 3.685-5.714 8.23 0 .433.023.864.064 1.274-.085.164-.173.33-.263.5a39.548 39.548 0 0 0-1.066 2.158c-.378.817-1.456 3.332-.709 3.946.339.278.822-.015 1.376-.588.192-.199.394-.437.604-.71a7.847 7.847 0 0 0 2.087 2.593c-.066.253-.108.49-.108.687 0 .638.223.923.636 1.077-.063.164-.098.336-.098.507 0 .87.768 1.453 2.078 1.453.745 0 1.553-.152 2.185-.552a3.03 3.03 0 0 0 1.344.321 3.03 3.03 0 0 0 1.344-.321c.632.4 1.44.552 2.185.552 1.31 0 2.078-.583 2.078-1.453 0-.17-.035-.343-.098-.507.413-.154.636-.439.636-1.077 0-.197-.042-.434-.108-.687a7.847 7.847 0 0 0 2.087-2.593c.21.273.412.511.604.71.554.573 1.037.866 1.376.588.747-.614-.331-3.13-.709-3.946z"/>
+                            <svg
+                              viewBox="0 0 24 24"
+                              className="w-5 h-5 text-white"
+                              fill="currentColor"
+                            >
+                              <path d="M21.395 15.035a39.548 39.548 0 0 0-1.066-2.158c-.09-.17-.178-.336-.263-.5a13.157 13.157 0 0 0 .064-1.274c0-4.545-2.558-8.23-5.714-8.23h-.002c-.324 0-.643.039-.955.107A4.357 4.357 0 0 0 12 2.467a4.357 4.357 0 0 0-1.459.513c-.312-.068-.631-.107-.955-.107h-.002c-3.156 0-5.714 3.685-5.714 8.23 0 .433.023.864.064 1.274-.085.164-.173.33-.263.5a39.548 39.548 0 0 0-1.066 2.158c-.378.817-1.456 3.332-.709 3.946.339.278.822-.015 1.376-.588.192-.199.394-.437.604-.71a7.847 7.847 0 0 0 2.087 2.593c-.066.253-.108.49-.108.687 0 .638.223.923.636 1.077-.063.164-.098.336-.098.507 0 .87.768 1.453 2.078 1.453.745 0 1.553-.152 2.185-.552a3.03 3.03 0 0 0 1.344.321 3.03 3.03 0 0 0 1.344-.321c.632.4 1.44.552 2.185.552 1.31 0 2.078-.583 2.078-1.453 0-.17-.035-.343-.098-.507.413-.154.636-.439.636-1.077 0-.197-.042-.434-.108-.687a7.847 7.847 0 0 0 2.087-2.593c.21.273.412.511.604.71.554.573 1.037.866 1.376.588.747-.614-.331-3.13-.709-3.946z" />
                             </svg>
                           </div>
                         </div>
-                        <p className="text-sm font-semibold text-stone-800 mb-1">导入联系人</p>
-                        <p className="text-xs text-stone-400 mb-4">关联微信、QQ 快速添加协作成员</p>
+                        <p className="text-sm font-semibold text-stone-800 mb-1">
+                          导入联系人
+                        </p>
+                        <p className="text-xs text-stone-400 mb-4">
+                          关联微信、QQ 快速添加协作成员
+                        </p>
                         <button className="px-4 py-1.5 border border-stone-200 rounded-lg text-sm text-stone-700 font-medium hover:bg-stone-50 transition-colors">
                           立即开始
                         </button>
@@ -1628,8 +2088,8 @@ export default function DocumentEditor() {
                     </>
                   ) : (
                     <>
-                  {/* [MVP] 邀请功能暂时屏蔽，后续版本恢复 */}
-                  {/* <div className="p-4 border-b border-stone-100">
+                      {/* [MVP] 邀请功能暂时屏蔽，后续版本恢复 */}
+                      {/* <div className="p-4 border-b border-stone-100">
                     <div className="flex items-center gap-2">
                       <input 
                         type="text" 
@@ -1643,246 +2103,204 @@ export default function DocumentEditor() {
                     </div>
                   </div> */}
 
-                  {/* Members list — hierarchical: Human → Agents */}
-                  <div className="p-2 max-h-72 overflow-y-auto">
-                    <div className="px-2 py-1 text-xs font-bold text-stone-400 uppercase tracking-wider">协作成员</div>
+                      {/* Members list — hierarchical: Human → Agents */}
+                      <div className="p-2 max-h-72 overflow-y-auto">
+                        <div className="px-2 py-1 text-xs font-bold text-stone-400 uppercase tracking-wider">
+                          协作成员
+                        </div>
 
-                    {shareMembers.map((user) => {
-                      const isOwner = user.role === '创建者';
-                      const isExpanded = expandedUsers.has(user.id);
-                      const agentCount = user.agents.length;
-                      const userRoleLevel = roleLevels[user.role] || 0;
+                        {shareMembers.map((user) => {
+                          const isOwner = user.role === "创建者";
+                          const isExpanded = expandedUsers.has(user.id);
+                          const agentCount = user.agents.length;
+                          const userRoleLevel = roleLevels[user.role] || 0;
 
-                      return (
-                        <div key={user.id}>
-                          {/* Human user row */}
-                          <div className="flex items-center justify-between px-2 py-2 rounded-lg hover:bg-stone-50 transition-colors group/user">
-                            <div className="flex items-center gap-3 min-w-0 flex-1">
-                              <div className={`w-7 h-7 rounded-full ${user.color} flex items-center justify-center text-white text-xs font-medium shrink-0`}>
-                                {user.initials}
-                              </div>
-                              <div className="min-w-0">
-                                <p className="text-sm font-medium text-stone-900 truncate">{user.name}</p>
-                                <p className="text-[11px] text-stone-400 truncate">{user.email}</p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-1.5 shrink-0">
-                              {/* Agent 折叠触发器 */}
-                              {agentCount > 0 && (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setExpandedUsers(prev => {
-                                      const next = new Set(prev);
-                                      if (next.has(user.id)) next.delete(user.id);
-                                      else next.add(user.id);
-                                      return next;
-                                    });
-                                  }}
-                                  className="flex items-center gap-1 px-1.5 py-0.5 text-[11px] text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded transition-colors"
-                                >
-                                  <Bot className="w-3 h-3" />
-                                  <span>{agentCount}</span>
-                                  <ChevronRight className={`w-3 h-3 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`} />
-                                </button>
-                              )}
-                              {/* 权限 / 角色 */}
-                              {isOwner ? (
-                                <span className="text-xs text-stone-400 font-medium ml-1">创建者</span>
-                              ) : (
-                                <div className="relative">
-                                  <button
-                                    onClick={(e) => { e.stopPropagation(); setOpenMemberDropdown(openMemberDropdown === user.id ? null : user.id); }}
-                                    className="text-xs text-stone-600 font-medium bg-transparent border border-stone-200 rounded-md px-2 py-1 cursor-pointer hover:bg-stone-50 flex items-center gap-1 transition-colors"
+                          return (
+                            <div key={user.id}>
+                              {/* Human user row */}
+                              <div className="flex items-center justify-between px-2 py-2 rounded-lg hover:bg-stone-50 transition-colors group/user">
+                                <div className="flex items-center gap-3 min-w-0 flex-1">
+                                  <div
+                                    className={`w-7 h-7 rounded-full ${user.color} flex items-center justify-center text-white text-xs font-medium shrink-0`}
                                   >
-                                    {user.role}
-                                    <ChevronDown className="w-3 h-3 text-stone-400" />
-                                  </button>
-                                  {openMemberDropdown === user.id && (
-                                    <>
-                                      <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); setOpenMemberDropdown(null); }} />
-                                      <div className="absolute right-0 top-full mt-1 w-36 bg-white rounded-lg shadow-lg border border-stone-200 py-1 z-50">
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            setShareMembers(prev => prev.map(m => m.id === user.id ? {
-                                              ...m,
-                                              role: '可编辑',
-                                              agents: m.agents.map(a => {
-                                                // 如果 agent 权限高于新的用户权限，自动降级
-                                                if ((roleLevels[a.role] || 0) > roleLevels['可编辑']) {
-                                                  return { ...a, role: '可编辑', inheritedFromUser: true };
-                                                }
-                                                return a;
-                                              })
-                                            } : m));
-                                            setOpenMemberDropdown(null);
-                                          }}
-                                          className="w-full flex items-center justify-between px-3 py-1.5 text-xs text-stone-700 hover:bg-stone-50 transition-colors"
-                                        >
-                                          <div className="flex items-center gap-2">
-                                            <Pencil className="w-3 h-3 text-stone-400" />
-                                            可编辑
-                                          </div>
-                                          {user.role === '可编辑' && <Check className="w-3 h-3 text-stone-900" />}
-                                        </button>
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            setShareMembers(prev => prev.map(m => m.id === user.id ? {
-                                              ...m,
-                                              role: '可查看',
-                                              agents: m.agents.map(a => {
-                                                if ((roleLevels[a.role] || 0) > roleLevels['可查看']) {
-                                                  return { ...a, role: '可查看', inheritedFromUser: true };
-                                                }
-                                                return a;
-                                              })
-                                            } : m));
-                                            setOpenMemberDropdown(null);
-                                          }}
-                                          className="w-full flex items-center justify-between px-3 py-1.5 text-xs text-stone-700 hover:bg-stone-50 transition-colors"
-                                        >
-                                          <div className="flex items-center gap-2">
-                                            <Eye className="w-3 h-3 text-stone-400" />
-                                            可查看
-                                          </div>
-                                          {user.role === '可查看' && <Check className="w-3 h-3 text-stone-900" />}
-                                        </button>
-                                        <div className="border-t border-stone-200 my-1" />
-                                        <button
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            setOpenMemberDropdown(null);
-                                            if (agentCount > 0) {
-                                              setRemoveConfirm({ userId: user.id, name: user.name, agentCount });
-                                            } else {
-                                              setShareMembers(prev => prev.filter(m => m.id !== user.id));
-                                            }
-                                          }}
-                                          className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-red-600 hover:bg-red-50 transition-colors"
-                                        >
-                                          <UserMinus className="w-3 h-3" />
-                                          移除
-                                        </button>
-                                      </div>
-                                    </>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Agent sub-rows (collapsible) */}
-                          {isExpanded && user.agents.map((agent) => {
-                            const agentRoleLevel = roleLevels[agent.role] || 0;
-                            return (
-                              <div key={agent.id} className="flex items-center justify-between pl-8 pr-2 py-1.5 rounded-lg hover:bg-stone-50/70 transition-colors">
-                                <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                                  <div className="flex items-center gap-1.5 text-stone-300 shrink-0">
-                                    <span className="text-[10px]">└</span>
-                                    <div className="w-5 h-5 rounded-full bg-stone-100 flex items-center justify-center">
-                                      <Bot className="w-3 h-3 text-stone-500" />
-                                    </div>
+                                    {user.initials}
                                   </div>
                                   <div className="min-w-0">
-                                    <p className="text-xs font-medium text-stone-700 truncate">{agent.name}</p>
+                                    <p className="text-sm font-medium text-stone-900 truncate">
+                                      {user.name}
+                                    </p>
+                                    <p className="text-[11px] text-stone-400 truncate">
+                                      {user.email}
+                                    </p>
                                   </div>
                                 </div>
-                                <div className="relative shrink-0">
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  {/* Agent 折叠触发器 */}
+                                  {agentCount > 0 && (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setExpandedUsers((prev) => {
+                                          const next = new Set(prev);
+                                          if (next.has(user.id))
+                                            next.delete(user.id);
+                                          else next.add(user.id);
+                                          return next;
+                                        });
+                                      }}
+                                      className="flex items-center gap-1 px-1.5 py-0.5 text-[11px] text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded transition-colors"
+                                    >
+                                      <Bot className="w-3 h-3" />
+                                      <span>{agentCount}</span>
+                                      <ChevronRight
+                                        className={`w-3 h-3 transition-transform duration-200 ${isExpanded ? "rotate-90" : ""}`}
+                                      />
+                                    </button>
+                                  )}
+                                  {/* 权限 / 角色 */}
                                   {isOwner ? (
-                                    /* Owner 的 agent 也可调整权限 */
-                                    <div className="relative">
-                                      <button
-                                        onClick={(e) => { e.stopPropagation(); setOpenMemberDropdown(openMemberDropdown === agent.id ? null : agent.id); }}
-                                        className="text-[11px] text-stone-500 font-medium bg-stone-50 border border-stone-200 rounded-md px-2 py-0.5 cursor-pointer hover:bg-stone-100 flex items-center gap-1 transition-colors"
-                                      >
-                                        {agent.role}
-                                        <ChevronDown className="w-2.5 h-2.5 text-stone-400" />
-                                      </button>
-                                      {openMemberDropdown === agent.id && (
-                                        <>
-                                          <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); setOpenMemberDropdown(null); }} />
-                                          <div className="absolute right-0 top-full mt-1 w-40 bg-white rounded-lg shadow-lg border border-stone-200 py-1 z-50">
-                                            {['可编辑', '可查看'].map((opt) => (
-                                              <button
-                                                key={opt}
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  setShareMembers(prev => prev.map(m => m.id === user.id ? {
-                                                    ...m,
-                                                    agents: m.agents.map(a => a.id === agent.id ? { ...a, role: opt, inheritedFromUser: false } : a)
-                                                  } : m));
-                                                  setOpenMemberDropdown(null);
-                                                }}
-                                                className="w-full flex items-center justify-between px-3 py-1.5 text-xs text-stone-700 hover:bg-stone-50 transition-colors"
-                                              >
-                                                <div className="flex items-center gap-2">
-                                                  {opt === '可编辑' ? <Pencil className="w-3 h-3 text-stone-400" /> : <Eye className="w-3 h-3 text-stone-400" />}
-                                                  {opt}
-                                                </div>
-                                                {agent.role === opt && <Check className="w-3 h-3 text-stone-900" />}
-                                              </button>
-                                            ))}
-                                          </div>
-                                        </>
-                                      )}
-                                    </div>
+                                    <span className="text-xs text-stone-400 font-medium ml-1">
+                                      创建者
+                                    </span>
                                   ) : (
-                                    /* 非 owner 用户下的 agent：权限下拉，超出上限的选项置灰 */
                                     <div className="relative">
                                       <button
-                                        onClick={(e) => { e.stopPropagation(); setOpenMemberDropdown(openMemberDropdown === agent.id ? null : agent.id); }}
-                                        className="text-[11px] text-stone-500 font-medium bg-stone-50 border border-stone-200 rounded-md px-2 py-0.5 cursor-pointer hover:bg-stone-100 flex items-center gap-1 transition-colors"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setOpenMemberDropdown(
+                                            openMemberDropdown === user.id
+                                              ? null
+                                              : user.id,
+                                          );
+                                        }}
+                                        className="text-xs text-stone-600 font-medium bg-transparent border border-stone-200 rounded-md px-2 py-1 cursor-pointer hover:bg-stone-50 flex items-center gap-1 transition-colors"
                                       >
-                                        {agent.role}
-                                        <ChevronDown className="w-2.5 h-2.5 text-stone-400" />
+                                        {user.role}
+                                        <ChevronDown className="w-3 h-3 text-stone-400" />
                                       </button>
-                                      {openMemberDropdown === agent.id && (
+                                      {openMemberDropdown === user.id && (
                                         <>
-                                          <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); setOpenMemberDropdown(null); }} />
-                                          <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-stone-200 py-1 z-50">
-                                            {['可编辑', '可查看'].map((opt) => {
-                                              const optLevel = roleLevels[opt] || 0;
-                                              const isDisabled = optLevel > userRoleLevel;
-                                              return (
-                                                <div key={opt} className="relative">
-                                                  <button
-                                                    onClick={(e) => {
-                                                      e.stopPropagation();
-                                                      if (isDisabled) return;
-                                                      setShareMembers(prev => prev.map(m => m.id === user.id ? {
-                                                        ...m,
-                                                        agents: m.agents.map(a => a.id === agent.id ? { ...a, role: opt, inheritedFromUser: false } : a)
-                                                      } : m));
-                                                      setOpenMemberDropdown(null);
-                                                    }}
-                                                    onMouseEnter={() => { if (isDisabled) setAgentPermTooltip(agent.id + opt); }}
-                                                    onMouseLeave={() => setAgentPermTooltip(null)}
-                                                    className={`w-full flex items-center justify-between px-3 py-1.5 text-xs transition-colors ${
-                                                      isDisabled 
-                                                        ? 'text-stone-300 cursor-not-allowed' 
-                                                        : 'text-stone-700 hover:bg-stone-50 cursor-pointer'
-                                                    }`}
-                                                    disabled={isDisabled}
-                                                  >
-                                                    <div className="flex items-center gap-2">
-                                                      {opt === '可编辑' ? <Pencil className={`w-3 h-3 ${isDisabled ? 'text-stone-300' : 'text-stone-400'}`} /> : <Eye className={`w-3 h-3 ${isDisabled ? 'text-stone-300' : 'text-stone-400'}`} />}
-                                                      {opt}
-                                                      {isDisabled && <Lock className="w-2.5 h-2.5 text-stone-300 ml-0.5" />}
-                                                    </div>
-                                                    {agent.role === opt && !isDisabled && <Check className="w-3 h-3 text-stone-900" />}
-                                                  </button>
-                                                  {/* Tooltip: 超出上限提示 */}
-                                                  {isDisabled && agentPermTooltip === agent.id + opt && (
-                                                    <div className="absolute right-full top-1/2 -translate-y-1/2 mr-2 px-2.5 py-1.5 bg-stone-800 text-white text-[10px] rounded-md whitespace-nowrap shadow-lg z-[60]">
-                                                      不能超过所属用户（{user.name}）的权限
-                                                      <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-full w-0 h-0 border-t-4 border-b-4 border-l-4 border-transparent border-l-stone-800" />
-                                                    </div>
-                                                  )}
-                                                </div>
-                                              );
-                                            })}
+                                          <div
+                                            className="fixed inset-0 z-40"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setOpenMemberDropdown(null);
+                                            }}
+                                          />
+                                          <div className="absolute right-0 top-full mt-1 w-36 bg-white rounded-lg shadow-lg border border-stone-200 py-1 z-50">
+                                            <button
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                setShareMembers((prev) =>
+                                                  prev.map((m) =>
+                                                    m.id === user.id
+                                                      ? {
+                                                          ...m,
+                                                          role: "可编辑",
+                                                          agents: m.agents.map(
+                                                            (a) => {
+                                                              // 如果 agent 权限高于新的用户权限，自动降级
+                                                              if (
+                                                                (roleLevels[
+                                                                  a.role
+                                                                ] || 0) >
+                                                                roleLevels[
+                                                                  "可编辑"
+                                                                ]
+                                                              ) {
+                                                                return {
+                                                                  ...a,
+                                                                  role: "可编辑",
+                                                                  inheritedFromUser: true,
+                                                                };
+                                                              }
+                                                              return a;
+                                                            },
+                                                          ),
+                                                        }
+                                                      : m,
+                                                  ),
+                                                );
+                                                setOpenMemberDropdown(null);
+                                              }}
+                                              className="w-full flex items-center justify-between px-3 py-1.5 text-xs text-stone-700 hover:bg-stone-50 transition-colors"
+                                            >
+                                              <div className="flex items-center gap-2">
+                                                <Pencil className="w-3 h-3 text-stone-400" />
+                                                可编辑
+                                              </div>
+                                              {user.role === "可编辑" && (
+                                                <Check className="w-3 h-3 text-stone-900" />
+                                              )}
+                                            </button>
+                                            <button
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                setShareMembers((prev) =>
+                                                  prev.map((m) =>
+                                                    m.id === user.id
+                                                      ? {
+                                                          ...m,
+                                                          role: "可查看",
+                                                          agents: m.agents.map(
+                                                            (a) => {
+                                                              if (
+                                                                (roleLevels[
+                                                                  a.role
+                                                                ] || 0) >
+                                                                roleLevels[
+                                                                  "可查看"
+                                                                ]
+                                                              ) {
+                                                                return {
+                                                                  ...a,
+                                                                  role: "可查看",
+                                                                  inheritedFromUser: true,
+                                                                };
+                                                              }
+                                                              return a;
+                                                            },
+                                                          ),
+                                                        }
+                                                      : m,
+                                                  ),
+                                                );
+                                                setOpenMemberDropdown(null);
+                                              }}
+                                              className="w-full flex items-center justify-between px-3 py-1.5 text-xs text-stone-700 hover:bg-stone-50 transition-colors"
+                                            >
+                                              <div className="flex items-center gap-2">
+                                                <Eye className="w-3 h-3 text-stone-400" />
+                                                可查看
+                                              </div>
+                                              {user.role === "可查看" && (
+                                                <Check className="w-3 h-3 text-stone-900" />
+                                              )}
+                                            </button>
+                                            <div className="border-t border-stone-200 my-1" />
+                                            <button
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                setOpenMemberDropdown(null);
+                                                if (agentCount > 0) {
+                                                  setRemoveConfirm({
+                                                    userId: user.id,
+                                                    name: user.name,
+                                                    agentCount,
+                                                  });
+                                                } else {
+                                                  setShareMembers((prev) =>
+                                                    prev.filter(
+                                                      (m) => m.id !== user.id,
+                                                    ),
+                                                  );
+                                                }
+                                              }}
+                                              className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-red-600 hover:bg-red-50 transition-colors"
+                                            >
+                                              <UserMinus className="w-3 h-3" />
+                                              移除
+                                            </button>
                                           </div>
                                         </>
                                       )}
@@ -1890,126 +2308,417 @@ export default function DocumentEditor() {
                                   )}
                                 </div>
                               </div>
-                            );
-                          })}
-                        </div>
-                      );
-                    })}
-                  </div>
 
-                  {/* Remove confirmation dialog */}
-                  {removeConfirm && (
-                    <div className="border-t border-stone-100 px-4 py-3 bg-red-50/50">
-                      <p className="text-xs text-stone-700 mb-2.5">
-                        移除 <span className="font-semibold">{removeConfirm.name}</span> 后，其名下 <span className="font-semibold">{removeConfirm.agentCount}</span> 个 Agent 也将同时失去访问权限，确认移除？
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => {
-                            setShareMembers(prev => prev.filter(m => m.id !== removeConfirm.userId));
-                            setRemoveConfirm(null);
-                          }}
-                          className="px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded-lg hover:bg-red-700 transition-colors"
-                        >
-                          确认移除
-                        </button>
-                        <button
-                          onClick={() => setRemoveConfirm(null)}
-                          className="px-3 py-1.5 border border-stone-200 text-xs font-medium text-stone-600 rounded-lg hover:bg-white transition-colors"
-                        >
-                          取消
-                        </button>
+                              {/* Agent sub-rows (collapsible) */}
+                              {isExpanded &&
+                                user.agents.map((agent) => {
+                                  const agentRoleLevel =
+                                    roleLevels[agent.role] || 0;
+                                  return (
+                                    <div
+                                      key={agent.id}
+                                      className="flex items-center justify-between pl-8 pr-2 py-1.5 rounded-lg hover:bg-stone-50/70 transition-colors"
+                                    >
+                                      <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                        <div className="flex items-center gap-1.5 text-stone-300 shrink-0">
+                                          <span className="text-[10px]">└</span>
+                                          <div className="w-5 h-5 rounded-full bg-stone-100 flex items-center justify-center">
+                                            <Bot className="w-3 h-3 text-stone-500" />
+                                          </div>
+                                        </div>
+                                        <div className="min-w-0">
+                                          <p className="text-xs font-medium text-stone-700 truncate">
+                                            {agent.name}
+                                          </p>
+                                        </div>
+                                      </div>
+                                      <div className="relative shrink-0">
+                                        {isOwner ? (
+                                          /* Owner 的 agent 也可调整权限 */
+                                          <div className="relative">
+                                            <button
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                setOpenMemberDropdown(
+                                                  openMemberDropdown ===
+                                                    agent.id
+                                                    ? null
+                                                    : agent.id,
+                                                );
+                                              }}
+                                              className="text-[11px] text-stone-500 font-medium bg-stone-50 border border-stone-200 rounded-md px-2 py-0.5 cursor-pointer hover:bg-stone-100 flex items-center gap-1 transition-colors"
+                                            >
+                                              {agent.role}
+                                              <ChevronDown className="w-2.5 h-2.5 text-stone-400" />
+                                            </button>
+                                            {openMemberDropdown ===
+                                              agent.id && (
+                                              <>
+                                                <div
+                                                  className="fixed inset-0 z-40"
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setOpenMemberDropdown(null);
+                                                  }}
+                                                />
+                                                <div className="absolute right-0 top-full mt-1 w-40 bg-white rounded-lg shadow-lg border border-stone-200 py-1 z-50">
+                                                  {["可编辑", "可查看"].map(
+                                                    (opt) => (
+                                                      <button
+                                                        key={opt}
+                                                        onClick={(e) => {
+                                                          e.stopPropagation();
+                                                          setShareMembers(
+                                                            (prev) =>
+                                                              prev.map((m) =>
+                                                                m.id === user.id
+                                                                  ? {
+                                                                      ...m,
+                                                                      agents:
+                                                                        m.agents.map(
+                                                                          (
+                                                                            a,
+                                                                          ) =>
+                                                                            a.id ===
+                                                                            agent.id
+                                                                              ? {
+                                                                                  ...a,
+                                                                                  role: opt,
+                                                                                  inheritedFromUser: false,
+                                                                                }
+                                                                              : a,
+                                                                        ),
+                                                                    }
+                                                                  : m,
+                                                              ),
+                                                          );
+                                                          setOpenMemberDropdown(
+                                                            null,
+                                                          );
+                                                        }}
+                                                        className="w-full flex items-center justify-between px-3 py-1.5 text-xs text-stone-700 hover:bg-stone-50 transition-colors"
+                                                      >
+                                                        <div className="flex items-center gap-2">
+                                                          {opt === "可编辑" ? (
+                                                            <Pencil className="w-3 h-3 text-stone-400" />
+                                                          ) : (
+                                                            <Eye className="w-3 h-3 text-stone-400" />
+                                                          )}
+                                                          {opt}
+                                                        </div>
+                                                        {agent.role === opt && (
+                                                          <Check className="w-3 h-3 text-stone-900" />
+                                                        )}
+                                                      </button>
+                                                    ),
+                                                  )}
+                                                </div>
+                                              </>
+                                            )}
+                                          </div>
+                                        ) : (
+                                          /* 非 owner 用户下的 agent：权限下拉，超出上限的选项置灰 */
+                                          <div className="relative">
+                                            <button
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                setOpenMemberDropdown(
+                                                  openMemberDropdown ===
+                                                    agent.id
+                                                    ? null
+                                                    : agent.id,
+                                                );
+                                              }}
+                                              className="text-[11px] text-stone-500 font-medium bg-stone-50 border border-stone-200 rounded-md px-2 py-0.5 cursor-pointer hover:bg-stone-100 flex items-center gap-1 transition-colors"
+                                            >
+                                              {agent.role}
+                                              <ChevronDown className="w-2.5 h-2.5 text-stone-400" />
+                                            </button>
+                                            {openMemberDropdown ===
+                                              agent.id && (
+                                              <>
+                                                <div
+                                                  className="fixed inset-0 z-40"
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setOpenMemberDropdown(null);
+                                                  }}
+                                                />
+                                                <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-stone-200 py-1 z-50">
+                                                  {["可编辑", "可查看"].map(
+                                                    (opt) => {
+                                                      const optLevel =
+                                                        roleLevels[opt] || 0;
+                                                      const isDisabled =
+                                                        optLevel >
+                                                        userRoleLevel;
+                                                      return (
+                                                        <div
+                                                          key={opt}
+                                                          className="relative"
+                                                        >
+                                                          <button
+                                                            onClick={(e) => {
+                                                              e.stopPropagation();
+                                                              if (isDisabled)
+                                                                return;
+                                                              setShareMembers(
+                                                                (prev) =>
+                                                                  prev.map(
+                                                                    (m) =>
+                                                                      m.id ===
+                                                                      user.id
+                                                                        ? {
+                                                                            ...m,
+                                                                            agents:
+                                                                              m.agents.map(
+                                                                                (
+                                                                                  a,
+                                                                                ) =>
+                                                                                  a.id ===
+                                                                                  agent.id
+                                                                                    ? {
+                                                                                        ...a,
+                                                                                        role: opt,
+                                                                                        inheritedFromUser: false,
+                                                                                      }
+                                                                                    : a,
+                                                                              ),
+                                                                          }
+                                                                        : m,
+                                                                  ),
+                                                              );
+                                                              setOpenMemberDropdown(
+                                                                null,
+                                                              );
+                                                            }}
+                                                            onMouseEnter={() => {
+                                                              if (isDisabled)
+                                                                setAgentPermTooltip(
+                                                                  agent.id +
+                                                                    opt,
+                                                                );
+                                                            }}
+                                                            onMouseLeave={() =>
+                                                              setAgentPermTooltip(
+                                                                null,
+                                                              )
+                                                            }
+                                                            className={`w-full flex items-center justify-between px-3 py-1.5 text-xs transition-colors ${
+                                                              isDisabled
+                                                                ? "text-stone-300 cursor-not-allowed"
+                                                                : "text-stone-700 hover:bg-stone-50 cursor-pointer"
+                                                            }`}
+                                                            disabled={
+                                                              isDisabled
+                                                            }
+                                                          >
+                                                            <div className="flex items-center gap-2">
+                                                              {opt ===
+                                                              "可编辑" ? (
+                                                                <Pencil
+                                                                  className={`w-3 h-3 ${isDisabled ? "text-stone-300" : "text-stone-400"}`}
+                                                                />
+                                                              ) : (
+                                                                <Eye
+                                                                  className={`w-3 h-3 ${isDisabled ? "text-stone-300" : "text-stone-400"}`}
+                                                                />
+                                                              )}
+                                                              {opt}
+                                                              {isDisabled && (
+                                                                <Lock className="w-2.5 h-2.5 text-stone-300 ml-0.5" />
+                                                              )}
+                                                            </div>
+                                                            {agent.role ===
+                                                              opt &&
+                                                              !isDisabled && (
+                                                                <Check className="w-3 h-3 text-stone-900" />
+                                                              )}
+                                                          </button>
+                                                          {/* Tooltip: 超出上限提示 */}
+                                                          {isDisabled &&
+                                                            agentPermTooltip ===
+                                                              agent.id +
+                                                                opt && (
+                                                              <div className="absolute right-full top-1/2 -translate-y-1/2 mr-2 px-2.5 py-1.5 bg-stone-800 text-white text-[10px] rounded-md whitespace-nowrap shadow-lg z-[60]">
+                                                                不能超过所属用户（
+                                                                {user.name}
+                                                                ）的权限
+                                                                <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-full w-0 h-0 border-t-4 border-b-4 border-l-4 border-transparent border-l-stone-800" />
+                                                              </div>
+                                                            )}
+                                                        </div>
+                                                      );
+                                                    },
+                                                  )}
+                                                </div>
+                                              </>
+                                            )}
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                            </div>
+                          );
+                        })}
                       </div>
-                    </div>
-                  )}
 
-                  {/* Access permission & Copy link */}
-                  <div className="border-t border-stone-100 p-3">
-                    <div className="flex items-center gap-2">
-                      <div className="relative flex-1">
-                        <button
-                          onClick={() => setShowAccessDropdown(!showAccessDropdown)}
-                          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-stone-200 hover:bg-stone-50 text-sm text-stone-700 font-medium transition-colors"
-                        >
-                          {shareAccessLevel === 'invited' && <Lock className="w-3.5 h-3.5 text-stone-500" />}
-                          {shareAccessLevel === 'view' && <Eye className="w-3.5 h-3.5 text-stone-500" />}
-                          {shareAccessLevel === 'edit' && <Pencil className="w-3.5 h-3.5 text-stone-500" />}
-                          <span className="truncate">
-                            {shareAccessLevel === 'invited' && '仅限协作成员访问'}
-                            {shareAccessLevel === 'view' && '获得链接的任何人都可查看'}
-                            {shareAccessLevel === 'edit' && '获得链接的任何人都可编辑'}
-                          </span>
-                          <ChevronDown className="w-3.5 h-3.5 text-stone-400 ml-auto flex-shrink-0" />
-                        </button>
-                        {showAccessDropdown && (
-                          <div className="absolute bottom-full left-0 right-0 mb-1 bg-white rounded-xl shadow-lg border border-stone-200 py-1 z-50">
+                      {/* Remove confirmation dialog */}
+                      {removeConfirm && (
+                        <div className="border-t border-stone-100 px-4 py-3 bg-red-50/50">
+                          <p className="text-xs text-stone-700 mb-2.5">
+                            移除{" "}
+                            <span className="font-semibold">
+                              {removeConfirm.name}
+                            </span>{" "}
+                            后，其名下{" "}
+                            <span className="font-semibold">
+                              {removeConfirm.agentCount}
+                            </span>{" "}
+                            个 Agent 也将同时失去访问权限，确认移除？
+                          </p>
+                          <div className="flex items-center gap-2">
                             <button
-                              onClick={() => { setShareAccessLevel('invited'); setShowAccessDropdown(false); }}
-                              className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-stone-50 transition-colors text-left"
+                              onClick={() => {
+                                setShareMembers((prev) =>
+                                  prev.filter(
+                                    (m) => m.id !== removeConfirm.userId,
+                                  ),
+                                );
+                                setRemoveConfirm(null);
+                              }}
+                              className="px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded-lg hover:bg-red-700 transition-colors"
                             >
-                              <Lock className="w-4 h-4 text-stone-500" />
-                              <span className="text-sm text-stone-700">仅限协作成员访问</span>
-                              {shareAccessLevel === 'invited' && <Check className="w-4 h-4 text-stone-900 ml-auto" />}
+                              确认移除
                             </button>
                             <button
-                              onClick={() => { setShareAccessLevel('view'); setShowAccessDropdown(false); }}
-                              className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-stone-50 transition-colors text-left"
+                              onClick={() => setRemoveConfirm(null)}
+                              className="px-3 py-1.5 border border-stone-200 text-xs font-medium text-stone-600 rounded-lg hover:bg-white transition-colors"
                             >
-                              <Eye className="w-4 h-4 text-stone-500" />
-                              <span className="text-sm text-stone-700">获得链接的任何人都可查看</span>
-                              {shareAccessLevel === 'view' && <Check className="w-4 h-4 text-stone-900 ml-auto" />}
+                              取消
                             </button>
-
                           </div>
-                        )}
+                        </div>
+                      )}
+
+                      {/* Access permission & Copy link */}
+                      <div className="border-t border-stone-100 p-3">
+                        <div className="flex items-center gap-2">
+                          <div className="relative flex-1">
+                            <button
+                              onClick={() =>
+                                setShowAccessDropdown(!showAccessDropdown)
+                              }
+                              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-stone-200 hover:bg-stone-50 text-sm text-stone-700 font-medium transition-colors"
+                            >
+                              {shareAccessLevel === "invited" && (
+                                <Lock className="w-3.5 h-3.5 text-stone-500" />
+                              )}
+                              {shareAccessLevel === "view" && (
+                                <Eye className="w-3.5 h-3.5 text-stone-500" />
+                              )}
+                              {shareAccessLevel === "edit" && (
+                                <Pencil className="w-3.5 h-3.5 text-stone-500" />
+                              )}
+                              <span className="truncate">
+                                {shareAccessLevel === "invited" &&
+                                  "仅限协作成员访问"}
+                                {shareAccessLevel === "view" &&
+                                  "获得链接的任何人都可查看"}
+                                {shareAccessLevel === "edit" &&
+                                  "获得链接的任何人都可编辑"}
+                              </span>
+                              <ChevronDown className="w-3.5 h-3.5 text-stone-400 ml-auto flex-shrink-0" />
+                            </button>
+                            {showAccessDropdown && (
+                              <div className="absolute bottom-full left-0 right-0 mb-1 bg-white rounded-xl shadow-lg border border-stone-200 py-1 z-50">
+                                <button
+                                  onClick={() => {
+                                    setShareAccessLevel("invited");
+                                    setShowAccessDropdown(false);
+                                  }}
+                                  className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-stone-50 transition-colors text-left"
+                                >
+                                  <Lock className="w-4 h-4 text-stone-500" />
+                                  <span className="text-sm text-stone-700">
+                                    仅限协作成员访问
+                                  </span>
+                                  {shareAccessLevel === "invited" && (
+                                    <Check className="w-4 h-4 text-stone-900 ml-auto" />
+                                  )}
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setShareAccessLevel("view");
+                                    setShowAccessDropdown(false);
+                                  }}
+                                  className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-stone-50 transition-colors text-left"
+                                >
+                                  <Eye className="w-4 h-4 text-stone-500" />
+                                  <span className="text-sm text-stone-700">
+                                    获得链接的任何人都可查看
+                                  </span>
+                                  {shareAccessLevel === "view" && (
+                                    <Check className="w-4 h-4 text-stone-900 ml-auto" />
+                                  )}
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(
+                                `https://mindx.app/d/project-alpha`,
+                              );
+                              setShareLinkCopied(true);
+                              setTimeout(() => setShareLinkCopied(false), 2000);
+                            }}
+                            className="flex-shrink-0 px-4 py-2 rounded-lg bg-stone-900 hover:bg-stone-800 text-white text-sm font-medium transition-colors"
+                          >
+                            {shareLinkCopied ? "已复制！" : "复制链接"}
+                          </button>
+                        </div>
                       </div>
-                      <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(`https://mindx.app/d/project-alpha`);
-                          setShareLinkCopied(true);
-                          setTimeout(() => setShareLinkCopied(false), 2000);
-                        }}
-                        className="flex-shrink-0 px-4 py-2 rounded-lg bg-stone-900 hover:bg-stone-800 text-white text-sm font-medium transition-colors"
-                      >
-                        {shareLinkCopied ? '已复制！' : '复制链接'}
-                      </button>
-                    </div>
-                  </div>
                     </>
                   )}
                 </div>
               </>
             )}
           </div>
-          
+
           {/* Comments Button */}
-          <button 
+          <button
             onClick={() => {
               setShowCommentsSidebar(!showCommentsSidebar);
               setShowVersionHistory(false);
             }}
-            className={`p-1.5 rounded-md hover:bg-stone-100 transition-colors ${showCommentsSidebar ? 'bg-stone-100 text-stone-900' : 'text-stone-500'}`}
+            className={`p-1.5 rounded-md hover:bg-stone-100 transition-colors ${showCommentsSidebar ? "bg-stone-100 text-stone-900" : "text-stone-500"}`}
             title="查看评论"
           >
             <MessageSquare className="w-4 h-4" />
           </button>
-          
+
           {/* More Menu Button */}
           <div className="relative">
-            <button 
+            <button
               onClick={() => setShowMoreMenu(!showMoreMenu)}
               className="p-1.5 rounded-md hover:bg-stone-100 text-stone-500 transition-colors"
             >
               <MoreHorizontal className="w-4 h-4" />
             </button>
-            
+
             {showMoreMenu && (
               <>
-                <div className="fixed inset-0 z-10" onClick={() => {
-                  setShowMoreMenu(false);
-                  setShowExportSubmenu(false);
-                }} />
-                <motion.div 
+                <div
+                  className="fixed inset-0 z-10"
+                  onClick={() => {
+                    setShowMoreMenu(false);
+                    setShowExportSubmenu(false);
+                  }}
+                />
+                <motion.div
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   className="absolute right-0 top-full mt-1 w-48 bg-white border border-stone-200 rounded-lg shadow-xl z-20 overflow-visible py-1"
@@ -2018,7 +2727,7 @@ export default function DocumentEditor() {
                     onClick={() => {
                       setShowMoreMenu(false);
                       setShowExportSubmenu(false);
-                      setDuplicateName('副本-Project Alpha Architecture');
+                      setDuplicateName("副本-Project Alpha Architecture");
                       setDuplicateModalOpen(true);
                     }}
                     className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
@@ -2026,118 +2735,119 @@ export default function DocumentEditor() {
                     <FilePlus2 className="w-4 h-4 text-stone-400" />
                     创建副本
                   </button>
-                  
+
                   {/* Export with submenu */}
-                  <div 
+                  <div
                     className="relative"
                     onMouseEnter={() => {
-                      console.log('鼠标进入导出区域');
+                      console.log("鼠标进入导出区域");
                       setShowExportSubmenu(true);
                     }}
                     onMouseLeave={() => {
-                      console.log('鼠标离开导出区域');
+                      console.log("鼠标离开导出区域");
                       setShowExportSubmenu(false);
                     }}
                   >
-                    <button
-                      className="w-full flex items-center justify-between px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
-                    >
+                    <button className="w-full flex items-center justify-between px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors">
                       <div className="flex items-center gap-2.5">
                         <Download className="w-4 h-4 text-stone-400" />
                         导出为
                       </div>
                       <ChevronRight className="w-3.5 h-3.5 text-stone-400" />
                     </button>
-                    
+
                     {/* Export Submenu */}
                     {showExportSubmenu && (
                       <>
-                        {console.log('正在渲染二级菜单, showExportSubmenu:', showExportSubmenu)}
+                        {console.log(
+                          "正在渲染二级菜单, showExportSubmenu:",
+                          showExportSubmenu,
+                        )}
                         <motion.div
                           initial={{ opacity: 0, x: 10 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ duration: 0.15 }}
                           className="absolute right-full top-0 mr-1 w-40 bg-white border border-stone-200 rounded-lg shadow-xl overflow-hidden py-1 z-50"
                         >
-                        <button
-                          onClick={() => {
-                            setShowMoreMenu(false);
-                            setShowExportSubmenu(false);
-                            // TODO: 实现导出为 Word 功能
-                            console.log('导出为 Word');
-                          }}
-                          className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
-                        >
-                          <FileText className="w-4 h-4 text-blue-500" />
-                          Word
-                        </button>
-                        <button
-                          onClick={() => {
-                            setShowMoreMenu(false);
-                            setShowExportSubmenu(false);
-                            // TODO: 实现导出为 PDF 功能
-                            console.log('导出为 PDF');
-                          }}
-                          className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
-                        >
-                          <FileText className="w-4 h-4 text-red-500" />
-                          PDF
-                        </button>
-                        <button
-                          onClick={() => {
-                            setShowMoreMenu(false);
-                            setShowExportSubmenu(false);
-                            // TODO: 实现导出为图片功能
-                            console.log('导出为图片');
-                          }}
-                          className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
-                        >
-                          <Image className="w-4 h-4 text-purple-500" />
-                          图片
-                        </button>
-                      </motion.div>
+                          <button
+                            onClick={() => {
+                              setShowMoreMenu(false);
+                              setShowExportSubmenu(false);
+                              // TODO: 实现导出为 Word 功能
+                              console.log("导出为 Word");
+                            }}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
+                          >
+                            <FileText className="w-4 h-4 text-blue-500" />
+                            Word
+                          </button>
+                          <button
+                            onClick={() => {
+                              setShowMoreMenu(false);
+                              setShowExportSubmenu(false);
+                              // TODO: 实现导出为 PDF 功能
+                              console.log("导出为 PDF");
+                            }}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
+                          >
+                            <FileText className="w-4 h-4 text-red-500" />
+                            PDF
+                          </button>
+                          <button
+                            onClick={() => {
+                              setShowMoreMenu(false);
+                              setShowExportSubmenu(false);
+                              // TODO: 实现导出为图片功能
+                              console.log("导出为图片");
+                            }}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
+                          >
+                            <Image className="w-4 h-4 text-purple-500" />
+                            图片
+                          </button>
+                        </motion.div>
                       </>
                     )}
                   </div>
-                  
+
                   {/* Divider */}
                   <div className="h-px bg-stone-200 my-1" />
-                  
+
                   {/* Undo */}
                   <button
                     onClick={() => {
                       setShowMoreMenu(false);
                       // TODO: 实现撤销功能
-                      console.log('撤销');
+                      console.log("撤销");
                     }}
                     className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
                   >
                     <Undo2 className="w-4 h-4 text-stone-400" />
                     撤销
                   </button>
-                  
+
                   {/* Redo */}
                   <button
                     onClick={() => {
                       setShowMoreMenu(false);
                       // TODO: 实现重做功能
-                      console.log('重做');
+                      console.log("重做");
                     }}
                     className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
                   >
                     <Redo2 className="w-4 h-4 text-stone-400" />
                     重做
                   </button>
-                  
+
                   {/* Divider */}
                   <div className="h-px bg-stone-200 my-1" />
-                  
+
                   {/* Find and Replace */}
                   <button
                     onClick={() => {
                       setShowMoreMenu(false);
                       // TODO: 实现查找替换功能
-                      console.log('查找替换');
+                      console.log("查找替换");
                     }}
                     className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
                   >
@@ -2151,35 +2861,37 @@ export default function DocumentEditor() {
         </div>
       </header>
 
-
       {/* Editor & Sidebar */}
-      <div className={`flex-1 flex overflow-hidden relative transition-all duration-300 ${
-        showCollaboratorsSidebar ? 'mr-80' : 'mr-0'
-      }`} onMouseUp={handleMouseUp}>
+      <div
+        className={`flex-1 flex overflow-hidden relative transition-all duration-300 ${
+          showCollaboratorsSidebar ? "mr-80" : "mr-0"
+        }`}
+        onMouseUp={handleMouseUp}
+      >
         {/* Floating Selection Menu */}
         {selectionMenu && !isChatLog && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            style={{ 
-              position: 'fixed', 
-              left: selectionMenu.x, 
-              top: selectionMenu.y, 
-              transform: 'translate(-50%, -100%)',
-              zIndex: 50
+            style={{
+              position: "fixed",
+              left: selectionMenu.x,
+              top: selectionMenu.y,
+              transform: "translate(-50%, -100%)",
+              zIndex: 50,
             }}
             className="flex items-center gap-1 bg-stone-900 text-white p-1 rounded-lg shadow-xl border border-stone-700"
           >
-            <button 
-              onClick={() => addNewComment('comment')}
+            <button
+              onClick={() => addNewComment("comment")}
               className="flex items-center gap-1.5 px-3 py-1.5 hover:bg-stone-800 rounded-md text-xs font-medium transition-colors"
             >
               <MessageSquare className="w-3.5 h-3.5" />
               Comment
             </button>
             <div className="w-px h-4 bg-stone-700 mx-1" />
-            <button 
-              onClick={() => addNewComment('modify')}
+            <button
+              onClick={() => addNewComment("modify")}
               className="flex items-center gap-1.5 px-3 py-1.5 hover:bg-stone-800 rounded-md text-xs font-medium transition-colors"
             >
               <RefreshCw className="w-3.5 h-3.5" />
@@ -2193,29 +2905,145 @@ export default function DocumentEditor() {
         )}
 
         {/* Main Editor */}
-        <main className="flex-1 overflow-y-auto p-8 lg:p-12 bg-white" ref={editorRef}>
-          <div className="max-w-3xl mx-auto space-y-6">
-            {isChatLog ? (
+        <main
+          className="flex-1 overflow-y-auto p-8 lg:p-12 bg-white"
+          ref={editorRef}
+        >
+          <div
+            className={`mx-auto space-y-6 ${isBlockEditorDoc ? "max-w-[960px]" : "w-full max-w-full px-4 lg:px-8"}`}
+          >
+            {isBlockEditorDoc ? (
+              <BlockList
+                blocks={resolvedBlocks!}
+                onRowExpand={handleRefRowExpand}
+              />
+            ) : isSheetDoc ? (
+              <div className="w-full overflow-x-auto">
+                {resolvedSheetData ? (
+                  <SheetView sheetData={resolvedSheetData} />
+                ) : (
+                  <div className="text-center text-stone-400 py-12">
+                    No sheet data available
+                  </div>
+                )}
+              </div>
+            ) : isPageDoc ? (
+              <div className="w-full">
+                {/* Preview / Code Mode Switch */}
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="inline-flex rounded-lg border border-stone-200 p-0.5 bg-stone-50">
+                    <button
+                      onClick={() => setPageMode("preview")}
+                      className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                        pageMode === "preview"
+                          ? "bg-white text-stone-900 shadow-sm border border-stone-200"
+                          : "text-stone-500 hover:text-stone-700"
+                      }`}
+                    >
+                      Preview
+                    </button>
+                    <button
+                      onClick={() => setPageMode("code")}
+                      className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                        pageMode === "code"
+                          ? "bg-white text-stone-900 shadow-sm border border-stone-200"
+                          : "text-stone-500 hover:text-stone-700"
+                      }`}
+                    >
+                      Code
+                    </button>
+                  </div>
+                  {contextDoc?.boundSheets &&
+                    contextDoc.boundSheets.length > 0 && (
+                      <div className="flex items-center gap-2 ml-4 text-xs text-stone-400">
+                        <span>绑定数据源：</span>
+                        {contextDoc.boundSheets.map((sheetId) => (
+                          <span
+                            key={sheetId}
+                            className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded font-mono text-[11px]"
+                          >
+                            {sheetId}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                </div>
+
+                {/* Content Area */}
+                {pageMode === "preview" ? (
+                  contextDoc?.htmlContent ? (
+                    <iframe
+                      sandbox="allow-scripts allow-same-origin"
+                      srcDoc={contextDoc.htmlContent}
+                      className="w-full border border-stone-200 rounded-lg"
+                      style={{
+                        height: "calc(100vh - 240px)",
+                        minHeight: "500px",
+                      }}
+                      title={contextDoc.name}
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-24 text-stone-400">
+                      <FileText className="w-16 h-16 mb-4 opacity-30" />
+                      <p className="text-lg font-medium">暂无页面内容</p>
+                      <p className="text-sm mt-1">No HTML content available</p>
+                    </div>
+                  )
+                ) : (
+                  <div className="relative">
+                    <pre
+                      className="bg-stone-900 text-stone-100 rounded-lg p-6 overflow-auto text-sm leading-relaxed font-mono"
+                      style={{
+                        height: "calc(100vh - 240px)",
+                        minHeight: "500px",
+                        tabSize: 2,
+                      }}
+                    >
+                      <code>
+                        {contextDoc?.htmlContent ?? "// No HTML content"}
+                      </code>
+                    </pre>
+                  </div>
+                )}
+              </div>
+            ) : isChatLog ? (
               <div className="space-y-8">
                 {chatMessages.map((msg) => (
-                  <div key={msg.id} className={`flex flex-col ${msg.senderType === 'human' ? 'items-end' : 'items-start'}`}>
+                  <div
+                    key={msg.id}
+                    className={`flex flex-col ${msg.senderType === "human" ? "items-end" : "items-start"}`}
+                  >
                     <div className="flex items-center gap-2 mb-2 px-1">
-                      <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border ${
-                        msg.senderType === 'agent' 
-                          ? 'bg-stone-50 text-stone-500 border-stone-200' 
-                          : 'bg-stone-100 text-stone-700 border-stone-300'
-                      }`}>
-                        {msg.senderType === 'agent' ? <Bot className="w-3 h-3" /> : msg.sender.charAt(0)}
+                      <div
+                        className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border ${
+                          msg.senderType === "agent"
+                            ? "bg-stone-50 text-stone-500 border-stone-200"
+                            : "bg-stone-100 text-stone-700 border-stone-300"
+                        }`}
+                      >
+                        {msg.senderType === "agent" ? (
+                          <Bot className="w-3 h-3" />
+                        ) : (
+                          msg.sender.charAt(0)
+                        )}
                       </div>
-                      <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">{msg.sender}</span>
-                      <span className="text-[10px] text-stone-300">{msg.time}</span>
+                      <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">
+                        {msg.sender}
+                      </span>
+                      <span className="text-[10px] text-stone-300">
+                        {msg.time}
+                      </span>
                     </div>
-                    <div className={`max-w-[85%] p-4 rounded-2xl shadow-sm border ${
-                      msg.senderType === 'human' 
-                        ? 'bg-stone-900 text-white border-stone-800 rounded-tr-none' 
-                        : 'bg-stone-50 text-stone-800 border-stone-200 rounded-tl-none'
-                    }`}>
-                      <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.text}</p>
+                    <div
+                      className={`max-w-[85%] p-4 rounded-2xl shadow-sm border ${
+                        msg.senderType === "human"
+                          ? "bg-stone-900 text-white border-stone-800 rounded-tr-none"
+                          : "bg-stone-50 text-stone-800 border-stone-200 rounded-tl-none"
+                      }`}
+                    >
+                      <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                        {msg.text}
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -2224,40 +3052,58 @@ export default function DocumentEditor() {
               displayedParagraphs.map((p, index) => {
                 // Find collaborators with cursor at this position
                 const collaboratorsHere = collaborators.filter(
-                  c => c.isActive && c.cursorPosition === index && c.type === 'agent'
+                  (c) =>
+                    c.isActive &&
+                    c.cursorPosition === index &&
+                    c.type === "agent",
                 );
-                
+
                 return (
-                  <div 
-                    key={p.id} 
+                  <div
+                    key={p.id}
                     className="group relative pl-10 paragraph-item"
                     onMouseEnter={() => setHoveredParagraph(index)}
                     onMouseLeave={() => setHoveredParagraph(null)}
                   >
                     {/* Author Indicator */}
                     <div className="absolute left-0 top-1 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center">
-                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border shadow-sm ${
-                        p.authorType === 'agent' 
-                          ? 'bg-stone-50 text-stone-500 border-stone-200' 
-                          : 'bg-stone-100 text-stone-700 border-stone-300'
-                      }`} title={`Written by ${p.author}`}>
-                        {p.authorType === 'agent' ? <Bot className="w-3 h-3" /> : p.author.charAt(0)}
+                      <div
+                        className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border shadow-sm ${
+                          p.authorType === "agent"
+                            ? "bg-stone-50 text-stone-500 border-stone-200"
+                            : "bg-stone-100 text-stone-700 border-stone-300"
+                        }`}
+                        title={`Written by ${p.author}`}
+                      >
+                        {p.authorType === "agent" ? (
+                          <Bot className="w-3 h-3" />
+                        ) : (
+                          p.author.charAt(0)
+                        )}
                       </div>
                     </div>
-                    
-                    <div 
+
+                    <div
                       className="w-full bg-transparent border-none focus:outline-none text-stone-800 font-sans text-lg leading-relaxed whitespace-pre-wrap relative"
                       data-paragraph-id={p.id}
                       contentEditable
                       suppressContentEditableWarning
                       onFocus={() => setFocusedParagraphId(p.id)}
-                      onCompositionStart={(e) => { (e.currentTarget as any).__composing = true; }}
+                      onCompositionStart={(e) => {
+                        (e.currentTarget as any).__composing = true;
+                      }}
                       onCompositionEnd={(e) => {
                         (e.currentTarget as any).__composing = false;
                         // Fire the update after composition ends
                         const newText = readEditableText(e.currentTarget);
                         const paragraphId = p.id;
-                        setParagraphs(prev => prev.map(item => item.id === paragraphId ? { ...item, text: newText } : item));
+                        setParagraphs((prev) =>
+                          prev.map((item) =>
+                            item.id === paragraphId
+                              ? { ...item, text: newText }
+                              : item,
+                          ),
+                        );
                       }}
                       onInput={(e) => {
                         // Skip during IME composition (Chinese/Japanese/Korean input)
@@ -2267,23 +3113,38 @@ export default function DocumentEditor() {
                         const paragraphId = p.id;
                         clearTimeout((el as any).__debounceTimer);
                         (el as any).__debounceTimer = setTimeout(() => {
-                          setParagraphs(prev => prev.map(item => item.id === paragraphId ? { ...item, text: newText } : item));
+                          setParagraphs((prev) =>
+                            prev.map((item) =>
+                              item.id === paragraphId
+                                ? { ...item, text: newText }
+                                : item,
+                            ),
+                          );
                         }, 600);
                       }}
                       onBlur={(e) => {
                         const newText = readEditableText(e.currentTarget);
                         clearTimeout((e.currentTarget as any).__debounceTimer);
-                        setParagraphs(prev => prev.map(item => item.id === p.id ? { ...item, text: newText } : item));
+                        setParagraphs((prev) =>
+                          prev.map((item) =>
+                            item.id === p.id
+                              ? { ...item, text: newText }
+                              : item,
+                          ),
+                        );
                         setFocusedParagraphId(null);
                       }}
                     >
                       {p.text}
-                      
+
                       {/* Cursor and Flag */}
                       {collaboratorsHere.length > 0 && (
                         <div className="absolute left-1/3 top-0 bottom-0 pointer-events-none">
                           {collaboratorsHere.map((collaborator, idx) => (
-                            <div key={collaborator.id} style={{ marginLeft: `${idx * 24}px` }}>
+                            <div
+                              key={collaborator.id}
+                              style={{ marginLeft: `${idx * 24}px` }}
+                            >
                               {/* Cursor Line - always visible */}
                               <motion.div
                                 initial={{ opacity: 1 }}
@@ -2298,7 +3159,9 @@ export default function DocumentEditor() {
                                   initial={{ opacity: 0, y: -10 }}
                                   animate={{ opacity: 1, y: 0 }}
                                   className="absolute -top-8 -left-2 flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium text-white shadow-lg whitespace-nowrap"
-                                  style={{ backgroundColor: collaborator.color }}
+                                  style={{
+                                    backgroundColor: collaborator.color,
+                                  }}
                                 >
                                   <Bot className="w-2.5 h-2.5" />
                                   {collaborator.name}
@@ -2319,286 +3182,309 @@ export default function DocumentEditor() {
         {/* Comments Sidebar */}
         {!isChatLog && showCommentsSidebar && (
           <aside className="w-80 border-l border-stone-200 bg-stone-50 flex flex-col">
-          <div className="p-4 border-b border-stone-200 flex items-center justify-between bg-white">
-            <h2 className="text-sm font-medium flex items-center gap-2 text-stone-900">
-              <MessageSquare className="w-4 h-4 text-stone-500" />
-              Comments
-            </h2>
-            <span className="bg-stone-100 text-xs px-2 py-0.5 rounded-full text-stone-600 font-medium">
-              {comments.length}
-            </span>
-          </div>
-          
-          <div className={`flex-1 p-4 space-y-4 ${showCommentsSidebar ? 'overflow-y-auto' : 'overflow-hidden'}`}>
-            {comments.length === 0 ? (
-              <div className="h-full min-h-[240px] flex flex-col items-center justify-center text-center px-6">
-                <MessageSquare className="w-8 h-8 text-stone-300 mb-3" />
-                <p className="text-sm font-medium text-stone-600">No comments yet</p>
-                <p className="text-xs text-stone-400 mt-1 leading-relaxed">
-                  Select text in the document to start a comment thread.
-                </p>
-              </div>
-            ) : comments.map((comment) => (
-              <motion.div 
-                key={comment.id}
-                ref={(el) => {
-                  if (el) commentRefs.current.set(comment.id, el);
-                  else commentRefs.current.delete(comment.id);
-                }}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                onClick={() => setActiveCommentId(comment.id)}
-                className={`p-4 rounded-xl border bg-white shadow-sm cursor-pointer transition-all comment-card ${
-                  activeCommentId === comment.id || comment.isDraft
-                    ? 'active border-stone-400 ring-2 ring-stone-900/5' 
-                    : 'border-stone-200'
-                } ${
-                  comment.resolved 
-                    ? 'opacity-60' 
-                    : ''
-                }`}
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <span className={`text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded ${
-                      comment.type === 'modify' 
-                        ? 'bg-amber-100 text-amber-700 border border-amber-200' 
-                        : 'bg-stone-100 text-stone-600 border border-stone-200'
-                    }`}>
-                      {comment.type === 'modify' ? 'Suggestion' : 'Comment'}
-                    </span>
-                    {comment.isDraft && (
-                      <span className="text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded bg-sky-100 text-sky-700 border border-sky-200">
-                        Draft
-                      </span>
-                    )}
-                    <span className="text-[10px] text-stone-400">•</span>
-                    <span className="text-[10px] text-stone-500">{comment.createdAtLabel}</span>
-                  </div>
-                  {comment.type === 'comment' && !comment.isDraft && !comment.resolved && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        markCommentResolved(comment.id);
-                      }}
-                      className="text-[10px] font-medium text-stone-400 hover:text-stone-600 px-2 py-1 rounded-md hover:bg-stone-100 transition-colors"
-                    >
-                      Resolve
-                    </button>
-                  )}
-                  {comment.resolved && (
-                    <span className="text-[10px] font-medium text-emerald-600 flex items-center gap-1">
-                      <Check className="w-3 h-3" /> Resolved
-                    </span>
-                  )}
-                </div>
+            <div className="p-4 border-b border-stone-200 flex items-center justify-between bg-white">
+              <h2 className="text-sm font-medium flex items-center gap-2 text-stone-900">
+                <MessageSquare className="w-4 h-4 text-stone-500" />
+                Comments
+              </h2>
+              <span className="bg-stone-100 text-xs px-2 py-0.5 rounded-full text-stone-600 font-medium">
+                {comments.length}
+              </span>
+            </div>
 
-                <div className="mb-3">
-                  <div className="flex items-start gap-2 mb-2 p-2 bg-stone-50 rounded-lg border-l-2 border-stone-300">
-                    <div className="mt-0.5">
-                      <Quote className="w-3 h-3 text-stone-400" />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <span className="text-xs text-stone-600 italic line-clamp-2">
-                        "{comment.highlight}"
-                      </span>
-                    </div>
-                  </div>
-                  {comment.isDraft ? (
-                    <div className="px-1">
-                      <textarea
-                        autoFocus={activeCommentId === comment.id}
-                        value={comment.draftText}
-                        placeholder="Write a comment..."
-                        className="w-full bg-stone-50 border border-stone-200 rounded-lg p-2 text-sm focus:outline-none focus:border-stone-300 transition-colors resize-none"
-                        rows={4}
-                        onChange={(e) => updateDraftText(comment.id, e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && !e.shiftKey) {
-                            e.preventDefault();
-                            submitCommentMessage(comment.id, 'draft');
-                          }
-                        }}
-                      />
-                      <div className="flex justify-end gap-2 mt-2">
-                        <button 
-                          onClick={() => cancelDraftComment(comment.id)}
-                          className="px-2 py-1 text-[10px] font-medium text-stone-500 hover:text-stone-800 transition-colors"
-                        >
-                          Cancel
-                        </button>
-                        <button 
-                          onClick={() => submitCommentMessage(comment.id, 'draft')}
-                          disabled={!comment.draftText.trim()}
-                          className="px-2 py-1 bg-stone-900 text-white text-[10px] font-medium rounded hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          Comment
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-2.5 px-1">
-                      {comment.messages.map((message) => (
-                        <div
-                          key={message.id}
-                          className={`rounded-lg border px-3 py-2.5 ${
-                            message.authorType === 'agent'
-                              ? 'bg-stone-50 border-stone-200'
-                              : 'bg-white border-stone-200'
+            <div
+              className={`flex-1 p-4 space-y-4 ${showCommentsSidebar ? "overflow-y-auto" : "overflow-hidden"}`}
+            >
+              {comments.length === 0 ? (
+                <div className="h-full min-h-[240px] flex flex-col items-center justify-center text-center px-6">
+                  <MessageSquare className="w-8 h-8 text-stone-300 mb-3" />
+                  <p className="text-sm font-medium text-stone-600">
+                    No comments yet
+                  </p>
+                  <p className="text-xs text-stone-400 mt-1 leading-relaxed">
+                    Select text in the document to start a comment thread.
+                  </p>
+                </div>
+              ) : (
+                comments.map((comment) => (
+                  <motion.div
+                    key={comment.id}
+                    ref={(el) => {
+                      if (el) commentRefs.current.set(comment.id, el);
+                      else commentRefs.current.delete(comment.id);
+                    }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    onClick={() => setActiveCommentId(comment.id)}
+                    className={`p-4 rounded-xl border bg-white shadow-sm cursor-pointer transition-all comment-card ${
+                      activeCommentId === comment.id || comment.isDraft
+                        ? "active border-stone-400 ring-2 ring-stone-900/5"
+                        : "border-stone-200"
+                    } ${comment.resolved ? "opacity-60" : ""}`}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded ${
+                            comment.type === "modify"
+                              ? "bg-amber-100 text-amber-700 border border-amber-200"
+                              : "bg-stone-100 text-stone-600 border border-stone-200"
                           }`}
                         >
-                          <div className="flex items-center gap-2 mb-1.5">
-                            <div className="relative">
-                              <div
-                                className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${
-                                  message.authorType === 'agent'
-                                    ? 'bg-white text-stone-500 border border-stone-200'
-                                    : 'bg-stone-100 text-stone-700 border border-stone-300'
-                                }`}
-                              >
-                                {message.authorType === 'agent' ? (
-                                  <Bot className="w-3 h-3" />
-                                ) : (
-                                  message.author.charAt(0)
-                                )}
-                              </div>
-                              {isCurrentUserMessage(message) && (
-                                <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-stone-900 border border-white" />
-                              )}
-                            </div>
-                            <span
-                              className={`text-[10px] font-bold uppercase tracking-wider ${
-                                message.authorType === 'agent' ? 'text-stone-500' : 'text-stone-600'
-                              }`}
-                            >
-                              {message.author}
-                            </span>
-                            {isCurrentUserMessage(message) && (
-                              <span className="text-[10px] font-medium text-stone-400">you</span>
-                            )}
-                            <span
-                              className={`text-[10px] ${
-                                message.authorType === 'agent' ? 'text-stone-400' : 'text-stone-400'
-                              }`}
-                            >
-                              {message.time}
-                            </span>
-                          </div>
-                          <p
-                            className={`text-sm leading-relaxed ${
-                              message.authorType === 'agent' ? 'text-stone-700' : 'text-stone-700'
-                            }`}
+                          {comment.type === "modify" ? "Suggestion" : "Comment"}
+                        </span>
+                        {comment.isDraft && (
+                          <span className="text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded bg-sky-100 text-sky-700 border border-sky-200">
+                            Draft
+                          </span>
+                        )}
+                        <span className="text-[10px] text-stone-400">•</span>
+                        <span className="text-[10px] text-stone-500">
+                          {comment.createdAtLabel}
+                        </span>
+                      </div>
+                      {comment.type === "comment" &&
+                        !comment.isDraft &&
+                        !comment.resolved && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              markCommentResolved(comment.id);
+                            }}
+                            className="text-[10px] font-medium text-stone-400 hover:text-stone-600 px-2 py-1 rounded-md hover:bg-stone-100 transition-colors"
                           >
-                            {message.text}
-                          </p>
-                        </div>
-                      ))}
-
-                      {comment.isAwaitingReply && (
-                        <div className="rounded-lg border border-dashed border-stone-300 bg-stone-50 px-3 py-3">
-                          <div className="flex items-center gap-2 mb-1.5">
-                            <div className="w-5 h-5 rounded-full bg-white text-stone-500 border border-stone-200 flex items-center justify-center">
-                              <Bot className="w-3 h-3" />
-                            </div>
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-stone-500">
-                              Claude 3.5 Sonnet
-                            </span>
-                          </div>
-                          <p className="text-sm text-stone-400 italic">Drafting a reply...</p>
-                        </div>
+                            Resolve
+                          </button>
+                        )}
+                      {comment.resolved && (
+                        <span className="text-[10px] font-medium text-emerald-600 flex items-center gap-1">
+                          <Check className="w-3 h-3" /> Resolved
+                        </span>
                       )}
                     </div>
-                  )}
-                </div>
-                
-                {!comment.resolved && !comment.isDraft && (
-                  <div className="flex flex-col gap-2 mt-3 pt-3 border-t border-stone-100">
-                    {comment.type === 'modify' ? (
-                      <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => markCommentResolved(comment.id)}
-                            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded bg-emerald-50 hover:bg-emerald-100 text-xs font-medium text-emerald-700 transition-colors border border-emerald-200"
-                          >
-                            <Check className="w-3 h-3" /> Accept
-                          </button>
-                          <button
-                            onClick={() => markCommentResolved(comment.id)}
-                            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded bg-rose-50 hover:bg-rose-100 text-xs font-medium text-rose-700 transition-colors border border-rose-200"
-                          >
-                            <X className="w-3 h-3" /> Reject
-                          </button>
+
+                    <div className="mb-3">
+                      <div className="flex items-start gap-2 mb-2 p-2 bg-stone-50 rounded-lg border-l-2 border-stone-300">
+                        <div className="mt-0.5">
+                          <Quote className="w-3 h-3 text-stone-400" />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <span className="text-xs text-stone-600 italic line-clamp-2">
+                            "{comment.highlight}"
+                          </span>
+                        </div>
                       </div>
-                    ) : (
-                      comment.isReplying ? (
-                        <div className="space-y-2">
+                      {comment.isDraft ? (
+                        <div className="px-1">
                           <textarea
                             autoFocus={activeCommentId === comment.id}
-                            value={comment.replyDraftText}
-                            placeholder="Reply in thread..."
+                            value={comment.draftText}
+                            placeholder="Write a comment..."
                             className="w-full bg-stone-50 border border-stone-200 rounded-lg p-2 text-sm focus:outline-none focus:border-stone-300 transition-colors resize-none"
-                            rows={3}
-                            onClick={(e) => e.stopPropagation()}
-                            onChange={(e) => updateReplyDraftText(comment.id, e.target.value)}
+                            rows={4}
+                            onChange={(e) =>
+                              updateDraftText(comment.id, e.target.value)
+                            }
                             onKeyDown={(e) => {
-                              if (e.key === 'Enter' && !e.shiftKey) {
+                              if (e.key === "Enter" && !e.shiftKey) {
                                 e.preventDefault();
-                                submitCommentMessage(comment.id, 'reply');
+                                submitCommentMessage(comment.id, "draft");
                               }
                             }}
                           />
-                          <div className="flex justify-end gap-2">
+                          <div className="flex justify-end gap-2 mt-2">
                             <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                cancelReplyDraft(comment.id);
-                              }}
+                              onClick={() => cancelDraftComment(comment.id)}
                               className="px-2 py-1 text-[10px] font-medium text-stone-500 hover:text-stone-800 transition-colors"
                             >
                               Cancel
                             </button>
                             <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                submitCommentMessage(comment.id, 'reply');
-                              }}
-                              disabled={!comment.replyDraftText.trim()}
+                              onClick={() =>
+                                submitCommentMessage(comment.id, "draft")
+                              }
+                              disabled={!comment.draftText.trim()}
                               className="px-2 py-1 bg-stone-900 text-white text-[10px] font-medium rounded hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                              Reply
+                              Comment
                             </button>
                           </div>
                         </div>
                       ) : (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openReplyComposer(comment.id);
-                          }}
-                          className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-stone-50 hover:bg-stone-100 text-xs font-medium text-stone-600 transition-colors border border-stone-200"
-                        >
-                          <MessageSquare className="w-3.5 h-3.5" /> Reply in thread
-                        </button>
-                      )
+                        <div className="space-y-2.5 px-1">
+                          {comment.messages.map((message) => (
+                            <div
+                              key={message.id}
+                              className={`rounded-lg border px-3 py-2.5 ${
+                                message.authorType === "agent"
+                                  ? "bg-stone-50 border-stone-200"
+                                  : "bg-white border-stone-200"
+                              }`}
+                            >
+                              <div className="flex items-center gap-2 mb-1.5">
+                                <div className="relative">
+                                  <div
+                                    className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${
+                                      message.authorType === "agent"
+                                        ? "bg-white text-stone-500 border border-stone-200"
+                                        : "bg-stone-100 text-stone-700 border border-stone-300"
+                                    }`}
+                                  >
+                                    {message.authorType === "agent" ? (
+                                      <Bot className="w-3 h-3" />
+                                    ) : (
+                                      message.author.charAt(0)
+                                    )}
+                                  </div>
+                                  {isCurrentUserMessage(message) && (
+                                    <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-stone-900 border border-white" />
+                                  )}
+                                </div>
+                                <span
+                                  className={`text-[10px] font-bold uppercase tracking-wider ${
+                                    message.authorType === "agent"
+                                      ? "text-stone-500"
+                                      : "text-stone-600"
+                                  }`}
+                                >
+                                  {message.author}
+                                </span>
+                                {isCurrentUserMessage(message) && (
+                                  <span className="text-[10px] font-medium text-stone-400">
+                                    you
+                                  </span>
+                                )}
+                                <span
+                                  className={`text-[10px] ${
+                                    message.authorType === "agent"
+                                      ? "text-stone-400"
+                                      : "text-stone-400"
+                                  }`}
+                                >
+                                  {message.time}
+                                </span>
+                              </div>
+                              <p
+                                className={`text-sm leading-relaxed ${
+                                  message.authorType === "agent"
+                                    ? "text-stone-700"
+                                    : "text-stone-700"
+                                }`}
+                              >
+                                {message.text}
+                              </p>
+                            </div>
+                          ))}
+
+                          {comment.isAwaitingReply && (
+                            <div className="rounded-lg border border-dashed border-stone-300 bg-stone-50 px-3 py-3">
+                              <div className="flex items-center gap-2 mb-1.5">
+                                <div className="w-5 h-5 rounded-full bg-white text-stone-500 border border-stone-200 flex items-center justify-center">
+                                  <Bot className="w-3 h-3" />
+                                </div>
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-stone-500">
+                                  Claude 3.5 Sonnet
+                                </span>
+                              </div>
+                              <p className="text-sm text-stone-400 italic">
+                                Drafting a reply...
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {!comment.resolved && !comment.isDraft && (
+                      <div className="flex flex-col gap-2 mt-3 pt-3 border-t border-stone-100">
+                        {comment.type === "modify" ? (
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => markCommentResolved(comment.id)}
+                              className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded bg-emerald-50 hover:bg-emerald-100 text-xs font-medium text-emerald-700 transition-colors border border-emerald-200"
+                            >
+                              <Check className="w-3 h-3" /> Accept
+                            </button>
+                            <button
+                              onClick={() => markCommentResolved(comment.id)}
+                              className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded bg-rose-50 hover:bg-rose-100 text-xs font-medium text-rose-700 transition-colors border border-rose-200"
+                            >
+                              <X className="w-3 h-3" /> Reject
+                            </button>
+                          </div>
+                        ) : comment.isReplying ? (
+                          <div className="space-y-2">
+                            <textarea
+                              autoFocus={activeCommentId === comment.id}
+                              value={comment.replyDraftText}
+                              placeholder="Reply in thread..."
+                              className="w-full bg-stone-50 border border-stone-200 rounded-lg p-2 text-sm focus:outline-none focus:border-stone-300 transition-colors resize-none"
+                              rows={3}
+                              onClick={(e) => e.stopPropagation()}
+                              onChange={(e) =>
+                                updateReplyDraftText(comment.id, e.target.value)
+                              }
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" && !e.shiftKey) {
+                                  e.preventDefault();
+                                  submitCommentMessage(comment.id, "reply");
+                                }
+                              }}
+                            />
+                            <div className="flex justify-end gap-2">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  cancelReplyDraft(comment.id);
+                                }}
+                                className="px-2 py-1 text-[10px] font-medium text-stone-500 hover:text-stone-800 transition-colors"
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  submitCommentMessage(comment.id, "reply");
+                                }}
+                                disabled={!comment.replyDraftText.trim()}
+                                className="px-2 py-1 bg-stone-900 text-white text-[10px] font-medium rounded hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                Reply
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openReplyComposer(comment.id);
+                            }}
+                            className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-stone-50 hover:bg-stone-100 text-xs font-medium text-stone-600 transition-colors border border-stone-200"
+                          >
+                            <MessageSquare className="w-3.5 h-3.5" /> Reply in
+                            thread
+                          </button>
+                        )}
+                      </div>
                     )}
-                  </div>
-                )}
-              </motion.div>
-            ))}
-          </div>
-          
-          <div className="p-4 border-t border-stone-200 bg-white">
-            <div className="relative">
-              <input 
-                type="text" 
-                placeholder="Add a comment..." 
-                className="w-full bg-stone-50 border border-stone-200 rounded-lg pl-3 pr-10 py-2 text-sm focus:outline-none focus:border-stone-300 focus:bg-white transition-colors text-stone-800 placeholder:text-stone-400"
-              />
-              <button className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded bg-stone-900 text-white hover:bg-stone-800 transition-colors">
-                <Sparkles className="w-3 h-3" />
-              </button>
+                  </motion.div>
+                ))
+              )}
             </div>
-          </div>
-        </aside>
+
+            <div className="p-4 border-t border-stone-200 bg-white">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Add a comment..."
+                  className="w-full bg-stone-50 border border-stone-200 rounded-lg pl-3 pr-10 py-2 text-sm focus:outline-none focus:border-stone-300 focus:bg-white transition-colors text-stone-800 placeholder:text-stone-400"
+                />
+                <button className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded bg-stone-900 text-white hover:bg-stone-800 transition-colors">
+                  <Sparkles className="w-3 h-3" />
+                </button>
+              </div>
+            </div>
+          </aside>
         )}
 
         {/* Version History Sidebar */}
@@ -2623,7 +3509,9 @@ export default function DocumentEditor() {
             {/* Filters */}
             <div className="p-4 border-b border-stone-200 bg-white space-y-3">
               <div>
-                <label className="text-xs font-medium text-stone-600 mb-1.5 block">按日期筛选</label>
+                <label className="text-xs font-medium text-stone-600 mb-1.5 block">
+                  按日期筛选
+                </label>
                 <select
                   value={versionFilterDate}
                   onChange={(e) => setVersionFilterDate(e.target.value)}
@@ -2636,14 +3524,16 @@ export default function DocumentEditor() {
                 </select>
               </div>
               <div>
-                <label className="text-xs font-medium text-stone-600 mb-1.5 block">按协作人筛选</label>
+                <label className="text-xs font-medium text-stone-600 mb-1.5 block">
+                  按协作人筛选
+                </label>
                 <select
                   value={versionFilterAuthor}
                   onChange={(e) => setVersionFilterAuthor(e.target.value)}
                   className="w-full px-2 py-1.5 border border-stone-200 rounded text-xs focus:outline-none focus:border-stone-400"
                 >
                   <option value="all">全部</option>
-                  {versionAuthors.map(author => (
+                  {versionAuthors.map((author) => (
                     <option key={author} value={author}>
                       {author}
                     </option>
@@ -2661,14 +3551,14 @@ export default function DocumentEditor() {
                   animate={{ opacity: 1, y: 0 }}
                   className={`p-3 rounded-lg border bg-white cursor-pointer transition-all ${
                     selectedVersion === version.id
-                      ? 'border-stone-400 ring-2 ring-stone-900/5'
-                      : 'border-stone-200 hover:border-stone-300'
+                      ? "border-stone-400 ring-2 ring-stone-900/5"
+                      : "border-stone-200 hover:border-stone-300"
                   }`}
                   onClick={() => setSelectedVersion(version.id)}
                 >
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      {version.authorType === 'agent' ? (
+                      {version.authorType === "agent" ? (
                         <div className="w-6 h-6 rounded-full bg-stone-100 flex items-center justify-center">
                           <Bot className="w-3 h-3 text-stone-600" />
                         </div>
@@ -2678,14 +3568,20 @@ export default function DocumentEditor() {
                         </div>
                       )}
                       <div>
-                        <div className="text-xs font-medium text-stone-900">{version.author}</div>
-                        <div className="text-[10px] text-stone-500">{version.timestamp}</div>
+                        <div className="text-xs font-medium text-stone-900">
+                          {version.author}
+                        </div>
+                        <div className="text-[10px] text-stone-500">
+                          {version.timestamp}
+                        </div>
                       </div>
                     </div>
                   </div>
-                  
-                  <p className="text-xs text-stone-600 mb-3">{version.changes}</p>
-                  
+
+                  <p className="text-xs text-stone-600 mb-3">
+                    {version.changes}
+                  </p>
+
                   {selectedVersion === version.id && (
                     <button
                       onClick={(e) => {
@@ -2722,72 +3618,74 @@ export default function DocumentEditor() {
 
             {/* Collaborators List */}
             <div className="flex-1 overflow-y-auto p-4 space-y-2">
-              {collaborators.filter(c => c.isActive).map((collaborator) => (
-                <motion.div
-                  key={collaborator.id}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  onClick={() => scrollToCollaborator(collaborator.id)}
-                  className={`p-3 rounded-lg border bg-white cursor-pointer transition-all hover:border-stone-300 ${
-                    collaborator.isActive ? 'shadow-sm' : 'opacity-60'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    {/* Avatar */}
-                    {collaborator.type === 'agent' ? (
-                      <div 
-                        className="w-10 h-10 rounded-full flex items-center justify-center text-white shadow-lg"
-                        style={{ backgroundColor: collaborator.color }}
-                      >
-                        <Bot className="w-5 h-5" />
-                      </div>
-                    ) : (
-                      <div 
-                        className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-semibold shadow-lg"
-                        style={{ backgroundColor: collaborator.color }}
-                      >
-                        {collaborator.name.charAt(0)}
-                      </div>
-                    )}
-                    
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-stone-900 truncate">
-                          {collaborator.name}
-                        </span>
-                        <span className="flex-shrink-0 w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                      </div>
-                      {collaborator.cursorPosition !== undefined && (
-                        <div className="text-xs text-stone-500 mt-0.5 flex items-center gap-1">
-                          <span className="inline-block w-1 h-3 bg-stone-400 animate-pulse" />
-                          正在编辑
+              {collaborators
+                .filter((c) => c.isActive)
+                .map((collaborator) => (
+                  <motion.div
+                    key={collaborator.id}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    onClick={() => scrollToCollaborator(collaborator.id)}
+                    className={`p-3 rounded-lg border bg-white cursor-pointer transition-all hover:border-stone-300 ${
+                      collaborator.isActive ? "shadow-sm" : "opacity-60"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      {/* Avatar */}
+                      {collaborator.type === "agent" ? (
+                        <div
+                          className="w-10 h-10 rounded-full flex items-center justify-center text-white shadow-lg"
+                          style={{ backgroundColor: collaborator.color }}
+                        >
+                          <Bot className="w-5 h-5" />
+                        </div>
+                      ) : (
+                        <div
+                          className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-semibold shadow-lg"
+                          style={{ backgroundColor: collaborator.color }}
+                        >
+                          {collaborator.name.charAt(0)}
                         </div>
                       )}
-                    </div>
 
-                    {/* Jump to cursor button */}
-                    {collaborator.cursorPosition !== undefined && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          scrollToCollaborator(collaborator.id);
-                        }}
-                        className="p-1.5 rounded-md hover:bg-stone-100 text-stone-400 hover:text-stone-600 transition-colors"
-                        title="跳转到光标位置"
-                      >
-                        <ChevronRight className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                </motion.div>
-              ))}
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-stone-900 truncate">
+                            {collaborator.name}
+                          </span>
+                          <span className="flex-shrink-0 w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                        </div>
+                        {collaborator.cursorPosition !== undefined && (
+                          <div className="text-xs text-stone-500 mt-0.5 flex items-center gap-1">
+                            <span className="inline-block w-1 h-3 bg-stone-400 animate-pulse" />
+                            正在编辑
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Jump to cursor button */}
+                      {collaborator.cursorPosition !== undefined && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            scrollToCollaborator(collaborator.id);
+                          }}
+                          className="p-1.5 rounded-md hover:bg-stone-100 text-stone-400 hover:text-stone-600 transition-colors"
+                          title="跳转到光标位置"
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </motion.div>
+                ))}
             </div>
 
             {/* Active Status Footer */}
             <div className="p-4 border-t border-stone-200 bg-white">
               <div className="text-xs text-stone-500 text-center">
-                {collaborators.filter(c => c.isActive).length} 人正在协作
+                {collaborators.filter((c) => c.isActive).length} 人正在协作
               </div>
             </div>
           </aside>
@@ -2796,7 +3694,10 @@ export default function DocumentEditor() {
 
       {/* Duplicate Modal */}
       {duplicateModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setDuplicateModalOpen(false)}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+          onClick={() => setDuplicateModalOpen(false)}
+        >
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -2837,7 +3738,10 @@ export default function DocumentEditor() {
 
       {/* Label Modal */}
       {labelModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setLabelModalOpen(false)}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+          onClick={() => setLabelModalOpen(false)}
+        >
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -2845,19 +3749,25 @@ export default function DocumentEditor() {
             className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md"
           >
             <h2 className="text-lg font-semibold mb-4">设置标签</h2>
-            
+
             {/* Current labels */}
             <div className="mb-4">
-              <p className="text-xs font-medium text-stone-600 mb-2">已有标签</p>
+              <p className="text-xs font-medium text-stone-600 mb-2">
+                已有标签
+              </p>
               <div className="flex flex-wrap gap-2">
                 {documentLabels.map((label, idx) => (
-                  <span 
+                  <span
                     key={idx}
                     className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-stone-100 text-stone-700 rounded-md text-xs"
                   >
                     {label}
                     <button
-                      onClick={() => setDocumentLabels(prev => prev.filter((_, i) => i !== idx))}
+                      onClick={() =>
+                        setDocumentLabels((prev) =>
+                          prev.filter((_, i) => i !== idx),
+                        )
+                      }
                       className="hover:text-red-600 transition-colors"
                     >
                       <X className="w-3 h-3" />
@@ -2874,9 +3784,13 @@ export default function DocumentEditor() {
                 value={tagInput}
                 onChange={(e) => setTagInput(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && tagInput.trim() && !documentLabels.includes(tagInput.trim())) {
-                    setDocumentLabels(prev => [...prev, tagInput.trim()]);
-                    setTagInput('');
+                  if (
+                    e.key === "Enter" &&
+                    tagInput.trim() &&
+                    !documentLabels.includes(tagInput.trim())
+                  ) {
+                    setDocumentLabels((prev) => [...prev, tagInput.trim()]);
+                    setTagInput("");
                   }
                 }}
                 className="w-full px-3 py-2 border border-stone-200 rounded-lg focus:outline-none focus:border-stone-400 text-sm"
@@ -2886,14 +3800,18 @@ export default function DocumentEditor() {
 
             {/* Historical tags */}
             <div className="mb-4">
-              <p className="text-xs font-medium text-stone-600 mb-2">历史标签</p>
+              <p className="text-xs font-medium text-stone-600 mb-2">
+                历史标签
+              </p>
               <div className="flex flex-wrap gap-2">
                 {usedTags
-                  .filter(tag => !documentLabels.includes(tag))
+                  .filter((tag) => !documentLabels.includes(tag))
                   .map((tag, idx) => (
                     <button
                       key={idx}
-                      onClick={() => setDocumentLabels(prev => [...prev, tag])}
+                      onClick={() =>
+                        setDocumentLabels((prev) => [...prev, tag])
+                      }
                       className="px-2.5 py-1 bg-white border border-stone-200 text-stone-600 rounded-md text-xs hover:bg-stone-50 hover:border-stone-300 transition-colors"
                     >
                       {tag}
@@ -2912,7 +3830,7 @@ export default function DocumentEditor() {
               <button
                 onClick={() => {
                   setLabelModalOpen(false);
-                  alert(`标签已更新：${documentLabels.join(', ')}`);
+                  alert(`标签已更新：${documentLabels.join(", ")}`);
                 }}
                 className="px-4 py-2 bg-stone-900 text-white rounded-lg text-sm font-medium hover:bg-stone-800 transition-colors"
               >
@@ -2925,7 +3843,10 @@ export default function DocumentEditor() {
 
       {/* Agent Permission Modal */}
       {agentPermissionModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setAgentPermissionModalOpen(false)}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+          onClick={() => setAgentPermissionModalOpen(false)}
+        >
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -2933,23 +3854,32 @@ export default function DocumentEditor() {
             className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md"
           >
             <h2 className="text-lg font-semibold mb-4">Agent权限设置</h2>
-            
+
             {/* Agent list with permissions */}
             <div className="space-y-3 mb-4">
               {agentPermissions.map((agent) => (
-                <div key={agent.agentId} className="flex items-center justify-between p-3 border border-stone-200 rounded-lg">
+                <div
+                  key={agent.agentId}
+                  className="flex items-center justify-between p-3 border border-stone-200 rounded-lg"
+                >
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center">
                       <Bot className="w-4 h-4 text-white" />
                     </div>
-                    <span className="text-sm font-medium text-stone-900">{agent.agentName}</span>
+                    <span className="text-sm font-medium text-stone-900">
+                      {agent.agentName}
+                    </span>
                   </div>
                   <select
                     value={agent.permission}
                     onChange={(e) => {
-                      const newPermission = e.target.value as 'read' | 'edit';
-                      setAgentPermissions(prev => 
-                        prev.map(a => a.agentId === agent.agentId ? { ...a, permission: newPermission } : a)
+                      const newPermission = e.target.value as "read" | "edit";
+                      setAgentPermissions((prev) =>
+                        prev.map((a) =>
+                          a.agentId === agent.agentId
+                            ? { ...a, permission: newPermission }
+                            : a,
+                        ),
                       );
                     }}
                     className="px-3 py-1.5 border border-stone-200 rounded-md text-sm focus:outline-none focus:border-stone-400"
@@ -2965,13 +3895,16 @@ export default function DocumentEditor() {
             <button
               onClick={() => {
                 const newAgentId = `agent${agentPermissions.length + 1}`;
-                const newAgentName = prompt('输入Agent名称：');
+                const newAgentName = prompt("输入Agent名称：");
                 if (newAgentName?.trim()) {
-                  setAgentPermissions(prev => [...prev, { 
-                    agentId: newAgentId, 
-                    agentName: newAgentName.trim(), 
-                    permission: 'read' 
-                  }]);
+                  setAgentPermissions((prev) => [
+                    ...prev,
+                    {
+                      agentId: newAgentId,
+                      agentName: newAgentName.trim(),
+                      permission: "read",
+                    },
+                  ]);
                 }
               }}
               className="w-full flex items-center justify-center gap-2 px-4 py-2 border-2 border-dashed border-stone-300 text-stone-600 rounded-lg text-sm font-medium hover:border-stone-400 hover:text-stone-900 transition-colors"
@@ -2990,7 +3923,7 @@ export default function DocumentEditor() {
               <button
                 onClick={() => {
                   setAgentPermissionModalOpen(false);
-                  alert('Agent权限已更新');
+                  alert("Agent权限已更新");
                 }}
                 className="px-4 py-2 bg-stone-900 text-white rounded-lg text-sm font-medium hover:bg-stone-800 transition-colors"
               >
@@ -2999,6 +3932,79 @@ export default function DocumentEditor() {
             </div>
           </motion.div>
         </div>
+      )}
+      {/* Row Expand Modal triggered by @ref tokens in canvas documents */}
+      {refExpandSheet && refExpandRow && (
+        <RowExpandModal
+          sheetData={refExpandSheet}
+          row={refExpandRow}
+          onClose={() => {
+            setRefExpandSheet(null);
+            setRefExpandRow(null);
+          }}
+        />
+      )}
+
+      {/* Page Publish Modal */}
+      {showPublishModal && publishedUrl && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/40 z-50"
+            onClick={() => {
+              setShowPublishModal(false);
+              setPublishCopied(false);
+            }}
+          />
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-white rounded-xl shadow-2xl border border-stone-200 p-6 w-[420px]">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center">
+                <Globe className="w-5 h-5 text-emerald-600" />
+              </div>
+              <div>
+                <h3 className="text-base font-semibold text-stone-900">
+                  已发布到互联网
+                </h3>
+                <p className="text-xs text-stone-500">
+                  任何拥有链接的人都可以访问此页面
+                </p>
+              </div>
+            </div>
+            <div className="bg-stone-50 border border-stone-200 rounded-lg p-3 mb-4">
+              <p className="text-sm text-stone-700 font-mono break-all">
+                {publishedUrl}
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(publishedUrl);
+                  setPublishCopied(true);
+                  setTimeout(() => setPublishCopied(false), 2000);
+                }}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
+              >
+                {publishCopied ? (
+                  <>
+                    <Check className="w-4 h-4" /> 已复制
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-4 h-4" /> 复制链接
+                  </>
+                )}
+              </button>
+              <button
+                onClick={() => {
+                  setShowPublishModal(false);
+                  setPublishCopied(false);
+                }}
+                className="px-4 py-2 bg-stone-100 text-stone-700 rounded-lg text-sm font-medium hover:bg-stone-200 transition-colors"
+              >
+                关闭
+              </button>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );
