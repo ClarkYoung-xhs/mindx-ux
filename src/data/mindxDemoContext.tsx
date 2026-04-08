@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useMemo, useState } from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+} from "react";
 import {
   agentConnections as initialAgentConnections,
   agentWritebacks as initialAgentWritebacks,
@@ -26,7 +32,8 @@ import {
   type MountedMemoryPack,
   type SourceLink,
   type WorkspaceDoc,
-} from './mindxDemo';
+} from "./mindxDemo";
+import type { SheetRow } from "../types/sheet";
 
 interface MindXDemoContextValue {
   workspaces: DemoWorkspace[];
@@ -44,7 +51,9 @@ interface MindXDemoContextValue {
   memoryAssets: MemoryAsset[];
   setMemoryAssets: React.Dispatch<React.SetStateAction<MemoryAsset[]>>;
   memoryDataSources: MemoryDataSource[];
-  setMemoryDataSources: React.Dispatch<React.SetStateAction<MemoryDataSource[]>>;
+  setMemoryDataSources: React.Dispatch<
+    React.SetStateAction<MemoryDataSource[]>
+  >;
   memoryTimeline: MemoryEvent[];
   setMemoryTimeline: React.Dispatch<React.SetStateAction<MemoryEvent[]>>;
   memoryInsights: MemoryInsight[];
@@ -54,28 +63,67 @@ interface MindXDemoContextValue {
   agentConnections: AgentConnection[];
   setAgentConnections: React.Dispatch<React.SetStateAction<AgentConnection[]>>;
   mountedMemoryPacks: MountedMemoryPack[];
-  setMountedMemoryPacks: React.Dispatch<React.SetStateAction<MountedMemoryPack[]>>;
+  setMountedMemoryPacks: React.Dispatch<
+    React.SetStateAction<MountedMemoryPack[]>
+  >;
   agentWritebacks: AgentWriteback[];
   setAgentWritebacks: React.Dispatch<React.SetStateAction<AgentWriteback[]>>;
+  addDocument: (doc: WorkspaceDoc) => void;
+  addSheetRow: (sheetId: string, row: SheetRow) => void;
 }
 
 const MindXDemoContext = createContext<MindXDemoContextValue | null>(null);
 
 export function MindXDemoProvider({ children }: { children: React.ReactNode }) {
   const [workspaces, setWorkspaces] = useState(initialWorkspaces);
-  const [activeWorkspaceId, setActiveWorkspaceId] = useState(initialWorkspaces[0]?.id ?? 'w1');
+  const [activeWorkspaceId, setActiveWorkspaceId] = useState(
+    initialWorkspaces[0]?.id ?? "w1",
+  );
   const [agents, setAgents] = useState(initialAgents);
   const [permissions, setPermissions] = useState(initialPermissions);
   const [documents, setDocuments] = useState(initialDocuments);
   const [activities, setActivities] = useState(initialActivities);
   const [memoryAssets, setMemoryAssets] = useState(initialMemoryAssets);
-  const [memoryDataSources, setMemoryDataSources] = useState(initialMemoryDataSources);
+  const [memoryDataSources, setMemoryDataSources] = useState(
+    initialMemoryDataSources,
+  );
   const [memoryTimeline, setMemoryTimeline] = useState(initialMemoryTimeline);
   const [memoryInsights, setMemoryInsights] = useState(initialMemoryInsights);
-  const [memorySourceLinks, setMemorySourceLinks] = useState(initialMemorySourceLinks);
-  const [agentConnections, setAgentConnections] = useState(initialAgentConnections);
-  const [mountedMemoryPacks, setMountedMemoryPacks] = useState(initialMountedMemoryPacks);
-  const [agentWritebacks, setAgentWritebacks] = useState(initialAgentWritebacks);
+  const [memorySourceLinks, setMemorySourceLinks] = useState(
+    initialMemorySourceLinks,
+  );
+  const [agentConnections, setAgentConnections] = useState(
+    initialAgentConnections,
+  );
+  const [mountedMemoryPacks, setMountedMemoryPacks] = useState(
+    initialMountedMemoryPacks,
+  );
+  const [agentWritebacks, setAgentWritebacks] = useState(
+    initialAgentWritebacks,
+  );
+
+  const addDocument = useCallback((doc: WorkspaceDoc) => {
+    setDocuments((prev) => {
+      if (prev.some((d) => d.id === doc.id)) return prev;
+      return [doc, ...prev];
+    });
+  }, []);
+
+  const addSheetRow = useCallback((sheetId: string, row: SheetRow) => {
+    setDocuments((prev) =>
+      prev.map((doc) => {
+        if (doc.id !== sheetId || !doc.sheetData) return doc;
+        if (doc.sheetData.rows.some((r) => r.id === row.id)) return doc;
+        return {
+          ...doc,
+          sheetData: {
+            ...doc.sheetData,
+            rows: [...doc.sheetData.rows, row],
+          },
+        };
+      }),
+    );
+  }, []);
 
   const value = useMemo<MindXDemoContextValue>(
     () => ({
@@ -107,10 +155,14 @@ export function MindXDemoProvider({ children }: { children: React.ReactNode }) {
       setMountedMemoryPacks,
       agentWritebacks,
       setAgentWritebacks,
+      addDocument,
+      addSheetRow,
     }),
     [
       activities,
       activeWorkspaceId,
+      addDocument,
+      addSheetRow,
       agentConnections,
       agentWritebacks,
       agents,
@@ -123,16 +175,20 @@ export function MindXDemoProvider({ children }: { children: React.ReactNode }) {
       mountedMemoryPacks,
       permissions,
       workspaces,
-    ]
+    ],
   );
 
-  return <MindXDemoContext.Provider value={value}>{children}</MindXDemoContext.Provider>;
+  return (
+    <MindXDemoContext.Provider value={value}>
+      {children}
+    </MindXDemoContext.Provider>
+  );
 }
 
 export function useMindXDemo() {
   const context = useContext(MindXDemoContext);
   if (!context) {
-    throw new Error('useMindXDemo must be used within MindXDemoProvider');
+    throw new Error("useMindXDemo must be used within MindXDemoProvider");
   }
   return context;
 }
