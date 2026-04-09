@@ -107,19 +107,19 @@ export default function LandingPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="flex flex-wrap items-center justify-center gap-3 mb-12"
+            className="flex flex-wrap items-center justify-center gap-2 mb-12"
           >
-            <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mr-2">{t('landing.integrations')}</span>
+            <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mr-1">{t('landing.integrations')}</span>
             {INTEGRATIONS.map((item) => (
               <div 
                 key={item.name}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-full border shadow-sm hover:shadow-md transition-all cursor-default group ${
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border shadow-sm hover:shadow-md transition-all cursor-default group ${
                   item.highlight
                     ? 'bg-stone-900 border-stone-700 ring-2 ring-stone-400/30'
                     : 'bg-stone-50 border-stone-200/60 hover:border-stone-300'
                 }`}
               >
-                <div className={`w-6 h-6 rounded-full ${item.highlight ? 'bg-stone-700' : item.color} flex items-center justify-center ${item.highlight ? 'text-white' : 'text-stone-600'} group-hover:scale-110 transition-transform`}>
+                <div className={`w-5 h-5 rounded-full ${item.highlight ? 'bg-stone-700' : item.color} flex items-center justify-center ${item.highlight ? 'text-white' : 'text-stone-600'} group-hover:scale-110 transition-transform`}>
                   {item.icon}
                 </div>
                 <span className={`text-xs font-semibold ${item.highlight ? 'text-white' : 'text-stone-700'}`}>{item.name}</span>

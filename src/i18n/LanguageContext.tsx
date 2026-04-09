@@ -56,10 +56,10 @@ const translations: Record<Language, Record<string, string>> = {
       "Your agent can create interactive rich-text documents — not just Markdown. Work with docs like a human.",
     "landing.feat2Title": "One-Click Deployment",
     "landing.feat2Desc":
-      "Documents go live automatically. Share a link and anyone can access instantly from any device.",
+      "Vibe coding apps are local-only by default. MindX lets your agent deploy them to the cloud effortlessly — share a link and anyone can access instantly.",
     "landing.feat3Title": "Built-in Database",
     "landing.feat3Desc":
-      "Cloud-native database for structured data. Knowledge persists beyond a single conversation.",
+      "Vibe coding usually produces frontend-only demos. With MindX's built-in database, your agent can build full-stack apps with real server-side persistence — effortlessly.",
     "landing.feat4Title": "Cross-Agent Memory Migration",
     "landing.feat4Desc":
       "Seamlessly transfer your preferences and context between Claude, Antigravity, Codex and more.",
@@ -68,7 +68,7 @@ const translations: Record<Language, Record<string, string>> = {
       "Build the most complete personal profile from chats, docs, and behavior. Your agent knows you better than you.",
     "landing.feat6Title": "Knowledge Compilation",
     "landing.feat6Desc":
-      "Compile scattered notes and thoughts into structured insights. Every conversation starts with the best knowledge.",
+      "Compile scattered notes and thoughts into structured insights, building a personalized knowledge graph from massive raw data.",
 
     // Landing Page - Footer
     "landing.copyright": "© 2026 MindX Platform. All rights reserved.",
@@ -227,10 +227,10 @@ const translations: Record<Language, Record<string, string>> = {
       "Agent 不只能写 Markdown，还能创建带交互的在线富文本文档——像人类一样使用文档套件。",
     "landing.feat2Title": "傻瓜式部署到线上",
     "landing.feat2Desc":
-      "Agent 写完文档自动上线，一键部署到公网。分享链接即可协作，任何设备即刻访问。",
+      "Vibe coding 默认做出的是本地网页。通过 MindX 增强，你的 Agent 可以轻而易举地将应用部署到线上，分享链接即可访问。",
     "landing.feat3Title": "数据库能力",
     "landing.feat3Desc":
-      "内置云端数据库，Agent 可以持久化结构化数据——知识不再随会话消亡。",
+      "Vibe coding 默认只能做纯前端 Demo。有了 MindX 内置数据库，你的 Agent 可以轻松构建有服务端能力的完整应用。",
     "landing.feat4Title": "跨 Agent 记忆迁移",
     "landing.feat4Desc":
       "在 Claude、Antigravity、Codex 之间无缝迁移你的偏好、习惯与上下文。换 Agent 不丢记忆。",
@@ -239,7 +239,7 @@ const translations: Record<Language, Record<string, string>> = {
       "从聊天记录、文档、行为数据中提炼出完整的个人画像——你的 Agent 比你更懂你。",
     "landing.feat6Title": "知识编译",
     "landing.feat6Desc":
-      "将碎片化的笔记和思考编译为结构化洞察，让 Agent 在每次对话中都能调取最精准的知识。",
+      "将碎片化的笔记和思考编译为结构化洞察，将海量原始数据构建为个性化的知识图谱。",
 
     // Landing Page - Footer
     "landing.copyright": "© 2026 MindX 平台。保留所有权利。",
