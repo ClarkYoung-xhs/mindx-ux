@@ -179,7 +179,7 @@ export default function LandingPage() {
                     V1 <span className="text-[10px] text-stone-400">当前版本</span>
                   </button>
                   <button
-                    onClick={() => { setShowVersionMenu(false); window.open('https://mindx.vercel.app/v2', '_blank'); }}
+                    onClick={() => { setShowVersionMenu(false); window.open('https://mindx-ux.vercel.app/v2', '_blank'); }}
                     className="w-full px-4 py-2.5 text-left text-sm font-medium text-stone-700 hover:bg-stone-50 transition-colors flex items-center justify-between border-t border-stone-100"
                   >
                     V2 <span className="text-[10px] text-accent-terracotta text-orange-600">NEW</span>
