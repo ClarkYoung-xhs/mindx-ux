@@ -33,6 +33,7 @@ const INTEGRATIONS: { name: string; icon: React.ReactNode; color: string; highli
 
 export default function LandingPage() {
   const [showAuth, setShowAuth] = useState(false);
+  const [showVersionMenu, setShowVersionMenu] = useState(false);
   const navigate = useNavigate();
   const { t } = useLanguage();
 
@@ -109,7 +110,7 @@ export default function LandingPage() {
             transition={{ duration: 0.5 }}
             className="flex flex-wrap items-center justify-center gap-2 mb-12"
           >
-            <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest mr-1">{t('landing.integrations')}</span>
+
             {INTEGRATIONS.map((item) => (
               <div 
                 key={item.name}
@@ -154,12 +155,38 @@ export default function LandingPage() {
             transition={{ duration: 0.5, delay: 0.3 }}
             className="flex flex-col sm:flex-row items-center justify-center gap-4"
           >
-            <button
-              onClick={() => setShowAuth(true)}
-              className="flex items-center gap-2 bg-stone-900 text-white px-6 py-3 rounded-md font-medium hover:bg-stone-800 transition-colors"
-            >
-              {t('nav.getStarted')} <ArrowRight className="w-4 h-4" />
-            </button>
+            <div className="relative">
+              <div className="flex items-stretch">
+                <button
+                  onClick={() => setShowAuth(true)}
+                  className="flex items-center gap-2 bg-stone-900 text-white px-6 py-3 rounded-l-md font-medium hover:bg-stone-800 transition-colors"
+                >
+                  {t('nav.getStarted')} <ArrowRight className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setShowVersionMenu(!showVersionMenu)}
+                  className="flex items-center bg-stone-900 text-white px-2 py-3 rounded-r-md border-l border-stone-700 hover:bg-stone-800 transition-colors"
+                >
+                  <svg className={`w-4 h-4 transition-transform ${showVersionMenu ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                </button>
+              </div>
+              {showVersionMenu && (
+                <div className="absolute top-full left-0 mt-2 w-full bg-white rounded-md shadow-lg border border-stone-200 overflow-hidden z-50">
+                  <button
+                    onClick={() => { setShowVersionMenu(false); setShowAuth(true); }}
+                    className="w-full px-4 py-2.5 text-left text-sm font-medium text-stone-700 hover:bg-stone-50 transition-colors flex items-center justify-between"
+                  >
+                    V1 <span className="text-[10px] text-stone-400">当前版本</span>
+                  </button>
+                  <button
+                    onClick={() => { setShowVersionMenu(false); window.open('https://mindx.vercel.app/v2', '_blank'); }}
+                    className="w-full px-4 py-2.5 text-left text-sm font-medium text-stone-700 hover:bg-stone-50 transition-colors flex items-center justify-between border-t border-stone-100"
+                  >
+                    V2 <span className="text-[10px] text-accent-terracotta text-orange-600">NEW</span>
+                  </button>
+                </div>
+              )}
+            </div>
             <a
               href="/mindx-presentation.html"
               target="_blank"

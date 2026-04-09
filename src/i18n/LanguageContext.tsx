@@ -28,7 +28,7 @@ const translations: Record<Language, Record<string, string>> = {
     "landing.heroTitle1": "Make your agent",
     "landing.heroTitle2": "powerful.",
     "landing.heroDesc":
-      "Give your agents persistent memory, structured knowledge, and the context they need to truly understand you.",
+      "Supercharge your agent with production-grade skills and persistent memory — from vibe coding to real apps, from scattered notes to a personal knowledge graph.",
     "landing.seeHow": "See How It Works",
 
     // Landing Page - Workflow
@@ -203,7 +203,7 @@ const translations: Record<Language, Record<string, string>> = {
     "landing.heroTitle1": "让你的 Agent",
     "landing.heroTitle2": "更加强大",
     "landing.heroDesc":
-      "赋予你的 Agent 持久记忆、结构化知识与深度上下文，让它真正理解你。",
+      "为你的 Agent 装上生产级技能与持久记忆——从 vibe coding 到真实应用，从碎片笔记到个人知识图谱。",
     "landing.seeHow": "了解工作原理",
 
     // Landing Page - Workflow
