@@ -29,7 +29,7 @@ const translations: Record<Language, Record<string, string>> = {
     "landing.heroTitle2": "powerful.",
     "landing.heroDesc":
       "Supercharge your agent with production-grade skills and persistent memory — from vibe coding to real apps, from scattered notes to a personal knowledge graph.",
-    "landing.seeHow": "See How It Works",
+    "landing.seeHow": "See Product Value",
 
     // Landing Page - Workflow
     "landing.workflowTitle": "How MindX Works",
@@ -204,7 +204,7 @@ const translations: Record<Language, Record<string, string>> = {
     "landing.heroTitle2": "更加强大",
     "landing.heroDesc":
       "为你的 Agent 装上生产级技能与持久记忆——从 vibe coding 到真实应用，从碎片笔记到个人知识图谱。",
-    "landing.seeHow": "了解工作原理",
+    "landing.seeHow": "了解产品价值",
 
     // Landing Page - Workflow
     "landing.workflowTitle": "MindX 如何运作",
