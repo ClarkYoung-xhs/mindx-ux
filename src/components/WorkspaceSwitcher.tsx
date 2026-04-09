@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Sparkles, ChevronDown, Check } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useMindXDemo } from "../data/mindxDemoContext";
 import type { WorkspaceType } from "../data/mindxDemoContext";
 
@@ -24,6 +25,7 @@ export default function WorkspaceSwitcher() {
   const { currentWorkspaceType, switchWorkspace } = useMindXDemo();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
   // Close on outside click
   useEffect(() => {
@@ -59,6 +61,13 @@ export default function WorkspaceSwitcher() {
         onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
       >
         <div
+          onClick={(e) => {
+            e.stopPropagation();
+            localStorage.removeItem('mindx_logged_in');
+            localStorage.removeItem('mindx_workspace_id');
+            localStorage.removeItem('mindx_user_name');
+            navigate('/');
+          }}
           style={{
             width: "24px",
             height: "24px",
@@ -67,7 +76,9 @@ export default function WorkspaceSwitcher() {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
+            cursor: "pointer",
           }}
+          title="Back to Home"
         >
           <Sparkles style={{ width: "14px", height: "14px", color: "#fff" }} />
         </div>

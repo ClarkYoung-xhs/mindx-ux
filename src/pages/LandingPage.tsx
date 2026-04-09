@@ -80,12 +80,12 @@ export default function LandingPage() {
       {/* Navigation */}
       <nav className="fixed top-0 inset-x-0 z-50 border-b border-stone-200 bg-white/80 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <Link to="/" className="flex items-center gap-2">
             <div className="w-8 h-8 rounded bg-stone-800 flex items-center justify-center">
               <Sparkles className="w-5 h-5 text-white" />
             </div>
             <span className="text-xl font-semibold tracking-tight">MindX</span>
-          </div>
+          </Link>
           <div className="flex items-center gap-4">
             <Link to="/skills" className="text-sm font-medium text-stone-500 hover:text-stone-900 transition-colors hidden md:block">
               Skills
@@ -155,37 +155,21 @@ export default function LandingPage() {
             transition={{ duration: 0.5, delay: 0.3 }}
             className="flex flex-col sm:flex-row items-center justify-center gap-4"
           >
-            <div className="relative">
-              <div className="flex items-stretch">
-                <button
-                  onClick={() => setShowAuth(true)}
-                  className="flex items-center gap-2 bg-stone-900 text-white px-6 py-3 rounded-l-md font-medium hover:bg-stone-800 transition-colors"
-                >
-                  {t('nav.getStarted')} <ArrowRight className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => setShowVersionMenu(!showVersionMenu)}
-                  className="flex items-center bg-stone-900 text-white px-2 py-3 rounded-r-md border-l border-stone-700 hover:bg-stone-800 transition-colors"
-                >
-                  <svg className={`w-4 h-4 transition-transform ${showVersionMenu ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                </button>
-              </div>
-              {showVersionMenu && (
-                <div className="absolute top-full left-0 mt-2 w-full bg-white rounded-md shadow-lg border border-stone-200 overflow-hidden z-50">
-                  <button
-                    onClick={() => { setShowVersionMenu(false); setShowAuth(true); }}
-                    className="w-full px-4 py-2.5 text-left text-sm font-medium text-stone-700 hover:bg-stone-50 transition-colors flex items-center justify-between"
-                  >
-                    V1 <span className="text-[10px] text-stone-400">当前版本</span>
-                  </button>
-                  <button
-                    onClick={() => { setShowVersionMenu(false); window.open('https://mindx-ux.vercel.app/v2', '_blank'); }}
-                    className="w-full px-4 py-2.5 text-left text-sm font-medium text-stone-700 hover:bg-stone-50 transition-colors flex items-center justify-between border-t border-stone-100"
-                  >
-                    V2 <span className="text-[10px] text-accent-terracotta text-orange-600">NEW</span>
-                  </button>
-                </div>
-              )}
+            <div className="flex items-stretch rounded-md overflow-hidden">
+              <button
+                onClick={() => setShowAuth(true)}
+                className="flex items-center gap-2 bg-stone-900 text-white px-5 py-3 font-medium hover:bg-stone-800 transition-colors border-r border-stone-700"
+              >
+                V1
+              </button>
+              <a
+                href="https://mindx-ux.vercel.app/v2"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 bg-stone-900 text-white px-5 py-3 font-medium hover:bg-stone-800 transition-colors"
+              >
+                V2 <span className="text-[9px] font-bold text-orange-400 bg-orange-400/15 px-1.5 py-0.5 rounded">NEW</span>
+              </a>
             </div>
             <a
               href="/mindx-presentation.html"
