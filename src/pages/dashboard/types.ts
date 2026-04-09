@@ -4,7 +4,8 @@
 
 export interface WorkspaceDoc {
   id: string;
-  workspaceId: string;
+  /** @deprecated No longer used — workspace concept removed in four-layer restructure */
+  workspaceId?: string;
   name: string;
   type: string;
   date: string;
@@ -17,6 +18,8 @@ export interface WorkspaceDoc {
   isNew?: boolean; // Whether this doc was created while the user was away
   isRead?: boolean; // Whether the user has read this doc
   source?: "normal" | "scheduled" | "webclip" | "memory"; // Document source
+  children?: WorkspaceDoc[]; // Nested child documents (file-in-file)
+  parentId?: string; // Parent document ID for nesting
 }
 
 export interface AgentPermission {

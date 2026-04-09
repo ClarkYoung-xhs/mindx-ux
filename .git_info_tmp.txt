@@ -1,0 +1,37 @@
+feat/ai-chat-and-cross-references
+==SEPARATOR==
+ M src/App.tsx
+ M src/components/AIChatFloat/AIChatFloat.tsx
+ M src/data/aiChatMockData.ts
+ M src/data/canvasMockData.ts
+ M src/data/mindxDemo.ts
+ M src/data/mindxDemoContext.tsx
+ M src/data/tocAiChatMockData.ts
+ M src/data/tocMindxDemo.ts
+ M src/pages/DocumentEditor.tsx
+ M src/pages/dashboard/types.ts
+ M src/pages/v2/V2ActivityPage.tsx
+ M src/pages/v2/V2ConnectPage.tsx
+ M src/pages/v2/V2DataSourcesPage.tsx
+ M src/pages/v2/V2KnowledgePage.tsx
+ M src/pages/v2/V2Layout.tsx
+ M src/pages/v2/V2MemoryHomePage.tsx
+ M src/pages/v2/V2MemoryPage.tsx
+ M src/pages/v2/useV2ModuleActions.tsx
+ M src/types/block.ts
+?? .codebuddy/plan/four-layer-restructure/
+?? .codebuddy/plan/knowledge-graph/
+?? .git_info_tmp.txt
+?? src/data/inboxSheetMockData.ts
+?? src/data/unifiedDocTree.ts
+?? src/data/workspaceRootBlocks.ts
+?? src/pages/v2/V2DocumentDetailPage.tsx
+?? src/pages/v2/V2InboxPage.tsx
+?? src/pages/v2/WorkspaceTree.tsx
+==SEPARATOR==
+origin	git@github.com:ClarkYoung-xhs/mindx-ux.git (fetch)
+origin	git@github.com:ClarkYoung-xhs/mindx-ux.git (push)
+==SEPARATOR==
+2f97831 docs: add comprehensive PR description for AI chat and cross-references feature
+e081e6c feat: update AI chat components and add new mock data files
+805d0f7 fix: correct getAgentAvatar import path in SettingsTab

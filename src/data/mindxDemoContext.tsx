@@ -8,9 +8,7 @@ import React, {
 import {
   agentConnections as initialAgentConnections,
   agentWritebacks as initialAgentWritebacks,
-  initialActivities,
   initialAgents,
-  initialDocuments,
   initialPermissions,
   initialWorkspaces,
   memoryDataSources as initialMemoryDataSources,
@@ -33,12 +31,15 @@ import {
   type SourceLink,
   type WorkspaceDoc,
 } from "./mindxDemo";
-import { tocInitialDocuments, tocInitialActivities } from "./tocMindxDemo";
-import { tocCrossReferences } from "./tocCrossReferences";
-import { crossReferences } from "./crossReferences";
+import {
+  unifiedDocuments,
+  unifiedActivities,
+  unifiedCrossReferences,
+} from "./unifiedDocTree";
 import type { CrossReference } from "../types/crossRef";
 import type { SheetRow } from "../types/sheet";
 
+/** @deprecated Workspace concept removed — kept for backward compatibility */
 export type WorkspaceType = "toB" | "toC";
 
 interface MindXDemoContextValue {
@@ -76,7 +77,9 @@ interface MindXDemoContextValue {
   setAgentWritebacks: React.Dispatch<React.SetStateAction<AgentWriteback[]>>;
   addDocument: (doc: WorkspaceDoc) => void;
   addSheetRow: (sheetId: string, row: SheetRow) => void;
+  /** @deprecated No-op — workspace concept removed */
   currentWorkspaceType: WorkspaceType;
+  /** @deprecated No-op — workspace concept removed */
   switchWorkspace: (type: WorkspaceType) => void;
   currentCrossReferences: CrossReference[];
 }
@@ -90,12 +93,14 @@ export function MindXDemoProvider({ children }: { children: React.ReactNode }) {
   );
   const [agents, setAgents] = useState(initialAgents);
   const [permissions, setPermissions] = useState(initialPermissions);
-  const [documents, setDocuments] = useState(initialDocuments);
-  const [activities, setActivities] = useState(initialActivities);
-  const [currentWorkspaceType, setCurrentWorkspaceType] =
-    useState<WorkspaceType>("toB");
-  const [currentCrossReferences, setCurrentCrossReferences] =
-    useState<CrossReference[]>(crossReferences);
+  // Unified document tree (merged toB + toC under two root nodes)
+  const [documents, setDocuments] = useState<WorkspaceDoc[]>(unifiedDocuments);
+  // Unified activities (merged toB + toC, sorted by timestamp)
+  const [activities, setActivities] = useState(unifiedActivities);
+  // Unified cross-references (merged toB + toC)
+  const [currentCrossReferences] = useState<CrossReference[]>(
+    unifiedCrossReferences,
+  );
   const [memoryAssets, setMemoryAssets] = useState(initialMemoryAssets);
   const [memoryDataSources, setMemoryDataSources] = useState(
     initialMemoryDataSources,
@@ -117,38 +122,55 @@ export function MindXDemoProvider({ children }: { children: React.ReactNode }) {
 
   const addDocument = useCallback((doc: WorkspaceDoc) => {
     setDocuments((prev) => {
+      // Helper: recursively try to add doc under its parent
+      const addUnderParent = (nodes: WorkspaceDoc[]): WorkspaceDoc[] =>
+        nodes.map((node) => {
+          if (node.id === doc.parentId) {
+            const existing = node.children ?? [];
+            if (existing.some((d) => d.id === doc.id)) return node;
+            return { ...node, children: [doc, ...existing] };
+          }
+          if (node.children) {
+            return { ...node, children: addUnderParent(node.children) };
+          }
+          return node;
+        });
+
+      if (doc.parentId) {
+        return addUnderParent(prev);
+      }
+      // Top-level add
       if (prev.some((d) => d.id === doc.id)) return prev;
       return [doc, ...prev];
     });
   }, []);
 
   const addSheetRow = useCallback((sheetId: string, row: SheetRow) => {
-    setDocuments((prev) =>
-      prev.map((doc) => {
-        if (doc.id !== sheetId || !doc.sheetData) return doc;
-        if (doc.sheetData.rows.some((r) => r.id === row.id)) return doc;
-        return {
-          ...doc,
-          sheetData: {
-            ...doc.sheetData,
-            rows: [...doc.sheetData.rows, row],
-          },
-        };
-      }),
-    );
+    setDocuments((prev) => {
+      const updateRow = (nodes: WorkspaceDoc[]): WorkspaceDoc[] =>
+        nodes.map((doc) => {
+          if (doc.id === sheetId && doc.sheetData) {
+            if (doc.sheetData.rows.some((r) => r.id === row.id)) return doc;
+            return {
+              ...doc,
+              sheetData: {
+                ...doc.sheetData,
+                rows: [...doc.sheetData.rows, row],
+              },
+            };
+          }
+          if (doc.children) {
+            return { ...doc, children: updateRow(doc.children) };
+          }
+          return doc;
+        });
+      return updateRow(prev);
+    });
   }, []);
 
-  const switchWorkspace = useCallback((type: WorkspaceType) => {
-    setCurrentWorkspaceType(type);
-    if (type === "toB") {
-      setDocuments(initialDocuments);
-      setActivities(initialActivities);
-      setCurrentCrossReferences(crossReferences);
-    } else {
-      setDocuments(tocInitialDocuments);
-      setActivities(tocInitialActivities);
-      setCurrentCrossReferences(tocCrossReferences);
-    }
+  /** @deprecated No-op — workspace concept removed */
+  const switchWorkspace = useCallback((_type: WorkspaceType) => {
+    // No-op: workspace switching is deprecated
   }, []);
 
   const value = useMemo<MindXDemoContextValue>(
@@ -183,7 +205,7 @@ export function MindXDemoProvider({ children }: { children: React.ReactNode }) {
       setAgentWritebacks,
       addDocument,
       addSheetRow,
-      currentWorkspaceType,
+      currentWorkspaceType: "toB" as WorkspaceType,
       switchWorkspace,
       currentCrossReferences,
     }),
@@ -192,7 +214,6 @@ export function MindXDemoProvider({ children }: { children: React.ReactNode }) {
       activeWorkspaceId,
       addDocument,
       addSheetRow,
-      currentWorkspaceType,
       switchWorkspace,
       currentCrossReferences,
       agentConnections,

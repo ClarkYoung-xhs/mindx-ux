@@ -33,12 +33,12 @@ const analysisPreset: ChatPreset = {
   id: "preset-analysis",
   chipLabel: "分析库存与供应链风险",
   fullCommand: "分析当前库存状况和供应链风险",
-  matchKeywords: ["分析", "库存", "供应链", "风险"],
+  matchKeywords: ["分析库存", "库存", "供应链", "风险"],
   mockReply: [
     { text: "已为您生成库存与供应链分析报告，点击查看详细分析 → " },
     {
       text: "📊 库存与供应链分析报告-20250410",
-      link: "/document?id=canvas-analysis-report&type=smartcanvas&from=v2-workspace",
+      link: "/v2/doc/canvas-analysis-report",
     },
   ],
   sideEffect: "createAnalysisReport",
@@ -57,7 +57,7 @@ const addCustomerPreset: ChatPreset = {
     { text: "已将新客户「腾讯集团-shrekyan」添加到 B2B 客户档案与授信表 → " },
     {
       text: "📋 B2B 客户档案与授信表",
-      link: "/document?id=sheet-crm&type=smartsheet&from=v2-workspace",
+      link: "/v2/doc/sheet-crm",
     },
   ],
   sideEffect: "addCrmRow",
@@ -70,7 +70,7 @@ const clientPortalPagePreset: ChatPreset = {
   id: "preset-client-portal-page",
   chipLabel: "生成经销商订货看板",
   fullCommand: "为华中区星巴克加盟商生成专属订货看板",
-  matchKeywords: ["经销商", "订货看板", "星巴克", "门户", "生成", "看板"],
+  matchKeywords: ["经销商", "订货看板", "星巴克", "门户", "看板"],
   mockReply: [
     {
       text: "已为您生成《华中区-星巴克加盟商订货看板》。该页面包含两个核心模块：\n\n",
@@ -86,7 +86,7 @@ const clientPortalPagePreset: ChatPreset = {
     },
     {
       text: "🌐 华中区-星巴克加盟商订货看板",
-      link: "/document?id=page-tob-client-portal&type=page&from=v2-workspace",
+      link: "/v2/doc/page-tob-client-portal",
     },
     {
       text: "\n\n该页面可通过右上角「发布」按钮生成对外链接，嵌入企业微信的外部联系人画册或作为独立服务号菜单使用。经销商手机端打开后，库存和价格数据会基于 CRDT 协议实时同步。",

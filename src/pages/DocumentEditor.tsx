@@ -1722,23 +1722,19 @@ export default function DocumentEditor() {
   const handleBackNavigation = () => {
     if (from === "knowledge") {
       if (assetId) {
-        navigate(`/v2/memory/knowledge?asset=${assetId}`);
+        navigate(`/v2/knowledge?asset=${assetId}`);
         return;
       }
       if (dataSourceId) {
-        navigate(`/v2/memory/knowledge?source=${dataSourceId}`);
+        navigate(`/v2/knowledge?source=${dataSourceId}`);
         return;
       }
-      navigate("/v2/memory/knowledge");
+      navigate("/v2/knowledge");
       return;
     }
 
     if (from === "data-sources") {
-      navigate(
-        dataSourceId
-          ? `/v2/memory/sources?source=${dataSourceId}`
-          : "/v2/memory/sources",
-      );
+      navigate(dataSourceId ? `/v2/inbox?source=${dataSourceId}` : "/v2/inbox");
       return;
     }
 
@@ -1756,11 +1752,7 @@ export default function DocumentEditor() {
     }
 
     if (from === "v2-workspace") {
-      navigate(
-        requestedDocId
-          ? `/v2/workspace?doc=${requestedDocId}`
-          : "/v2/workspace",
-      );
+      navigate(requestedDocId ? `/v2/doc/${requestedDocId}` : "/v2/activity");
       return;
     }
 

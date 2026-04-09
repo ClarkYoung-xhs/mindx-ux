@@ -13,6 +13,7 @@ import {
   clientPortalBlocks,
 } from "./canvasMockData";
 
+/** @deprecated Workspace concept removed in four-layer restructure */
 export interface DemoWorkspace {
   id: string;
   name: string;
@@ -40,7 +41,8 @@ export interface DemoPermission {
 
 export interface WorkspaceDoc {
   id: string;
-  workspaceId: string;
+  /** @deprecated No longer used — workspace concept removed in four-layer restructure */
+  workspaceId?: string;
   name: string;
   type: DocType;
   date: string;
@@ -54,6 +56,8 @@ export interface WorkspaceDoc {
   sheetData?: SheetData;
   htmlContent?: string; // For Page type: full HTML source code
   boundSheets?: string[]; // For Page type: bound Smart Sheet IDs
+  children?: WorkspaceDoc[]; // Nested child documents (file-in-file)
+  parentId?: string; // Parent document ID for nesting
 }
 
 export interface Activity {
@@ -194,6 +198,7 @@ export interface AgentWriteback {
   docName: string;
 }
 
+/** @deprecated Workspace concept removed in four-layer restructure */
 export const initialWorkspaces: DemoWorkspace[] = [
   { id: "w1", name: "Main Space" },
 ];
@@ -242,7 +247,7 @@ export const initialPermissions: DemoPermission[] = [
 ];
 
 export const initialDocuments: WorkspaceDoc[] = [
-  // === Smart Sheet (4 tables) ===
+  // === Smart Sheet (top-level) ===
   {
     id: "sheet-inventory",
     workspaceId: "w1",
@@ -271,6 +276,7 @@ export const initialDocuments: WorkspaceDoc[] = [
     size: 28672,
     sheetData: crmSheet,
   },
+  // === Smart Sheet with nested child ===
   {
     id: "sheet-orders",
     workspaceId: "w1",
@@ -284,22 +290,25 @@ export const initialDocuments: WorkspaceDoc[] = [
     creatorType: "agent",
     size: 45056,
     sheetData: ordersSheet,
+    children: [
+      {
+        id: "sheet-suppliers",
+        workspaceId: "w1",
+        parentId: "sheet-orders",
+        name: "供应商与产能评估表",
+        type: "Smart Sheet",
+        date: "2 days ago",
+        lastModified: "2026-04-06T14:00:00Z",
+        lastViewed: "2026-04-08T08:00:00Z",
+        labels: ["Suppliers", "Capacity"],
+        creatorName: "Data Analyzer",
+        creatorType: "agent",
+        size: 24576,
+        sheetData: suppliersSheet,
+      },
+    ],
   },
-  {
-    id: "sheet-suppliers",
-    workspaceId: "w1",
-    name: "供应商与产能评估表",
-    type: "Smart Sheet",
-    date: "2 days ago",
-    lastModified: "2026-04-06T14:00:00Z",
-    lastViewed: "2026-04-08T08:00:00Z",
-    labels: ["Suppliers", "Capacity"],
-    creatorName: "Data Analyzer",
-    creatorType: "agent",
-    size: 24576,
-    sheetData: suppliersSheet,
-  },
-  // === Smart Canvas (3 documents) ===
+  // === Smart Canvas with nested children (2 levels) ===
   {
     id: "canvas-client-visit",
     workspaceId: "w1",
@@ -313,7 +322,42 @@ export const initialDocuments: WorkspaceDoc[] = [
     creatorType: "human",
     size: 38912,
     blocks: clientVisitBlocks,
+    children: [
+      {
+        id: "canvas-client-portal",
+        workspaceId: "w1",
+        parentId: "canvas-client-visit",
+        name: "客户专属采购工作台（老王专区）",
+        type: "Smart Canvas",
+        date: "Today",
+        lastModified: "2026-04-08T08:00:00Z",
+        lastViewed: "2026-04-08T14:30:00Z",
+        labels: ["客户门户", "老王"],
+        creatorName: "Claude Assistant",
+        creatorType: "agent",
+        size: 40960,
+        blocks: clientPortalBlocks,
+        children: [
+          {
+            id: "page-tob-client-portal",
+            workspaceId: "w1",
+            parentId: "canvas-client-portal",
+            name: "华中区-星巴克加盟商订货看板",
+            type: "Page",
+            date: "Today",
+            lastModified: "2026-04-09T11:00:00Z",
+            lastViewed: "2026-04-09T11:30:00Z",
+            labels: ["客户门户", "看板", "星巴克"],
+            creatorName: "Claude Assistant",
+            creatorType: "agent",
+            size: 20480,
+            boundSheets: ["sheet-inventory", "sheet-orders"],
+          },
+        ],
+      },
+    ],
   },
+  // === Smart Canvas (top-level) ===
   {
     id: "canvas-supply-alert",
     workspaceId: "w1",
@@ -327,20 +371,6 @@ export const initialDocuments: WorkspaceDoc[] = [
     creatorType: "agent",
     size: 33792,
     blocks: supplyAlertBlocks,
-  },
-  {
-    id: "canvas-client-portal",
-    workspaceId: "w1",
-    name: "客户专属采购工作台（老王专区）",
-    type: "Smart Canvas",
-    date: "Today",
-    lastModified: "2026-04-08T08:00:00Z",
-    lastViewed: "2026-04-08T14:30:00Z",
-    labels: ["客户门户", "老王"],
-    creatorName: "Claude Assistant",
-    creatorType: "agent",
-    size: 40960,
-    blocks: clientPortalBlocks,
   },
 ];
 
