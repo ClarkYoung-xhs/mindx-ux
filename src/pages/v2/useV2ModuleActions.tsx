@@ -298,7 +298,7 @@ export function useMemoryCreateActions(): V2HeaderActionItem[] {
     setMemorySourceLinks((prev) => [newSource, ...prev]);
     setMemoryAssets((prev) => [newAsset, ...prev]);
     setMemoryTimeline((prev) => [newEvent, ...prev]);
-    navigate(`/v2/memory/sources?source=${dataSourceId}&from=intake`);
+    navigate(`/v2/inbox?source=${dataSourceId}&from=intake`);
   };
 
   return useMemo(

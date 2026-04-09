@@ -4,16 +4,11 @@ import { useMindXDemo } from "../../data/mindxDemoContext";
 import {
   chatPresets,
   defaultReply,
-  matchPreset,
   shrekyanRow,
   type ChatPreset,
   type ReplySegment,
 } from "../../data/aiChatMockData";
-import {
-  tocChatPresets,
-  tocDefaultReply,
-  matchTocPreset,
-} from "../../data/tocAiChatMockData";
+import { tocChatPresets } from "../../data/tocAiChatMockData";
 import { analysisReportBlocks } from "../../data/analysisReportBlocks";
 import {
   tobClientPortalHtml,
@@ -43,31 +38,28 @@ const AIChatFloat: React.FC = () => {
   const executedEffects = useRef<Set<string>>(new Set());
   const listRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const { addDocument, addSheetRow, currentWorkspaceType, setDocuments } =
-    useMindXDemo();
+  const { addDocument, addSheetRow, setDocuments } = useMindXDemo();
 
-  // Derive workspace-aware presets
-  const activePresets =
-    currentWorkspaceType === "toC" ? tocChatPresets : chatPresets;
-  const activeDefaultReply =
-    currentWorkspaceType === "toC" ? tocDefaultReply : defaultReply;
-  const activeMatchPreset =
-    currentWorkspaceType === "toC" ? matchTocPreset : matchPreset;
-
-  // Auto-clear chat when workspace changes
-  const prevWorkspaceRef = useRef(currentWorkspaceType);
-  useEffect(() => {
-    if (prevWorkspaceRef.current !== currentWorkspaceType) {
-      prevWorkspaceRef.current = currentWorkspaceType;
-      // Clear all timers
-      clearTimeout(thinkingTimer.current);
-      clearTimeout(replyTimer.current);
-      sendingRef.current = false;
-      setSending(false);
-      setMessages([]);
-      executedEffects.current.clear();
+  // Combine both toB and toC presets (no workspace switching)
+  const activePresets = [...chatPresets, ...tocChatPresets];
+  const activeDefaultReply = defaultReply;
+  // Best-match strategy: pick the preset with the most keyword hits to avoid
+  // cross-scenario collisions (e.g. generic "生成" matching toB before toC).
+  const activeMatchPreset = (text: string): ChatPreset | undefined => {
+    const normalized = text.toLowerCase();
+    let bestPreset: ChatPreset | undefined;
+    let bestCount = 0;
+    for (const preset of activePresets) {
+      const hitCount = preset.matchKeywords.filter((kw) =>
+        normalized.includes(kw.toLowerCase()),
+      ).length;
+      if (hitCount > bestCount) {
+        bestCount = hitCount;
+        bestPreset = preset;
+      }
     }
-  }, [currentWorkspaceType]);
+    return bestPreset;
+  };
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {

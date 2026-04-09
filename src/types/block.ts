@@ -23,6 +23,10 @@ export enum BlockType {
   Toggle = "toggle",
   EmbedSheet = "embed_sheet",
   Mention = "mention",
+  // Nested document block types (for file-in-file nesting)
+  SmartCanvas = "smart_canvas",
+  SmartSheet = "smart_sheet",
+  Page = "page",
 }
 
 /**
@@ -71,4 +75,8 @@ export interface Block {
   icon?: string; // for callout — emoji icon
   level?: number; // for numbered_list — nesting level
   color?: string; // for callout — background color
+
+  // Nested block support
+  children?: Block[]; // for toggle, smart_canvas, smart_sheet, page — child blocks
+  docId?: string; // for smart_canvas, smart_sheet, page — reference to WorkspaceDoc.id
 }

@@ -614,6 +614,11 @@ export const clientPortalBlocks: Block[] = [
   },
 ];
 
+import {
+  tobWorkspaceRootBlocks,
+  tocWorkspaceRootBlocks,
+} from "./workspaceRootBlocks";
+
 /**
  * Lookup map: canvasId → Block[]
  */
@@ -622,5 +627,7 @@ export const allCanvasBlocks: Record<string, Block[]> = {
   "canvas-supply-alert": supplyAlertBlocks,
   "canvas-client-portal": clientPortalBlocks,
   "canvas-analysis-report": analysisReportBlocks,
+  "ws-tob-root": tobWorkspaceRootBlocks,
+  "ws-toc-root": tocWorkspaceRootBlocks,
   ...tocAllCanvasBlocks,
 };

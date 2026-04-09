@@ -3,16 +3,14 @@ import {
   Activity,
   ArrowLeft,
   Brain,
-  Database,
-  FileText,
+  Cable,
+  Inbox,
   Package2,
-  PlugZap,
-  Sparkles,
 } from "lucide-react";
-import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { currentUser } from "../../data/mindxDemo";
 import { LanguageSwitcher, useLanguage } from "../../i18n/LanguageContext";
-import WorkspaceSwitcher from "../../components/WorkspaceSwitcher";
+import WorkspaceTree from "./WorkspaceTree";
 
 interface NavItemConfig {
   label: string;
@@ -58,118 +56,141 @@ export default function V2Layout() {
   const copy =
     lang === "zh"
       ? {
-          workspace: "Workspace",
-          integrations: "Integrations",
-          memory: "Memory",
-          documents: "文档",
           activity: "动态",
-          baseMemory: "记忆",
-          dataSources: "数据源",
+          workspace: "Workspace",
+          inbox: "Inbox",
           knowledge: "知识资产",
-          connect: "集成与挂载",
+          memory: "记忆",
+          memoryGroup: "Memory",
+          integrations: "Integrations",
+          connect: "连接器",
           back: "返回 1.0",
           humanAccount: "人类账号",
         }
       : {
-          workspace: "Workspace",
-          integrations: "Integrations",
-          memory: "Memory",
-          documents: "Documents",
           activity: "Activity",
-          baseMemory: "Memory",
-          dataSources: "Data Sources",
+          workspace: "Workspace",
+          inbox: "Inbox",
           knowledge: "Knowledge",
-          connect: "Connect & Mount",
+          memory: "Memory",
+          memoryGroup: "Memory",
+          integrations: "Integrations",
+          connect: "Connect",
           back: "Back to 1.0",
           humanAccount: "Human Account",
         };
 
-  const groups: Array<{ label: string; items: NavItemConfig[] }> = [
-    {
-      label: copy.workspace,
-      items: [
-        {
-          label: copy.documents,
-          icon: <FileText className="w-4 h-4" />,
-          to: "/v2/workspace",
-          match: (pathname) => pathname === "/v2/workspace",
-        },
-        {
-          label: copy.activity,
-          icon: <Activity className="w-4 h-4" />,
-          to: "/v2/workspace/activity",
-          match: (pathname) => pathname === "/v2/workspace/activity",
-        },
-      ],
-    },
-    {
-      label: copy.memory,
-      items: [
-        {
-          label: copy.baseMemory,
-          icon: <Brain className="w-4 h-4" />,
-          to: "/v2/memory",
-          match: (pathname) =>
-            pathname.startsWith("/v2/memory") &&
-            !pathname.startsWith("/v2/memory/knowledge") &&
-            !pathname.startsWith("/v2/memory/sources"),
-        },
-        {
-          label: copy.knowledge,
-          icon: <Package2 className="w-4 h-4" />,
-          to: "/v2/memory/knowledge",
-          match: (pathname) => pathname.startsWith("/v2/memory/knowledge"),
-        },
-        {
-          label: copy.dataSources,
-          icon: <Database className="w-4 h-4" />,
-          to: "/v2/memory/sources",
-          match: (pathname) => pathname.startsWith("/v2/memory/sources"),
-        },
-      ],
-    },
-    {
-      label: copy.integrations,
-      items: [
-        {
-          label: copy.connect,
-          icon: <PlugZap className="w-4 h-4" />,
-          to: "/v2/connect",
-          match: (pathname) =>
-            pathname.startsWith("/v2/connect") ||
-            pathname.startsWith("/v2/agent"),
-        },
-      ],
-    },
-  ];
+  /** Activity tab — homepage entry */
+  const activityItem: NavItemConfig = {
+    label: copy.activity,
+    icon: <Activity className="w-4 h-4" />,
+    to: "/v2/activity",
+    match: (pathname) => pathname === "/v2/activity" || pathname === "/v2",
+  };
+
+  /** Inbox */
+  const inboxItem: NavItemConfig = {
+    label: copy.inbox,
+    icon: <Inbox className="w-4 h-4" />,
+    to: "/v2/inbox",
+    match: (pathname) => pathname.startsWith("/v2/inbox"),
+  };
+
+  /** Knowledge */
+  const knowledgeItem: NavItemConfig = {
+    label: copy.knowledge,
+    icon: <Package2 className="w-4 h-4" />,
+    to: "/v2/knowledge",
+    match: (pathname) => pathname.startsWith("/v2/knowledge"),
+  };
+
+  /** Memory */
+  const memoryItem: NavItemConfig = {
+    label: copy.memory,
+    icon: <Brain className="w-4 h-4" />,
+    to: "/v2/memory",
+    match: (pathname) => pathname.startsWith("/v2/memory"),
+  };
+
+  /** Connect (Integrations) */
+  const connectItem: NavItemConfig = {
+    label: copy.connect,
+    icon: <Cable className="w-4 h-4" />,
+    to: "/v2/connect",
+    match: (pathname) => pathname.startsWith("/v2/connect"),
+  };
 
   return (
     <div className="flex h-screen overflow-hidden bg-white text-stone-900">
       <aside className="w-64 border-r border-stone-200 bg-[#F7F7F5] flex flex-col">
         <div className="h-14 flex items-center px-4">
-          <WorkspaceSwitcher />
+          <span className="text-sm font-semibold text-stone-800 tracking-tight">
+            MindX
+          </span>
         </div>
 
         <div className="flex-1 px-3 py-4 space-y-6 overflow-y-auto">
-          {groups.map((group) => (
-            <div key={group.label} className="space-y-1">
-              <div className="px-3 mb-2">
-                <span className="text-[11px] font-bold text-stone-400 uppercase tracking-widest">
-                  {group.label}
-                </span>
-              </div>
-              {group.items.map((item) => (
-                <div key={item.to}>
-                  <SidebarItem
-                    icon={item.icon}
-                    label={item.label}
-                    active={item.match(location.pathname)}
-                    onClick={() => navigate(item.to)}
-                  />
-                </div>
-              ))}
+          {/* 1. Activity — homepage entry */}
+          <div className="space-y-1">
+            <SidebarItem
+              icon={activityItem.icon}
+              label={activityItem.label}
+              active={activityItem.match(location.pathname)}
+              onClick={() => navigate(activityItem.to)}
+            />
+          </div>
+
+          {/* 2. Workspace directory tree */}
+          <div className="space-y-1">
+            <div className="px-3 mb-2">
+              <span className="text-[11px] font-bold text-stone-400 uppercase tracking-widest">
+                {copy.workspace}
+              </span>
             </div>
-          ))}
+            <WorkspaceTree />
+          </div>
+
+          {/* 3. Memory group — Inbox / Knowledge / Memory */}
+          <div className="space-y-1">
+            <div className="px-3 mb-2">
+              <span className="text-[11px] font-bold text-stone-400 uppercase tracking-widest">
+                {copy.memoryGroup}
+              </span>
+            </div>
+            <SidebarItem
+              icon={inboxItem.icon}
+              label={inboxItem.label}
+              active={inboxItem.match(location.pathname)}
+              onClick={() => navigate(inboxItem.to)}
+            />
+            <SidebarItem
+              icon={knowledgeItem.icon}
+              label={knowledgeItem.label}
+              active={knowledgeItem.match(location.pathname)}
+              onClick={() => navigate(knowledgeItem.to)}
+            />
+            <SidebarItem
+              icon={memoryItem.icon}
+              label={memoryItem.label}
+              active={memoryItem.match(location.pathname)}
+              onClick={() => navigate(memoryItem.to)}
+            />
+          </div>
+
+          {/* 4. Integrations group — Connect */}
+          <div className="space-y-1">
+            <div className="px-3 mb-2">
+              <span className="text-[11px] font-bold text-stone-400 uppercase tracking-widest">
+                {copy.integrations}
+              </span>
+            </div>
+            <SidebarItem
+              icon={connectItem.icon}
+              label={connectItem.label}
+              active={connectItem.match(location.pathname)}
+              onClick={() => navigate(connectItem.to)}
+            />
+          </div>
         </div>
 
         <div className="shrink-0 border-t border-stone-200 px-3 py-2 bg-[#F7F7F5] space-y-1">

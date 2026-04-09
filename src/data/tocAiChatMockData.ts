@@ -17,7 +17,7 @@ const nvdaAlertPreset: ChatPreset = {
     },
     {
       text: "📄 AI 赛道观察逻辑",
-      link: "/document?id=toc-canvas-ai-sector&type=smartcanvas&from=v2-workspace",
+      link: "/v2/doc/toc-canvas-ai-sector",
     },
     {
       text: " 中的 NVDA 操作剧本，现价 < $850 触发「接针协议」。\n\n",
@@ -27,7 +27,7 @@ const nvdaAlertPreset: ChatPreset = {
     },
     {
       text: "📊 Crypto 链上生息账簿",
-      link: "/document?id=toc-sheet-defi-yield&type=smartsheet&from=v2-workspace",
+      link: "/v2/doc/toc-sheet-defi-yield",
     },
     {
       text: "，Aave USDC 当前存款 50,000 USDC，可即时提取。Lido stETH 20 ETH 退出需 1-3 天。\n\n",
@@ -55,7 +55,7 @@ const macroReportPreset: ChatPreset = {
     },
     {
       text: "📄 深度研究剪藏库",
-      link: "/document?id=toc-canvas-alpha-clipper&type=smartcanvas&from=v2-workspace",
+      link: "/v2/doc/toc-canvas-alpha-clipper",
     },
     {
       text: "，AI 已提取关键实体并建立资产链接。\n\n",
@@ -74,7 +74,7 @@ const macroReportPreset: ChatPreset = {
     },
     {
       text: "📄 投资哲学",
-      link: "/document?id=toc-canvas-investment-thesis&type=smartcanvas&from=v2-workspace",
+      link: "/v2/doc/toc-canvas-investment-thesis",
     },
     {
       text: " 风险偏好分析**：\n",
@@ -120,7 +120,7 @@ const cryptoRebalancePreset: ChatPreset = {
     },
     {
       text: "📊 全球资产配置总表",
-      link: "/document?id=toc-sheet-asset-nav&type=smartsheet&from=v2-workspace",
+      link: "/v2/doc/toc-sheet-asset-nav",
     },
     {
       text: "。\n\n下一波动周期预警已设置，当 BTC 回调至 $58,000 时将自动提醒您评估回补时机。",
@@ -152,7 +152,7 @@ const wealthDashboardPagePreset: ChatPreset = {
     },
     {
       text: "🌐 财富视图",
-      link: "/document?id=toc-page-wealth-dashboard&type=page&from=v2-workspace",
+      link: "/v2/doc/toc-page-wealth-dashboard",
     },
     {
       text: "\n\n支持发布为手机桌面 Widget 或 PWA 轻应用。当持仓价格变动或记录新开销时，Widget 上的数据会基于 CRDT 协议静默刷新，保持毫秒级的全局数据一致性。",
