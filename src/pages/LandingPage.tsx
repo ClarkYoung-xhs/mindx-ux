@@ -20,12 +20,15 @@ import {
 import AuthModal from '../components/AuthModal';
 import { useLanguage, LanguageSwitcher } from '../i18n/LanguageContext';
 
-const INTEGRATIONS = [
+const INTEGRATIONS: { name: string; icon: React.ReactNode; color: string; highlight?: boolean }[] = [
+  { name: 'Workbuddy', icon: <Briefcase className="w-4 h-4" />, color: 'bg-stone-100', highlight: true },
   { name: 'Claude', icon: <Bot className="w-4 h-4" />, color: 'bg-stone-100' },
   { name: 'Antigravity', icon: <Zap className="w-4 h-4" />, color: 'bg-stone-100' },
   { name: 'Codex', icon: <Code className="w-4 h-4" />, color: 'bg-stone-100' },
   { name: 'OpenClaw', icon: <Cpu className="w-4 h-4" />, color: 'bg-stone-100' },
-  { name: 'Workbuddy', icon: <Briefcase className="w-4 h-4" />, color: 'bg-stone-100' },
+  { name: 'TRAE', icon: <Layers className="w-4 h-4" />, color: 'bg-stone-100' },
+  { name: 'Qoder', icon: <Terminal className="w-4 h-4" />, color: 'bg-stone-100' },
+  { name: 'opencode', icon: <Code className="w-4 h-4" />, color: 'bg-stone-100' },
 ];
 
 export default function LandingPage() {
@@ -62,8 +65,11 @@ export default function LandingPage() {
 
   const features = [
     { icon: <FileText className="w-5 h-5 text-stone-600" />, title: t('landing.feat1Title'), desc: t('landing.feat1Desc') },
-    { icon: <Database className="w-5 h-5 text-stone-600" />, title: t('landing.feat2Title'), desc: t('landing.feat2Desc') },
-    { icon: <Search className="w-5 h-5 text-stone-600" />, title: t('landing.feat3Title'), desc: t('landing.feat3Desc') },
+    { icon: <Sparkles className="w-5 h-5 text-stone-600" />, title: t('landing.feat2Title'), desc: t('landing.feat2Desc') },
+    { icon: <Database className="w-5 h-5 text-stone-600" />, title: t('landing.feat3Title'), desc: t('landing.feat3Desc') },
+    { icon: <RefreshCw className="w-5 h-5 text-stone-600" />, title: t('landing.feat4Title'), desc: t('landing.feat4Desc') },
+    { icon: <Users className="w-5 h-5 text-stone-600" />, title: t('landing.feat5Title'), desc: t('landing.feat5Desc') },
+    { icon: <Search className="w-5 h-5 text-stone-600" />, title: t('landing.feat6Title'), desc: t('landing.feat6Desc') },
   ];
 
   return (
@@ -107,12 +113,16 @@ export default function LandingPage() {
             {INTEGRATIONS.map((item) => (
               <div 
                 key={item.name}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-stone-50 border border-stone-200/60 shadow-sm hover:shadow-md hover:border-stone-300 transition-all cursor-default group"
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-full border shadow-sm hover:shadow-md transition-all cursor-default group ${
+                  item.highlight
+                    ? 'bg-stone-900 border-stone-700 ring-2 ring-stone-400/30'
+                    : 'bg-stone-50 border-stone-200/60 hover:border-stone-300'
+                }`}
               >
-                <div className={`w-6 h-6 rounded-full ${item.color} flex items-center justify-center text-stone-600 group-hover:scale-110 transition-transform`}>
+                <div className={`w-6 h-6 rounded-full ${item.highlight ? 'bg-stone-700' : item.color} flex items-center justify-center ${item.highlight ? 'text-white' : 'text-stone-600'} group-hover:scale-110 transition-transform`}>
                   {item.icon}
                 </div>
-                <span className="text-xs font-semibold text-stone-700">{item.name}</span>
+                <span className={`text-xs font-semibold ${item.highlight ? 'text-white' : 'text-stone-700'}`}>{item.name}</span>
               </div>
             ))}
           </motion.div>
@@ -151,7 +161,9 @@ export default function LandingPage() {
               {t('nav.getStarted')} <ArrowRight className="w-4 h-4" />
             </button>
             <a
-              href="#workflow"
+              href="/mindx-presentation.html"
+              target="_blank"
+              rel="noopener noreferrer"
               className="flex items-center gap-2 bg-white text-stone-800 px-6 py-3 rounded-md font-medium hover:bg-stone-50 transition-colors border border-stone-200"
             >
               {t('landing.seeHow')}

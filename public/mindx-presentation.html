@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MindX — Make Your Agent More Powerful</title>
+
+    <!-- Fonts: Fraunces (editorial serif) + Work Sans (clean body) -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,700;0,9..144,900;1,9..144,400&family=Work+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap" />
+
+    <style>
+        /* ===========================================
+           THEME: Warm Editorial
+           Fraunces + Work Sans, cream & charcoal
+           =========================================== */
+        :root {
+            --bg-cream: #faf8f4;
+            --bg-warm: #f3efe8;
+            --bg-dark: #1c1917;
+            --text-primary: #1c1917;
+            --text-secondary: #78716c;
+            --text-light: #a8a29e;
+            --accent-terracotta: #c2410c;
+            --accent-warm: #ea580c;
+            --accent-gold: #b45309;
+            --border: #e7e5e4;
+            --border-dark: #d6d3d1;
+
+            --font-display: "Fraunces", Georgia, serif;
+            --font-body: "Work Sans", -apple-system, sans-serif;
+            --font-mono: "JetBrains Mono", monospace;
+
+            --title-size: clamp(2.2rem, 6vw, 5.5rem);
+            --h2-size: clamp(1.4rem, 3.8vw, 2.8rem);
+            --h3-size: clamp(1rem, 2vw, 1.4rem);
+            --subtitle-size: clamp(0.9rem, 1.8vw, 1.2rem);
+            --body-size: clamp(0.8rem, 1.3vw, 1.05rem);
+            --small-size: clamp(0.7rem, 1vw, 0.85rem);
+
+            --slide-padding: clamp(2rem, 6vw, 7rem);
+            --content-gap: clamp(1rem, 2vw, 2rem);
+
+            --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+            --duration-normal: 0.8s;
+        }
+
+        /* ===========================================
+           BASE STYLES
+           =========================================== */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--bg-cream);
+            color: var(--text-primary);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ===========================================
+           VIEWPORT FITTING (MANDATORY)
+           =========================================== */
+        html, body { height: 100%; overflow-x: hidden; }
+        html { scroll-snap-type: y mandatory; scroll-behavior: smooth; }
+
+        .slide {
+            width: 100vw; height: 100vh; height: 100dvh;
+            overflow: hidden; scroll-snap-align: start;
+            display: flex; flex-direction: column;
+            position: relative;
+            background: var(--bg-cream);
+        }
+
+        .slide-content {
+            flex: 1; display: flex; flex-direction: column;
+            justify-content: center; max-height: 100%;
+            overflow: hidden; padding: var(--slide-padding);
+        }
+
+        @media (max-height: 700px) {
+            :root {
+                --slide-padding: clamp(1rem, 3vw, 2.5rem);
+                --title-size: clamp(1.4rem, 4.5vw, 2.5rem);
+                --h2-size: clamp(1.1rem, 3vw, 1.8rem);
+            }
+        }
+        @media (max-height: 600px) {
+            :root {
+                --slide-padding: clamp(0.8rem, 2.5vw, 1.5rem);
+                --title-size: clamp(1.2rem, 4vw, 2rem);
+                --body-size: clamp(0.7rem, 1.2vw, 0.9rem);
+            }
+            .nav-dots, .decorative, .slide-number { display: none; }
+        }
+        @media (max-height: 500px) {
+            :root {
+                --slide-padding: clamp(0.5rem, 2vw, 1rem);
+                --title-size: clamp(1rem, 3.5vw, 1.5rem);
+                --h2-size: clamp(0.9rem, 2.5vw, 1.25rem);
+            }
+        }
+        @media (max-width: 600px) {
+            :root { --title-size: clamp(1.5rem, 8vw, 2.5rem); }
+            .feature-grid { grid-template-columns: 1fr !important; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.2s !important;
+            }
+            html { scroll-behavior: auto; }
+        }
+
+        /* ===========================================
+           ANIMATIONS
+           =========================================== */
+        .reveal {
+            opacity: 0; transform: translateY(24px);
+            transition: opacity var(--duration-normal) var(--ease-out-expo),
+                        transform var(--duration-normal) var(--ease-out-expo);
+        }
+        .slide.visible .reveal { opacity: 1; transform: translateY(0); }
+        .reveal:nth-child(1) { transition-delay: 0.05s; }
+        .reveal:nth-child(2) { transition-delay: 0.15s; }
+        .reveal:nth-child(3) { transition-delay: 0.25s; }
+        .reveal:nth-child(4) { transition-delay: 0.35s; }
+        .reveal:nth-child(5) { transition-delay: 0.45s; }
+
+        /* ===========================================
+           DECORATIVE ELEMENTS
+           =========================================== */
+        .deco-circle {
+            position: absolute;
+            border-radius: 50%;
+            border: 1.5px solid var(--border-dark);
+            pointer-events: none;
+            opacity: 0.5;
+        }
+        .deco-line {
+            position: absolute;
+            background: var(--border-dark);
+            pointer-events: none;
+            opacity: 0.4;
+        }
+        .deco-dot {
+            position: absolute;
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--accent-terracotta);
+            pointer-events: none;
+            opacity: 0.6;
+        }
+
+        /* ===========================================
+           TITLE SLIDE
+           =========================================== */
+        .title-slide {
+            align-items: center; justify-content: center;
+            text-align: center;
+            background: var(--bg-cream);
+        }
+        .title-slide .eyebrow {
+            font-family: var(--font-body);
+            font-size: var(--small-size);
+            font-weight: 500;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--accent-terracotta);
+            margin-bottom: clamp(0.8rem, 2vh, 2rem);
+        }
+        .title-slide h1 {
+            font-family: var(--font-display);
+            font-size: var(--title-size);
+            font-weight: 700;
+            line-height: 1.05;
+            color: var(--text-primary);
+            margin-bottom: clamp(0.6rem, 1.5vh, 1.2rem);
+            letter-spacing: -0.02em;
+        }
+        .title-slide h1 em {
+            font-style: italic;
+            font-weight: 300;
+            color: var(--text-secondary);
+        }
+        .title-slide .tagline {
+            font-family: var(--font-body);
+            font-size: var(--subtitle-size);
+            color: var(--text-secondary);
+            font-weight: 400;
+            max-width: 480px;
+            line-height: 1.6;
+        }
+        .title-slide .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: clamp(0.3rem, 0.6vw, 0.5rem);
+            font-family: var(--font-body);
+            font-size: var(--small-size);
+            font-weight: 500;
+            color: var(--accent-terracotta);
+            border: 1.5px solid var(--accent-terracotta);
+            padding: clamp(0.3rem, 0.5vw, 0.5rem) clamp(0.8rem, 1.5vw, 1.2rem);
+            border-radius: 4px;
+            margin-top: clamp(1.2rem, 3vh, 2.5rem);
+            letter-spacing: 0.05em;
+        }
+
+        /* ===========================================
+           SECTION SLIDES
+           =========================================== */
+        .section-slide {
+            justify-content: center;
+            background: var(--bg-dark);
+        }
+        .section-slide .slide-content {
+            align-items: flex-start;
+            max-width: min(90vw, 900px);
+        }
+        .section-slide .number {
+            font-family: var(--font-display);
+            font-size: clamp(1rem, 2vw, 1.4rem);
+            font-weight: 500;
+            color: var(--accent-warm);
+            opacity: 0.8;
+            margin-bottom: clamp(0.5rem, 1.5vh, 1rem);
+            letter-spacing: 0.1em;
+        }
+        .section-slide h2 {
+            font-family: var(--font-display);
+            font-size: var(--h2-size);
+            font-weight: 700;
+            color: #fafaf9;
+            line-height: 1.15;
+            margin-bottom: clamp(0.5rem, 1.5vh, 1rem);
+            letter-spacing: -0.01em;
+        }
+        .section-slide .desc {
+            font-size: var(--subtitle-size);
+            color: #a8a29e;
+            font-weight: 300;
+            max-width: 500px;
+            line-height: 1.6;
+        }
+        .section-slide .accent-bar {
+            width: clamp(40px, 5vw, 64px);
+            height: 3px;
+            background: var(--accent-warm);
+            margin-bottom: clamp(0.8rem, 2vh, 1.5rem);
+            border-radius: 2px;
+        }
+
+        /* ===========================================
+           FEATURE CARDS
+           =========================================== */
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: clamp(1rem, 2vw, 1.8rem);
+            max-width: min(95vw, 1000px);
+            margin: 0 auto;
+        }
+
+        .feature-card {
+            background: #ffffff;
+            border: 1px solid var(--border);
+            border-radius: clamp(8px, 1vw, 12px);
+            padding: clamp(1.2rem, 2.5vw, 2rem);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .feature-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(28, 25, 23, 0.06);
+        }
+
+        .feature-card .card-number {
+            font-family: var(--font-display);
+            font-size: var(--small-size);
+            color: var(--text-light);
+            font-weight: 300;
+            margin-bottom: clamp(0.5rem, 1vh, 0.8rem);
+        }
+        .feature-card h3 {
+            font-family: var(--font-display);
+            font-size: var(--h3-size);
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: clamp(0.3rem, 0.6vh, 0.6rem);
+            line-height: 1.3;
+        }
+        .feature-card p {
+            font-size: var(--body-size);
+            color: var(--text-secondary);
+            line-height: 1.6;
+            font-weight: 300;
+        }
+        .feature-card .card-accent {
+            width: 24px; height: 2px;
+            background: var(--accent-terracotta);
+            margin-bottom: clamp(0.6rem, 1vh, 1rem);
+            border-radius: 1px;
+        }
+
+        /* ===========================================
+           OVERVIEW SLIDE
+           =========================================== */
+        .overview-slide {
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+        .overview-slide h2 {
+            font-family: var(--font-display);
+            font-size: var(--h2-size);
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: clamp(0.5rem, 1.5vh, 1rem);
+        }
+        .overview-slide .sub {
+            font-size: var(--subtitle-size);
+            color: var(--text-secondary);
+            font-weight: 300;
+            max-width: 520px;
+            line-height: 1.6;
+        }
+        .overview-slide .divider {
+            width: clamp(40px, 4vw, 56px);
+            height: 2px;
+            background: var(--accent-terracotta);
+            margin: clamp(0.8rem, 2vh, 1.5rem) auto;
+        }
+        .pill-row {
+            display: flex;
+            gap: clamp(0.6rem, 1.5vw, 1rem);
+            margin-top: clamp(1rem, 2.5vh, 2rem);
+        }
+        .pill {
+            font-family: var(--font-body);
+            font-size: var(--small-size);
+            font-weight: 500;
+            padding: clamp(0.3rem, 0.5vw, 0.5rem) clamp(1rem, 2vw, 1.5rem);
+            border-radius: 999px;
+            letter-spacing: 0.03em;
+        }
+        .pill-dark {
+            background: var(--bg-dark);
+            color: #fafaf9;
+        }
+        .pill-outline {
+            background: transparent;
+            border: 1.5px solid var(--text-primary);
+            color: var(--text-primary);
+        }
+
+        /* ===========================================
+           END SLIDE
+           =========================================== */
+        .end-slide {
+            align-items: center; justify-content: center;
+            text-align: center;
+            background: var(--bg-dark);
+        }
+        .end-slide h2 {
+            font-family: var(--font-display);
+            font-size: var(--h2-size);
+            font-weight: 700;
+            color: #fafaf9;
+            line-height: 1.15;
+            margin-bottom: clamp(0.6rem, 1.5vh, 1.2rem);
+        }
+        .end-slide .url {
+            font-family: var(--font-mono);
+            font-size: var(--small-size);
+            color: #a8a29e;
+            letter-spacing: 0.05em;
+        }
+        .end-slide .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-family: var(--font-body);
+            font-size: var(--small-size);
+            font-weight: 500;
+            color: var(--accent-warm);
+            border: 1px solid rgba(234, 88, 12, 0.4);
+            padding: 0.3rem 1rem;
+            border-radius: 4px;
+            margin-top: clamp(1rem, 2.5vh, 2rem);
+        }
+
+        /* ===========================================
+           PROGRESS BAR
+           =========================================== */
+        .progress-bar {
+            position: fixed; top: 0; left: 0; z-index: 9999;
+            height: 2px; width: 0%;
+            background: var(--accent-terracotta);
+            transition: width 0.3s ease;
+        }
+
+        /* ===========================================
+           NAV DOTS
+           =========================================== */
+        .nav-dots {
+            position: fixed; right: clamp(16px, 2.5vw, 28px);
+            top: 50%; transform: translateY(-50%);
+            display: flex; flex-direction: column;
+            gap: clamp(8px, 1vh, 14px);
+            z-index: 9999;
+        }
+        .nav-dot {
+            width: 7px; height: 7px;
+            border-radius: 50%;
+            background: var(--border-dark);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .nav-dot.active {
+            background: var(--accent-terracotta);
+            transform: scale(1.4);
+        }
+        /* On dark slides, make dots visible */
+        .slide-dark ~ .nav-dots .nav-dot,
+        .nav-dot { mix-blend-mode: normal; }
+
+        /* ===========================================
+           SLIDE NUMBER (bottom-left)
+           =========================================== */
+        .slide-number {
+            position: absolute;
+            bottom: clamp(1rem, 2.5vh, 2rem);
+            left: var(--slide-padding);
+            font-family: var(--font-mono);
+            font-size: var(--small-size);
+            color: var(--text-light);
+            opacity: 0.5;
+            z-index: 2;
+        }
+        .section-slide .slide-number,
+        .end-slide .slide-number {
+            color: #57534e;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Progress bar -->
+    <div class="progress-bar"></div>
+    <!-- Nav dots -->
+    <nav class="nav-dots" aria-label="Slide navigation"></nav>
+
+
+    <!-- ===================== SLIDE 1: TITLE ===================== -->
+    <section class="slide title-slide">
+        <!-- Decorative elements -->
+        <div class="deco-circle" style="width: 180px; height: 180px; top: 12%; right: 15%;"></div>
+        <div class="deco-line" style="width: 1px; height: 60px; top: 14%; right: calc(15% + 90px);"></div>
+        <div class="deco-dot" style="bottom: 20%; left: 18%;"></div>
+
+        <p class="eyebrow reveal">MindX</p>
+        <h1 class="reveal">Buddy<br><em>Booster</em></h1>
+        <p class="tagline reveal">Make Your Agent More Powerful</p>
+        <div class="badge reveal">⬡ Agent 的最强外挂</div>
+
+        <span class="slide-number">01 / 07</span>
+    </section>
+
+
+    <!-- ===================== SLIDE 2: OVERVIEW ===================== -->
+    <section class="slide overview-slide">
+        <div class="deco-circle" style="width: 120px; height: 120px; bottom: 15%; left: 10%;"></div>
+
+        <h2 class="reveal">两大核心能力</h2>
+        <div class="divider reveal"></div>
+        <p class="sub reveal">为你的 Agent 装上超能力</p>
+        <div class="pill-row reveal">
+            <span class="pill pill-dark">Skill Booster</span>
+            <span class="pill pill-outline">Ultimate Memory</span>
+        </div>
+
+        <span class="slide-number">02 / 07</span>
+    </section>
+
+
+    <!-- ===================== SLIDE 3: SKILL BOOSTER HEADER ===================== -->
+    <section class="slide section-slide">
+        <div class="slide-content">
+            <div class="accent-bar reveal"></div>
+            <div class="number reveal">01</div>
+            <h2 class="reveal">Skill Booster</h2>
+            <p class="desc reveal">让 Agent 获得原本不具备的生产力技能——<br>从文档创作到云端部署，一步到位。</p>
+        </div>
+        <span class="slide-number">03 / 07</span>
+    </section>
+
+
+    <!-- ===================== SLIDE 4: SKILL BOOSTER FEATURES ===================== -->
+    <section class="slide">
+        <div class="slide-content" style="justify-content: center; align-items: center;">
+            <h2 class="reveal" style="font-family: var(--font-display); font-size: var(--h2-size); font-weight: 700; text-align: center; margin-bottom: clamp(1.5rem, 3.5vh, 3rem); letter-spacing: -0.01em;">
+                Skill <em style="font-weight: 300; font-style: italic; color: var(--text-secondary);">Booster</em>
+            </h2>
+            <div class="feature-grid reveal">
+                <div class="feature-card">
+                    <div class="card-accent"></div>
+                    <div class="card-number">01</div>
+                    <h3>在线富文本能力</h3>
+                    <p>Agent 不只能写 Markdown，还能创建带交互的在线富文本文档——像人类一样使用文档套件。</p>
+                </div>
+                <div class="feature-card">
+                    <div class="card-accent"></div>
+                    <div class="card-number">02</div>
+                    <h3>傻瓜式部署到线上</h3>
+                    <p>Agent 写完文档自动上线，一键部署到公网。分享链接即可协作，任何设备即刻访问。</p>
+                </div>
+                <div class="feature-card">
+                    <div class="card-accent"></div>
+                    <div class="card-number">03</div>
+                    <h3>数据库能力</h3>
+                    <p>内置云端数据库，Agent 可以持久化结构化数据——知识不再随会话消亡。</p>
+                </div>
+            </div>
+        </div>
+        <span class="slide-number">04 / 07</span>
+    </section>
+
+
+    <!-- ===================== SLIDE 5: ULTIMATE MEMORY HEADER ===================== -->
+    <section class="slide section-slide">
+        <div class="slide-content">
+            <div class="accent-bar reveal"></div>
+            <div class="number reveal">02</div>
+            <h2 class="reveal">Ultimate Memory</h2>
+            <p class="desc reveal">打破上下文窗口限制，构建持久智能——<br>让你的 Agent 拥有真正的"回忆"。</p>
+        </div>
+        <span class="slide-number">05 / 07</span>
+    </section>
+
+
+    <!-- ===================== SLIDE 6: ULTIMATE MEMORY FEATURES ===================== -->
+    <section class="slide">
+        <div class="slide-content" style="justify-content: center; align-items: center;">
+            <h2 class="reveal" style="font-family: var(--font-display); font-size: var(--h2-size); font-weight: 700; text-align: center; margin-bottom: clamp(1.5rem, 3.5vh, 3rem); letter-spacing: -0.01em;">
+                Ultimate <em style="font-weight: 300; font-style: italic; color: var(--text-secondary);">Memory</em>
+            </h2>
+            <div class="feature-grid reveal">
+                <div class="feature-card">
+                    <div class="card-accent"></div>
+                    <div class="card-number">01</div>
+                    <h3>跨 Agent 记忆迁移</h3>
+                    <p>在 Claude、Antigravity、Codex 之间无缝迁移你的偏好、习惯与上下文。换 Agent 不丢记忆。</p>
+                </div>
+                <div class="feature-card">
+                    <div class="card-accent"></div>
+                    <div class="card-number">02</div>
+                    <h3>打造最全的个人数字分身</h3>
+                    <p>从聊天记录、文档、行为数据中提炼出完整的个人画像——你的 Agent 比你更懂你。</p>
+                </div>
+                <div class="feature-card">
+                    <div class="card-accent"></div>
+                    <div class="card-number">03</div>
+                    <h3>知识编译</h3>
+                    <p>将碎片化的笔记和思考编译为结构化洞察，让 Agent 在每次对话中都能调取最精准的知识。</p>
+                </div>
+            </div>
+        </div>
+        <span class="slide-number">06 / 07</span>
+    </section>
+
+
+    <!-- ===================== SLIDE 7: CLOSING ===================== -->
+    <section class="slide end-slide">
+        <div class="deco-circle" style="width: 200px; height: 200px; top: 15%; left: 12%; border-color: #44403c;"></div>
+
+        <h2 class="reveal">Make Your Agent<br>More Powerful.</h2>
+        <p class="url reveal">mindx-ux.vercel.app</p>
+        <div class="badge reveal">⬡ MindX — Buddy Booster</div>
+
+        <span class="slide-number">07 / 07</span>
+    </section>
+
+
+    <!-- ===========================================
+         SLIDE CONTROLLER
+         =========================================== -->
+    <script>
+    class SlidePresentation {
+        constructor() {
+            this.slides = document.querySelectorAll('.slide');
+            this.navDotsContainer = document.querySelector('.nav-dots');
+            this.progressBar = document.querySelector('.progress-bar');
+            this.currentSlide = 0;
+
+            this.setupIntersectionObserver();
+            this.setupKeyboardNav();
+            this.setupTouchNav();
+            this.setupNavDots();
+            this.setupProgressBar();
+        }
+
+        setupIntersectionObserver() {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                        const idx = Array.from(this.slides).indexOf(entry.target);
+                        this.currentSlide = idx;
+                        this.updateNavDots();
+                        this.updateProgressBar();
+                    }
+                });
+            }, { threshold: 0.5 });
+            this.slides.forEach(slide => observer.observe(slide));
+        }
+
+        setupKeyboardNav() {
+            document.addEventListener('keydown', (e) => {
+                if (['ArrowDown', 'ArrowRight', ' ', 'PageDown'].includes(e.key)) {
+                    e.preventDefault();
+                    this.goTo(Math.min(this.currentSlide + 1, this.slides.length - 1));
+                } else if (['ArrowUp', 'ArrowLeft', 'PageUp'].includes(e.key)) {
+                    e.preventDefault();
+                    this.goTo(Math.max(this.currentSlide - 1, 0));
+                }
+            });
+        }
+
+        setupTouchNav() {
+            let startY = 0;
+            document.addEventListener('touchstart', (e) => { startY = e.touches[0].clientY; });
+            document.addEventListener('touchend', (e) => {
+                const diff = startY - e.changedTouches[0].clientY;
+                if (Math.abs(diff) > 50) {
+                    if (diff > 0) this.goTo(Math.min(this.currentSlide + 1, this.slides.length - 1));
+                    else this.goTo(Math.max(this.currentSlide - 1, 0));
+                }
+            });
+        }
+
+        setupNavDots() {
+            this.navDotsContainer.innerHTML = '';
+            this.slides.forEach((_, i) => {
+                const dot = document.createElement('div');
+                dot.className = 'nav-dot' + (i === 0 ? ' active' : '');
+                dot.addEventListener('click', () => this.goTo(i));
+                dot.setAttribute('aria-label', `Slide ${i + 1}`);
+                this.navDotsContainer.appendChild(dot);
+            });
+        }
+
+        setupProgressBar() {
+            window.addEventListener('scroll', () => {
+                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+                const progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+                this.progressBar.style.width = progress + '%';
+            });
+        }
+
+        updateNavDots() {
+            const dots = this.navDotsContainer.querySelectorAll('.nav-dot');
+            dots.forEach((dot, i) => dot.classList.toggle('active', i === this.currentSlide));
+        }
+
+        updateProgressBar() {
+            const progress = ((this.currentSlide + 1) / this.slides.length) * 100;
+            this.progressBar.style.width = progress + '%';
+        }
+
+        goTo(index) {
+            if (index >= 0 && index < this.slides.length) {
+                this.slides[index].scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+    }
+
+    new SlidePresentation();
+    </script>
+
+</body>
+</html>

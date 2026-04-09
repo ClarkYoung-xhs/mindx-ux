@@ -50,22 +50,25 @@ const translations: Record<Language, Record<string, string>> = {
     // Landing Page - Features
     "landing.featuresTitle": "Core Capabilities",
     "landing.featuresDesc":
-      "MindX provides the infrastructure your agents need to interact with the real world of documents and data.",
-    "landing.feat1Title": "Create rich docs with agents",
+      "Two superpowers for your agent: Skill Booster and Ultimate Memory.",
+    "landing.feat1Title": "Online Rich-Text Editing",
     "landing.feat1Desc":
-      "Collaborate with agents to draft, edit, and refine docs that stay useful beyond a single session.",
-    "landing.feat2Title": "Save context in one place",
+      "Your agent can create interactive rich-text documents — not just Markdown. Work with docs like a human.",
+    "landing.feat2Title": "One-Click Deployment",
     "landing.feat2Desc":
-      "Keep docs, files, chats, and project context in one shared workspace for you and your agents.",
-    "landing.feat3Title": "Find past work and continue",
+      "Documents go live automatically. Share a link and anyone can access instantly from any device.",
+    "landing.feat3Title": "Built-in Database",
     "landing.feat3Desc":
-      "Search past work, recover context, and pick up where you left off.",
-    "landing.feat4Title": "Human-Agent Collaboration",
+      "Cloud-native database for structured data. Knowledge persists beyond a single conversation.",
+    "landing.feat4Title": "Cross-Agent Memory Migration",
     "landing.feat4Desc":
-      "A collaborative UI where humans and agents can work together, including text selection and commenting.",
-    "landing.feat5Title": "Format Conversion",
+      "Seamlessly transfer your preferences and context between Claude, Antigravity, Codex and more.",
+    "landing.feat5Title": "Ultimate Digital Twin",
     "landing.feat5Desc":
-      "Seamlessly convert between various document formats (e.g., Markdown to PDF, CSV to Table).",
+      "Build the most complete personal profile from chats, docs, and behavior. Your agent knows you better than you.",
+    "landing.feat6Title": "Knowledge Compilation",
+    "landing.feat6Desc":
+      "Compile scattered notes and thoughts into structured insights. Every conversation starts with the best knowledge.",
 
     // Landing Page - Footer
     "landing.copyright": "© 2026 MindX Platform. All rights reserved.",
@@ -218,22 +221,25 @@ const translations: Record<Language, Record<string, string>> = {
     // Landing Page - Features
     "landing.featuresTitle": "核心能力",
     "landing.featuresDesc":
-      "MindX 为你的 Agent 提供与真实文档和数据交互所需的基础设施。",
-    "landing.feat1Title": "与 Agent 共同创建丰富文档",
+      "两大超能力加持你的 Agent：技能增强 & 终极记忆。",
+    "landing.feat1Title": "在线富文本能力",
     "landing.feat1Desc":
-      "与 Agent 协作起草、编辑和完善文档，让高价值内容在多次会话间持续留存。",
-    "landing.feat2Title": "将上下文保存在一处",
+      "Agent 不只能写 Markdown，还能创建带交互的在线富文本文档——像人类一样使用文档套件。",
+    "landing.feat2Title": "傻瓜式部署到线上",
     "landing.feat2Desc":
-      "在同一个共享空间中，为你和你的 Agent 集中保存文档、文件、对话与项目上下文。",
-    "landing.feat3Title": "随时找回并继续过去的工作",
+      "Agent 写完文档自动上线，一键部署到公网。分享链接即可协作，任何设备即刻访问。",
+    "landing.feat3Title": "数据库能力",
     "landing.feat3Desc":
-      "搜索过往工作，恢复上下文，并从你上次离开的地方无缝接续。",
-    "landing.feat4Title": "人机协作",
+      "内置云端数据库，Agent 可以持久化结构化数据——知识不再随会话消亡。",
+    "landing.feat4Title": "跨 Agent 记忆迁移",
     "landing.feat4Desc":
-      "人类与 Agent 可以在协作界面中共同工作，支持文本选择和评论。",
-    "landing.feat5Title": "格式转换",
+      "在 Claude、Antigravity、Codex 之间无缝迁移你的偏好、习惯与上下文。换 Agent 不丢记忆。",
+    "landing.feat5Title": "打造最全的个人数字分身",
     "landing.feat5Desc":
-      "在多种文档格式之间无缝转换（例如 Markdown 转 PDF、CSV 转表格）。",
+      "从聊天记录、文档、行为数据中提炼出完整的个人画像——你的 Agent 比你更懂你。",
+    "landing.feat6Title": "知识编译",
+    "landing.feat6Desc":
+      "将碎片化的笔记和思考编译为结构化洞察，让 Agent 在每次对话中都能调取最精准的知识。",
 
     // Landing Page - Footer
     "landing.copyright": "© 2026 MindX 平台。保留所有权利。",
