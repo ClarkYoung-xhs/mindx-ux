@@ -6,6 +6,7 @@ import {
   Cable,
   Inbox,
   Package2,
+  Settings,
 } from "lucide-react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { currentUser } from "../../data/mindxDemo";
@@ -214,6 +215,13 @@ export default function V2Layout() {
               </p>
             </div>
             <LanguageSwitcher />
+            <button
+              onClick={() => navigate('/dashboard?tab=settings')}
+              className="p-1.5 rounded-md text-stone-400 hover:text-stone-700 transition-colors"
+              title={lang === 'zh' ? '设置' : 'Settings'}
+            >
+              <Settings className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </aside>

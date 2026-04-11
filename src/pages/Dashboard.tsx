@@ -36,6 +36,7 @@ import {
 } from "lucide-react";
 import WorkspaceSwitcher from "../components/WorkspaceSwitcher";
 import { useMindXDemo } from "../data/mindxDemoContext";
+import WorkspaceTreeV1 from "../components/WorkspaceTreeV1";
 import PricingModal from "./dashboard/PricingModal";
 import NavItem from "./dashboard/NavItem";
 import DocumentsTab from "./dashboard/DocumentsTab";
@@ -266,6 +267,7 @@ export default function Dashboard() {
   const [selectedExtractionFileIds, setSelectedExtractionFileIds] = useState<
     Set<string>
   >(new Set());
+  const [selectedExtractionSkill, setSelectedExtractionSkill] = useState<string>("profile");
   const [docSceneFilter, setDocSceneFilter] = useState<
     "all" | "today" | "unread" | "scheduled" | "webclip" | "memory"
   >("all");
@@ -1253,15 +1255,7 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                 Workspace
               </span>
             </div>
-            <NavItem
-              icon={<FileText className="w-4 h-4" />}
-              label={t("sidebar.documents")}
-              active={activeTab === "documents"}
-              onClick={() => {
-                setActiveTab("documents");
-                setIsCreatingAgent(false);
-              }}
-            />
+            <WorkspaceTreeV1 />
             <NavItem
               icon={<ActivityIcon className="w-4 h-4" />}
               label={t("sidebar.activityFeed")}
@@ -2220,13 +2214,13 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[70vh] flex flex-col overflow-hidden"
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] flex flex-col overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100">
               <h2 className="text-sm font-bold text-stone-900 flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-blue-500" />
-                {lang === "zh" ? "选择要提取的文件" : "Select Files to Extract"}
+                {lang === "zh" ? "蒸馏配置" : "Distillation Config"}
               </h2>
               <button
                 onClick={() => setShowExtractionFilePicker(false)}
@@ -2235,57 +2229,124 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <div className="flex-1 overflow-auto px-6 py-3">
-              {/* Select all */}
-              <label className="flex items-center gap-3 py-2 border-b border-stone-100 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={
-                    selectedExtractionFileIds.size === rawDataItems.length
-                  }
-                  onChange={(e) =>
-                    setSelectedExtractionFileIds(
-                      e.target.checked
-                        ? new Set(rawDataItems.map((i) => i.id))
-                        : new Set(),
-                    )
-                  }
-                  className="w-4 h-4 rounded border-stone-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-xs font-bold text-stone-700">
-                  {lang === "zh" ? "全选" : "Select All"}
-                </span>
-                <span className="text-[10px] text-stone-400 ml-auto">
-                  {selectedExtractionFileIds.size}/{rawDataItems.length}
-                </span>
-              </label>
-              {rawDataItems.map((item) => (
-                <label
-                  key={item.id}
-                  className="flex items-center gap-3 py-2.5 border-b border-stone-50 cursor-pointer hover:bg-stone-50/50 rounded-lg px-1 transition-colors"
-                >
+            <div className="flex-1 overflow-auto px-6 py-3 space-y-5">
+              {/* Skill Selection */}
+              <div>
+                <div className="text-[11px] font-bold text-stone-400 uppercase tracking-widest mb-2.5">
+                  {lang === "zh" ? "选择蒸馏 Skill" : "Select Distillation Skill"}
+                </div>
+                <div className="space-y-1.5">
+                  {[
+                    {
+                      id: "profile",
+                      name: "Profile",
+                      desc: lang === "zh" ? "提炼用户画像、偏好与行为模式" : "Extract user profile, preferences & patterns",
+                      repo: "https://github.com/ClarkYoung-xhs/profile-distill-skill",
+                    },
+                    {
+                      id: "knowledge-graph",
+                      name: "Knowledge Graph",
+                      desc: lang === "zh" ? "构建实体关系图谱与知识网络" : "Build entity-relationship graph & knowledge network",
+                      repo: null as string | null,
+                    },
+                    {
+                      id: "action-items",
+                      name: "Action Items",
+                      desc: lang === "zh" ? "提取待办事项与行动计划" : "Extract action items & plans",
+                      repo: null as string | null,
+                    },
+                  ].map((skill) => (
+                    <label
+                      key={skill.id}
+                      className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all border ${
+                        selectedExtractionSkill === skill.id
+                          ? "border-blue-200 bg-blue-50/50"
+                          : "border-stone-100 hover:border-stone-200 hover:bg-stone-50/50"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="extraction-skill"
+                        value={skill.id}
+                        checked={selectedExtractionSkill === skill.id}
+                        onChange={() => setSelectedExtractionSkill(skill.id)}
+                        className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                      />
+                      <div className="min-w-0">
+                        <div className="text-xs font-semibold text-stone-800">{skill.name}</div>
+                        <div className="text-[10px] text-stone-400">{skill.desc}</div>
+                        {skill.repo && (
+                          <a
+                            href={skill.repo}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="inline-flex items-center gap-1 mt-1 text-[10px] text-blue-500 hover:text-blue-700 transition-colors"
+                          >
+                            ↗ GitHub
+                          </a>
+                        )}
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* File Selection */}
+              <div>
+                <div className="text-[11px] font-bold text-stone-400 uppercase tracking-widest mb-2.5">
+                  {lang === "zh" ? "选择数据源" : "Select Data Sources"}
+                </div>
+                <label className="flex items-center gap-3 py-2 border-b border-stone-100 cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={selectedExtractionFileIds.has(item.id)}
-                    onChange={(e) => {
-                      const next = new Set(selectedExtractionFileIds);
-                      e.target.checked
-                        ? next.add(item.id)
-                        : next.delete(item.id);
-                      setSelectedExtractionFileIds(next);
-                    }}
-                    className="w-4 h-4 rounded border-stone-300 text-blue-600 focus:ring-blue-500 shrink-0"
+                    checked={
+                      selectedExtractionFileIds.size === rawDataItems.length
+                    }
+                    onChange={(e) =>
+                      setSelectedExtractionFileIds(
+                        e.target.checked
+                          ? new Set(rawDataItems.map((i) => i.id))
+                          : new Set(),
+                      )
+                    }
+                    className="w-4 h-4 rounded border-stone-300 text-blue-600 focus:ring-blue-500"
                   />
-                  <div className="min-w-0 flex-1">
-                    <div className="text-xs font-medium text-stone-700 truncate">
-                      {item.name}
-                    </div>
-                    <div className="text-[10px] text-stone-400">
-                      {item.type}
-                    </div>
-                  </div>
+                  <span className="text-xs font-bold text-stone-700">
+                    {lang === "zh" ? "全选" : "Select All"}
+                  </span>
+                  <span className="text-[10px] text-stone-400 ml-auto">
+                    {selectedExtractionFileIds.size}/{rawDataItems.length}
+                  </span>
                 </label>
-              ))}
+                {rawDataItems.map((item) => (
+                  <label
+                    key={item.id}
+                    className="flex items-center gap-3 py-2.5 border-b border-stone-50 cursor-pointer hover:bg-stone-50/50 rounded-lg px-1 transition-colors"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedExtractionFileIds.has(item.id)}
+                      onChange={(e) => {
+                        const next = new Set(selectedExtractionFileIds);
+                        e.target.checked
+                          ? next.add(item.id)
+                          : next.delete(item.id);
+                        setSelectedExtractionFileIds(next);
+                      }}
+                      className="w-4 h-4 rounded border-stone-300 text-blue-600 focus:ring-blue-500 shrink-0"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs font-medium text-stone-700 truncate">
+                        {item.name}
+                      </div>
+                      <div className="text-[10px] text-stone-400">
+                        {item.type}
+                      </div>
+                    </div>
+                  </label>
+                ))}
+              </div>
             </div>
             <div className="px-6 py-4 border-t border-stone-100">
               <button

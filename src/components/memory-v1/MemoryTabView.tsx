@@ -788,8 +788,8 @@ export default function MemoryTabView({
       <section className="space-y-4">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-400">Timeline Summary</div>
-            <h3 className="mt-1 text-xl font-semibold tracking-tight text-stone-900">已提炼洞察列表</h3>
+            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-400">Profile</div>
+            <h3 className="mt-1 text-xl font-semibold tracking-tight text-stone-900">Profile</h3>
           </div>
         </div>
 
@@ -944,7 +944,7 @@ export default function MemoryTabView({
             className="inline-flex items-center gap-2 rounded-full border border-stone-200 bg-white px-4 py-2 text-sm font-medium text-stone-700 transition-colors hover:border-stone-300 hover:bg-stone-50"
           >
             <Wand2 className="h-4 w-4" />
-            开始提炼
+            开始蒸馏
           </button>
         </div>
       </section>

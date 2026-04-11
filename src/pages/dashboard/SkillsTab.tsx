@@ -8,6 +8,8 @@ import {
   Check,
   Copy,
   Sparkles,
+  Globe,
+  Table2,
 } from "lucide-react";
 import { useLanguage } from "../../i18n/LanguageContext";
 import { activeWorkspaceIdGlobal } from "./constants";
@@ -76,6 +78,28 @@ export default function SkillsTab({
             provider: "MindX",
             desc:
               lang === "zh" ? "上传今天做了啥的 Skill" : "Daily upload skill",
+          },
+          {
+            id: "one-click-deploy",
+            name: "One-Click Deploy",
+            tag: "Core",
+            icon: <Globe className="w-4 h-4" />,
+            provider: "MindX",
+            desc:
+              lang === "zh"
+                ? "本地 HTML 一键发布到线上"
+                : "Publish local HTML to the web",
+          },
+          {
+            id: "smart-sheet-db",
+            name: "Smart Sheet DB",
+            tag: "Core",
+            icon: <Table2 className="w-4 h-4" />,
+            provider: "MindX",
+            desc:
+              lang === "zh"
+                ? "智能表格作为 Agent 数据库"
+                : "Use Smart Sheet as Agent database",
           },
         ].map((skill, i, arr) => (
           <div key={skill.id}>
@@ -649,11 +673,201 @@ export default function SkillsTab({
                 </div>
               </div>
             )}
+            {/* Inline detail for One-Click Deploy */}
+            {selectedSkillId === skill.id && skill.id === "one-click-deploy" && (
+              <div
+                className="border-t border-stone-100 bg-white"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="p-6 pb-5">
+                  <p className="text-sm text-stone-500 leading-relaxed mb-4">
+                    {lang === "zh"
+                      ? "Vibe coding 做出来的应用默认是本地网页。通过此 Skill，你的 Agent 可以将 HTML/CSS/JS 文件一键部署到公网，分享链接即可访问。"
+                      : "Vibe coding apps are local pages by default. This Skill lets your Agent deploy HTML/CSS/JS to the public web with one click — just share the link."}
+                  </p>
+                  <div className="grid md:grid-cols-2 gap-1.5">
+                    {(lang === "zh"
+                      ? [
+                          "本地 HTML 一键发布到公网",
+                          "自动生成公网访问链接",
+                          "支持 HTML/CSS/JS 全栈文件",
+                          "更新内容自动重新部署",
+                        ]
+                      : [
+                          "One-click publish to public web",
+                          "Auto-generate public URL",
+                          "Support HTML/CSS/JS full-stack",
+                          "Auto-redeploy on content update",
+                        ]
+                    ).map((cap, j) => (
+                      <div
+                        key={j}
+                        className="flex items-center gap-2 text-sm text-stone-600"
+                      >
+                        <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                        {cap}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="border-t border-stone-100 p-6 space-y-6">
+                  <div className="relative pl-10">
+                    <div className="absolute left-[11px] top-8 -bottom-6 flex flex-col items-center w-0">
+                      <div className="flex-1 border-l border-dashed border-stone-300" />
+                      <svg className="w-2.5 h-2.5 text-stone-300 shrink-0" viewBox="0 0 10 10" fill="none"><path d="M1 3L5 7L9 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                    </div>
+                    <div className="absolute left-0 top-0 w-6 h-6 rounded-md border border-stone-300 bg-stone-50 flex items-center justify-center text-stone-700 text-[10px] font-bold">1</div>
+                    <h4 className="text-sm font-bold text-stone-800 mb-2">
+                      {lang === "zh" ? "安装命令" : "Install Command"}
+                    </h4>
+                    <p className="text-xs text-stone-500 mb-3">
+                      💡 {lang === "zh"
+                        ? "复制粘贴到 Agent 对话中即可自动安装。"
+                        : "Copy and paste into your Agent chat to auto-install."}
+                    </p>
+                    <div className="relative">
+                      <div className="bg-stone-50 border border-stone-200 rounded-xl p-4 pr-24 text-sm font-mono text-stone-700 leading-relaxed overflow-x-auto whitespace-pre-wrap">{`Install the MindX One-Click Deploy skill. API endpoint:\n- POST https://mindx-ux.vercel.app/api/deploy (deploy HTML, body: {workspace_id: "${activeWorkspaceIdGlobal}", filename, html_content, css_content?, js_content?})\n- GET https://mindx-ux.vercel.app/api/deploy?workspace_id=${activeWorkspaceIdGlobal} (list deployed pages)\nAgent writes HTML locally, then calls deploy API to publish.`}</div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigator.clipboard.writeText(
+                            `Install the MindX One-Click Deploy skill. API endpoint:\n- POST https://mindx-ux.vercel.app/api/deploy (deploy HTML, body: {workspace_id: "${activeWorkspaceIdGlobal}", filename, html_content, css_content?, js_content?})\n- GET https://mindx-ux.vercel.app/api/deploy?workspace_id=${activeWorkspaceIdGlobal} (list deployed pages)\nAgent writes HTML locally, then calls deploy API to publish.`
+                          );
+                          setCopiedStates((prev) => ({ ...prev, deployInstall: true }));
+                          setTimeout(() => setCopiedStates((prev) => ({ ...prev, deployInstall: false })), 2000);
+                        }}
+                        className="absolute right-3 bottom-3 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-stone-900 hover:bg-stone-800 text-white text-xs font-medium transition-colors shadow-sm"
+                      >
+                        {copiedStates["deployInstall"] ? (<><Check className="w-3.5 h-3.5" />{lang === "zh" ? "已复制" : "Copied"}</>) : (<><Copy className="w-3.5 h-3.5" />{lang === "zh" ? "复制" : "Copy"}</>)}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="relative pl-10">
+                    <div className="absolute left-0 top-0 w-6 h-6 rounded-md border border-stone-300 bg-stone-50 flex items-center justify-center text-stone-700 text-[10px] font-bold">2</div>
+                    <h4 className="text-sm font-bold text-stone-800 mb-2">
+                      {lang === "zh" ? "使用 Skill" : "Use Skill"}
+                    </h4>
+                    <p className="text-xs text-stone-500 leading-relaxed mb-3">
+                      💡 {lang === "zh"
+                        ? "让 Agent 开发完网页后，直接说「部署到线上」即可一键发布。"
+                        : "After Agent builds the page, say 'deploy to web' to publish instantly."}
+                    </p>
+                    <div className="space-y-2">
+                      <div className="flex items-start gap-2.5 p-3 rounded-lg bg-stone-50 border border-stone-200/60">
+                        <span className="text-xs font-bold text-stone-800 shrink-0">{lang === "zh" ? "部署" : "Deploy"}</span>
+                        <span className="text-xs text-stone-500">—</span>
+                        <span className="text-xs text-stone-600">{lang === "zh" ? '"把这个页面部署到线上"、"发布到公网"' : '"deploy this page", "publish to web"'}</span>
+                      </div>
+                      <div className="flex items-start gap-2.5 p-3 rounded-lg bg-stone-50 border border-stone-200/60">
+                        <span className="text-xs font-bold text-stone-800 shrink-0">{lang === "zh" ? "更新" : "Update"}</span>
+                        <span className="text-xs text-stone-500">—</span>
+                        <span className="text-xs text-stone-600">{lang === "zh" ? '"更新线上版本"、"重新部署"' : '"update the live version", "redeploy"'}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            {/* Inline detail for Smart Sheet DB */}
+            {selectedSkillId === skill.id && skill.id === "smart-sheet-db" && (
+              <div
+                className="border-t border-stone-100 bg-white"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="p-6 pb-5">
+                  <p className="text-sm text-stone-500 leading-relaxed mb-4">
+                    {lang === "zh"
+                      ? "Vibe coding 默认只能做纯前端 Demo。通过此 Skill，你的 Agent 可以使用 MindX 智能表格作为云端数据库，轻松构建有服务端能力的完整应用。"
+                      : "Vibe coding only makes frontend demos by default. This Skill lets your Agent use MindX Smart Sheets as a cloud database to build full-stack apps."}
+                  </p>
+                  <div className="grid md:grid-cols-2 gap-1.5">
+                    {(lang === "zh"
+                      ? [
+                          "智能表格作为结构化数据库",
+                          "Agent 可增删改查表格数据",
+                          "无需搭建后端服务",
+                          "数据即时持久化到云端",
+                        ]
+                      : [
+                          "Smart Sheet as structured database",
+                          "Agent can CRUD sheet data",
+                          "No backend setup needed",
+                          "Data persisted to cloud instantly",
+                        ]
+                    ).map((cap, j) => (
+                      <div
+                        key={j}
+                        className="flex items-center gap-2 text-sm text-stone-600"
+                      >
+                        <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                        {cap}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="border-t border-stone-100 p-6 space-y-6">
+                  <div className="relative pl-10">
+                    <div className="absolute left-[11px] top-8 -bottom-6 flex flex-col items-center w-0">
+                      <div className="flex-1 border-l border-dashed border-stone-300" />
+                      <svg className="w-2.5 h-2.5 text-stone-300 shrink-0" viewBox="0 0 10 10" fill="none"><path d="M1 3L5 7L9 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                    </div>
+                    <div className="absolute left-0 top-0 w-6 h-6 rounded-md border border-stone-300 bg-stone-50 flex items-center justify-center text-stone-700 text-[10px] font-bold">1</div>
+                    <h4 className="text-sm font-bold text-stone-800 mb-2">
+                      {lang === "zh" ? "安装命令" : "Install Command"}
+                    </h4>
+                    <p className="text-xs text-stone-500 mb-3">
+                      💡 {lang === "zh"
+                        ? "复制粘贴到 Agent 对话中即可自动安装。"
+                        : "Copy and paste into your Agent chat to auto-install."}
+                    </p>
+                    <div className="relative">
+                      <div className="bg-stone-50 border border-stone-200 rounded-xl p-4 pr-24 text-sm font-mono text-stone-700 leading-relaxed overflow-x-auto whitespace-pre-wrap">{`Install the MindX Smart Sheet DB skill. API endpoints:\n- GET https://mindx-ux.vercel.app/api/sheets?workspace_id=${activeWorkspaceIdGlobal} (list all sheets)\n- POST https://mindx-ux.vercel.app/api/sheets (create sheet, body: {workspace_id: "${activeWorkspaceIdGlobal}", name, columns: [{name, type}]})\n- GET https://mindx-ux.vercel.app/api/sheets/:id/rows (read rows)\n- POST https://mindx-ux.vercel.app/api/sheets/:id/rows (insert rows, body: {rows: [{col: val}]})\n- PUT https://mindx-ux.vercel.app/api/sheets/:id/rows/:rowId (update row)\n- DELETE https://mindx-ux.vercel.app/api/sheets/:id/rows/:rowId (delete row)\nUse Smart Sheet as database for your vibe-coded apps.`}</div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigator.clipboard.writeText(
+                            `Install the MindX Smart Sheet DB skill. API endpoints:\n- GET https://mindx-ux.vercel.app/api/sheets?workspace_id=${activeWorkspaceIdGlobal} (list all sheets)\n- POST https://mindx-ux.vercel.app/api/sheets (create sheet, body: {workspace_id: "${activeWorkspaceIdGlobal}", name, columns: [{name, type}]})\n- GET https://mindx-ux.vercel.app/api/sheets/:id/rows (read rows)\n- POST https://mindx-ux.vercel.app/api/sheets/:id/rows (insert rows, body: {rows: [{col: val}]})\n- PUT https://mindx-ux.vercel.app/api/sheets/:id/rows/:rowId (update row)\n- DELETE https://mindx-ux.vercel.app/api/sheets/:id/rows/:rowId (delete row)\nUse Smart Sheet as database for your vibe-coded apps.`
+                          );
+                          setCopiedStates((prev) => ({ ...prev, sheetInstall: true }));
+                          setTimeout(() => setCopiedStates((prev) => ({ ...prev, sheetInstall: false })), 2000);
+                        }}
+                        className="absolute right-3 bottom-3 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-stone-900 hover:bg-stone-800 text-white text-xs font-medium transition-colors shadow-sm"
+                      >
+                        {copiedStates["sheetInstall"] ? (<><Check className="w-3.5 h-3.5" />{lang === "zh" ? "已复制" : "Copied"}</>) : (<><Copy className="w-3.5 h-3.5" />{lang === "zh" ? "复制" : "Copy"}</>)}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="relative pl-10">
+                    <div className="absolute left-0 top-0 w-6 h-6 rounded-md border border-stone-300 bg-stone-50 flex items-center justify-center text-stone-700 text-[10px] font-bold">2</div>
+                    <h4 className="text-sm font-bold text-stone-800 mb-2">
+                      {lang === "zh" ? "使用 Skill" : "Use Skill"}
+                    </h4>
+                    <p className="text-xs text-stone-500 leading-relaxed mb-3">
+                      💡 {lang === "zh"
+                        ? "Agent 开发应用时可以直接调用智能表格 API 存取数据，无需搭建后端。"
+                        : "Agent can directly call Smart Sheet API for data storage during app development."}
+                    </p>
+                    <div className="space-y-2">
+                      <div className="flex items-start gap-2.5 p-3 rounded-lg bg-stone-50 border border-stone-200/60">
+                        <span className="text-xs font-bold text-stone-800 shrink-0">{lang === "zh" ? "建表" : "Create"}</span>
+                        <span className="text-xs text-stone-500">—</span>
+                        <span className="text-xs text-stone-600">{lang === "zh" ? '"建一个用户表，字段：姓名、邮箱、注册时间"' : '"Create a users table with name, email, signup_date"'}</span>
+                      </div>
+                      <div className="flex items-start gap-2.5 p-3 rounded-lg bg-stone-50 border border-stone-200/60">
+                        <span className="text-xs font-bold text-stone-800 shrink-0">{lang === "zh" ? "读写" : "CRUD"}</span>
+                        <span className="text-xs text-stone-500">—</span>
+                        <span className="text-xs text-stone-600">{lang === "zh" ? '"把表单数据存到智能表格"、"查询所有用户"' : '"save form data to sheet", "query all users"'}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
             {/* Inline Coming Soon for other skills */}
             {selectedSkillId === skill.id &&
-              !["mindx-docs", "daily-log", "memory-io"].includes(skill.id) && (
+              !["mindx-docs", "daily-log", "memory-io", "one-click-deploy", "smart-sheet-db"].includes(skill.id) && (
                 <div className="bg-stone-50/50 p-8 text-center">
-                  <Package className="w-8 h-8 text-stone-300 mx-auto mb-2" />
+                  <Sparkles className="w-8 h-8 text-stone-300 mx-auto mb-2" />
                   <h3 className="text-sm font-semibold text-stone-900 mb-1">
                     {lang === "zh" ? "即将上线" : "Coming Soon"}
                   </h3>
