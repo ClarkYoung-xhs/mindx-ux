@@ -184,7 +184,17 @@ function TreeNode({
           style={{ paddingLeft: `${12 + depth * 16}px` }}
         >
           {/* Expand/collapse chevron */}
-          <span className="w-4 h-4 flex items-center justify-center shrink-0">
+          <span
+          className="w-4 h-4 flex items-center justify-center shrink-0"
+          onClick={(e) => {
+            if (hasChildren) {
+              e.stopPropagation();
+              onToggle(doc.id);
+            }
+          }}
+          role="button"
+          tabIndex={-1}
+        >
             {hasChildren ? (
               <ChevronRight
                 className={`w-3.5 h-3.5 text-stone-400 transition-transform duration-200 ${

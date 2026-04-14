@@ -33,6 +33,7 @@ import {
   ExternalLink,
   Brain,
   Database,
+  MessageSquareText,
 } from "lucide-react";
 import WorkspaceSwitcher from "../components/WorkspaceSwitcher";
 import { useMindXDemo } from "../data/mindxDemoContext";
@@ -44,6 +45,7 @@ import ActivityTab from "./dashboard/ActivityTab";
 import SettingsTab from "./dashboard/SettingsTab";
 import SkillsTab from "./dashboard/SkillsTab";
 import MemoryTab from "./dashboard/MemoryTab";
+import MemoAgentTab from "./dashboard/MemoAgentTab";
 import {
   tocInitialDocuments,
   tocInitialActivities,
@@ -208,6 +210,7 @@ export default function Dashboard() {
     | "skills"
     | "profile"
     | "rawdata"
+    | "memoagent"
   >(() => {
     const params = new URLSearchParams(window.location.search);
     const tab = params.get("tab");
@@ -223,6 +226,7 @@ export default function Dashboard() {
         "skills",
         "profile",
         "rawdata",
+        "memoagent",
       ].includes(tab)
     ) {
       return tab as
@@ -234,7 +238,8 @@ export default function Dashboard() {
         | "labels"
         | "skills"
         | "profile"
-        | "rawdata";
+        | "rawdata"
+        | "memoagent";
     }
     if (tab === "memory") return "profile";
     return "documents";
@@ -853,7 +858,8 @@ Analyze the following text strictly from the perspective of "Who am I" and to se
       | "labels"
       | "skills"
       | "profile"
-      | "rawdata",
+      | "rawdata"
+      | "memoagent",
   ) => {
     setActiveTabState(tab);
     const params = new URLSearchParams(window.location.search);
@@ -1272,25 +1278,6 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
             />
           </div>
 
-          {/* Skills Group */}
-          <div className="space-y-1">
-            <div className="px-3 mb-2">
-              <span className="text-[11px] font-bold text-stone-400 uppercase tracking-widest">
-                Skills
-              </span>
-            </div>
-            <NavItem
-              icon={<Sparkles className="w-4 h-4" />}
-              label="Skills"
-              active={activeTab === "skills"}
-              onClick={() => {
-                setActiveTab("skills");
-                setIsCreatingAgent(false);
-                setSelectedAgentId(null);
-              }}
-            />
-          </div>
-
           {/* Memory Group */}
           <div className="space-y-1">
             <div className="px-3 mb-2">
@@ -1314,6 +1301,34 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
               onClick={() => {
                 setActiveTab("rawdata");
                 setIsCreatingAgent(false);
+              }}
+            />
+            <NavItem
+              icon={<MessageSquareText className="w-4 h-4" />}
+              label="Memo Agent"
+              active={activeTab === "memoagent"}
+              onClick={() => {
+                setActiveTab("memoagent");
+                setIsCreatingAgent(false);
+              }}
+            />
+          </div>
+
+          {/* Skills Group */}
+          <div className="space-y-1">
+            <div className="px-3 mb-2">
+              <span className="text-[11px] font-bold text-stone-400 uppercase tracking-widest">
+                Skills
+              </span>
+            </div>
+            <NavItem
+              icon={<Sparkles className="w-4 h-4" />}
+              label="Skills"
+              active={activeTab === "skills"}
+              onClick={() => {
+                setActiveTab("skills");
+                setIsCreatingAgent(false);
+                setSelectedAgentId(null);
               }}
             />
           </div>
@@ -1358,6 +1373,7 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
             {activeTab === "profile" && "Profile"}
             {activeTab === "rawdata" &&
               (lang === "zh" ? "原始数据 (Raw Data)" : "Raw Data")}
+            {activeTab === "memoagent" && "Memo Agent"}
             {activeTab === "settings" && t("settings.title")}
             {activeTab === "skills" && "Skills"}
           </h1>
@@ -1534,6 +1550,8 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                 handleOpenExtractionPicker={handleOpenExtractionPicker}
               />
             )}
+
+            {activeTab === "memoagent" && <MemoAgentTab />}
           </div>
         </div>
       </main>

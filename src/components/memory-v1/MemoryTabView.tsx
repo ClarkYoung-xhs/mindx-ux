@@ -280,7 +280,6 @@ export default function MemoryTabView({
   onOpenExtractionPicker,
 }: MemoryTabViewProps) {
   const { memoryAssets, memoryDataSources, memorySourceLinks } = useMindXDemo();
-  const [memoDraft, setMemoDraft] = useState('');
   const [isAllInsightsViewOpen, setIsAllInsightsViewOpen] = useState(false);
 
   const recentLogs = extractionLogs.slice(0, 3);
@@ -425,59 +424,6 @@ export default function MemoryTabView({
     [allInsightKnowledgeCards]
   );
 
-  const buildMemoReply = (query: string) => {
-    const normalizedQuery = normalize(query);
-
-    if (!normalizedQuery) {
-      if (extractedKeyPoints.length === 0 && showSampleSources) {
-        return '这页已经先把可能形成的记忆线索、知识摘要和数据源处理链路铺出来了，你可以先按完整叙事去判断 1.0 和 2.0 是否对齐。';
-      }
-
-      if (extractedKeyPoints.length > 0) {
-        return `我可以帮你从 ${extractedKeyPoints.length} 条洞察、${rawDataItems.length} 份数据源和 ${memoryNodes.length} 个自定义节点里快速定位记忆。`;
-      }
-
-      return '我可以帮你快速查看基础记忆、正在形成的洞察卡片，以及当前接入的数据源。';
-    }
-
-    if (/偏好|who|about|identity/.test(normalizedQuery)) {
-      return `你当前的长期偏好会落在“关于我”里：${compactPreview(
-        whoAmIDocContent,
-        baseWhoAmI
-      )}`;
-    }
-
-    if (/最近|今天|推进|progress|recent/.test(normalizedQuery)) {
-      return allInsightKnowledgeCards.length > 0
-        ? `最近最清晰的一条资产是「${allInsightKnowledgeCards[0].title}」。当前它还挂在「${allInsightKnowledgeCards[0].sources[0]?.label ?? 'Memory'}」这条来源上。`
-        : `最近的推进主线还是围绕目标在走：${baseGoals.join('；')}。`;
-    }
-
-    if (/目标|goal|focus/.test(normalizedQuery)) {
-      return `你当前的目标摘要是：${listPreview(
-        goalDocContent,
-        baseGoals[0]
-      ).join('；')}`;
-    }
-
-    if (/资料|source|数据源|提炼/.test(normalizedQuery)) {
-      return rawDataItems.length > 0
-        ? `当前共有 ${rawDataItems.length} 份数据源，最近一份是「${rawDataItems[0].name}」。如果要继续形成记忆，可以直接从下面的数据源列表开始。`
-        : `当前还没有真实接入的数据源，不过这页已经先把完整处理链路铺出来了，像「${dataSourceRows[0]?.name ?? '飞书妙记：03/24 产品同步'}」这种就是现在更接近的展示方式。`;
-    }
-
-    if (/挂载|agent|mount/.test(normalizedQuery)) {
-      return `当前最适合挂载给 agent 的，还是已经比较稳定的基础判断：${knowledgeSummary.slice(0, 2).join('；')}。`;
-    }
-
-    if (/洞察|timeline|形成|signal|knowledge/.test(normalizedQuery)) {
-      return extractedKeyPoints.length > 0
-        ? `现在已经有 ${extractedKeyPoints.length} 张洞察卡片，最近一张是「${extractedKeyPoints[0].title || extractedKeyPoints[0].text}」。`
-        : `当前还没有真实提炼出的洞察卡片，但这页已经先把资产卡的展示方式铺出来了，像「${allInsightKnowledgeCards[0]?.title ?? 'Knowledge 暂不升级为一级导航，继续归属 Memory'}」这种，就是当前更接近的呈现方式。`;
-    }
-
-    return `我先按 “${query}” 理解你的问题。你可以继续往下看基础记忆、洞察卡片和数据源列表，它们已经按 2.0 的展示方式排好了。`;
-  };
 
   const dataSourceRows = useMemo<DataSourceRowRecord[]>(() => {
     if (!showSampleSources) {
@@ -545,98 +491,9 @@ export default function MemoryTabView({
     });
   }, [extractedKeyPoints, extractionRunning, memoryDataSources, onOpenRawData, rawDataItems, showSampleSources]);
 
-  const memoIntro = '我是专属于你的记忆专家。我可以帮你从记忆中溯源证据、检索关联、洞察灵感。你只要随时问我就好了。';
-  const [memoMessages, setMemoMessages] = useState<Array<{ id: string; role: 'assistant' | 'user'; text: string }>>([]);
-
-  const submitMemoQuery = (query: string) => {
-    const question = query.trim();
-    if (!question) return;
-
-    setMemoMessages(prev => [
-      ...prev,
-      {
-        id: `memo-user-${Date.now()}-${prev.length}`,
-        role: 'user',
-        text: question,
-      },
-      {
-        id: `memo-assistant-${Date.now()}-${prev.length + 1}`,
-        role: 'assistant',
-        text: buildMemoReply(question),
-      },
-    ]);
-    setMemoDraft('');
-  };
 
   return (
     <div className="space-y-8 pb-12">
-      <section className="rounded-[1.75rem] border border-stone-200 bg-white p-6 shadow-[0_10px_30px_rgba(28,25,23,0.04)]">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-stone-900 text-white">
-            <Sparkles className="h-4 w-4" />
-          </div>
-          <div>
-            <h2 className="text-lg font-semibold tracking-tight text-stone-900">memo agent</h2>
-            <div className="max-w-3xl text-sm leading-6 text-stone-500">{memoIntro}</div>
-          </div>
-        </div>
-
-        {memoMessages.length > 0 && (
-          <div className="mt-5 space-y-3">
-            {memoMessages.map(message => (
-              <div
-                key={message.id}
-                className={`rounded-[1.35rem] border px-4 py-3 ${
-                  message.role === 'assistant'
-                    ? 'border-stone-200 bg-stone-50/80'
-                    : 'border-stone-200 bg-white'
-                }`}
-              >
-                <div className="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-400">
-                  {message.role === 'assistant' ? 'memo agent' : '你'}
-                </div>
-                <p className="text-sm leading-6 text-stone-700">{message.text}</p>
-              </div>
-            ))}
-          </div>
-        )}
-
-        <div className="mt-5 rounded-[1.35rem] border border-stone-200 bg-stone-50/70 p-3">
-          <div className="flex items-start gap-3">
-            <div className="mt-2 text-stone-400">
-              <Search className="h-4 w-4" />
-            </div>
-            <div className="flex-1">
-              <textarea
-                value={memoDraft}
-                onChange={event => setMemoDraft(event.target.value)}
-                onKeyDown={event => {
-                  if (event.key === 'Enter' && !event.shiftKey) {
-                    event.preventDefault();
-                    submitMemoQuery(memoDraft);
-                  }
-                }}
-                placeholder="问我任何和记忆有关的问题，比如“我最近在推进什么？”"
-                rows={3}
-                className="w-full resize-none bg-transparent text-sm leading-6 text-stone-800 placeholder:text-stone-400 focus:outline-none"
-              />
-            </div>
-            <button
-              type="button"
-              onClick={() => submitMemoQuery(memoDraft)}
-              className="shrink-0 rounded-full bg-stone-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-stone-800"
-            >
-              发送
-            </button>
-          </div>
-        </div>
-
-        <div className="mt-4 flex flex-wrap gap-2">
-          <SearchChip label="我最近在推进什么？" onClick={() => submitMemoQuery('我最近在推进什么？')} />
-          <SearchChip label="哪些记忆适合挂载给 agent？" onClick={() => submitMemoQuery('哪些记忆适合挂载给 agent？')} />
-          <SearchChip label="现在有哪些记忆还在形成？" onClick={() => submitMemoQuery('现在有哪些记忆还在形成？')} />
-        </div>
-      </section>
 
       {/* ═══════════════════ PROFILE — 萃取给 Agent 读的数据 ═══════════════════ */}
       {activeMemoryView === 'profile' && (
@@ -837,102 +694,36 @@ export default function MemoryTabView({
           </button>
         </div>
 
-        {/* Custom Memory Nodes — inline within Raw Data */}
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {memoryNodes.map(node => (
-            <button
-              key={node.id}
-              type="button"
-              onClick={() => onEditNode(node)}
-              className="rounded-[1.3rem] border border-stone-200 bg-white p-5 text-left shadow-[0_10px_24px_rgba(28,25,23,0.04)] transition-all hover:border-stone-300 hover:bg-stone-50/60"
-            >
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex min-w-0 items-center gap-2">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-violet-50 text-violet-600">
-                    <Brain className="h-4 w-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="truncate text-sm font-semibold text-stone-900">{node.title}</div>
-                    <div className="text-[11px] text-stone-400">{formatDateLabel(node.updatedAt)}</div>
-                  </div>
-                </div>
-              </div>
-              <p className="mt-4 line-clamp-4 text-sm leading-6 text-stone-600">
-                {node.content || '点击编辑这条长期记忆。'}
-              </p>
-            </button>
-          ))}
-
-          <div className="rounded-[1.3rem] border border-dashed border-stone-300 bg-stone-50/70 p-5">
-            {isMemoryNodesExpanded ? (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-sm font-semibold text-stone-900">
-                  <Brain className="h-4 w-4 text-violet-600" />
-                  添加自定义节点
-                </div>
-                <input
-                  value={memoryNodeInput}
-                  onChange={event => onMemoryNodeInputChange(event.target.value)}
-                  onKeyDown={event => {
-                    if (event.key === 'Enter' && memoryNodeInput.trim()) { void onCreateMemoryNode(); }
-                    if (event.key === 'Escape') { onCancelMemoryNodeComposer(); }
-                  }}
-                  type="text"
-                  placeholder="输入节点名称后回车..."
-                  className="w-full rounded-2xl border border-stone-200 bg-white px-3 py-2.5 text-sm text-stone-700 outline-none transition-colors focus:border-stone-300"
-                  autoFocus
-                />
-                <div className="flex items-center gap-2">
-                  <button type="button" onClick={() => { void onCreateMemoryNode(); }} className="flex-1 rounded-full bg-stone-900 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-stone-800">保存</button>
-                  <button type="button" onClick={onCancelMemoryNodeComposer} className="flex-1 rounded-full border border-stone-200 bg-white px-3 py-2 text-sm font-medium text-stone-600 transition-colors hover:border-stone-300 hover:text-stone-900">取消</button>
-                </div>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={onOpenMemoryNodeComposer}
-                className="flex h-full min-h-[100px] w-full flex-col items-center justify-center gap-3 rounded-[1rem] text-center"
-              >
-                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-stone-500 shadow-sm">
-                  <Plus className="h-5 w-5" />
-                </div>
-                <div>
-                  <div className="text-sm font-semibold text-stone-700">新建记忆节点</div>
-                  <div className="mt-1 text-xs text-stone-400">手动添加一条长期记忆</div>
-                </div>
-              </button>
-            )}
-          </div>
-        </div>
       </section>
       )}
 
       <section
-        className="rounded-[1.5rem] border border-stone-200 bg-gradient-to-r from-stone-900 to-stone-800 p-6 text-white shadow-[0_16px_40px_rgba(28,25,23,0.18)]"
+        className="rounded-[1.5rem] border border-stone-200 bg-stone-50/80 p-6"
       >
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-100">
-              <Sparkles className="h-3.5 w-3.5" />
-              Pro
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-stone-900 text-white">
+              <Sparkles className="h-4 w-4" />
             </div>
-            <h3 className="mt-3 text-xl font-semibold tracking-tight">大模型提炼 Pro</h3>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-stone-300">
-              保留 1.0 底部独立入口。需要更完整的提炼能力时，从这里进入付费弹窗或调整模型配置。
-            </p>
+            <div>
+              <h3 className="text-sm font-semibold text-stone-900">大模型提炼 Pro</h3>
+              <p className="text-xs text-stone-500">
+                更完整的提炼能力，调整模型配置
+              </p>
+            </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={onOpenModelConfig}
-              className="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/10"
+              className="rounded-full border border-stone-200 bg-white px-4 py-2 text-sm font-medium text-stone-700 transition-colors hover:border-stone-300 hover:bg-stone-50"
             >
               模型配置
             </button>
             <button
               type="button"
               onClick={onOpenPricing}
-              className="rounded-full bg-white px-4 py-2 text-sm font-medium text-stone-900 transition-colors hover:bg-stone-100"
+              className="rounded-full bg-stone-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-stone-800"
             >
               查看权益
             </button>

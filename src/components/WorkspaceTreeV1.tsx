@@ -167,7 +167,6 @@ function TreeNode({ doc, depth, activeDocId, expandedIds, onToggle, onSelect, on
         <button
           onClick={() => {
             onSelect(doc);
-            if (hasChildren) onToggle(doc.id);
           }}
           className={`w-full flex items-center gap-1.5 py-1.5 pr-2 rounded-md text-[13px] transition-all duration-150 group ${
             isActive
@@ -176,7 +175,17 @@ function TreeNode({ doc, depth, activeDocId, expandedIds, onToggle, onSelect, on
           }`}
           style={{ paddingLeft: `${12 + depth * 16}px` }}
         >
-          <span className="w-4 h-4 flex items-center justify-center shrink-0">
+          <span
+            className="w-4 h-4 flex items-center justify-center shrink-0"
+            onClick={(e) => {
+              if (hasChildren) {
+                e.stopPropagation();
+                onToggle(doc.id);
+              }
+            }}
+            role="button"
+            tabIndex={-1}
+          >
             {hasChildren ? (
               <ChevronRight
                 className={`w-3.5 h-3.5 text-stone-400 transition-transform duration-200 ${
@@ -253,16 +262,9 @@ export default function WorkspaceTreeV1() {
   const navigate = useNavigate();
   const { documents, addDocument, setDocuments } = useMindXDemo();
 
-  const [expandedDocIds, setExpandedDocIds] = useState<Set<string>>(() => {
-    // Expand first level by default
-    const initial = new Set<string>();
-    documents.forEach((doc) => {
-      if (doc.children && doc.children.length > 0) {
-        initial.add(doc.id);
-      }
-    });
-    return initial;
-  });
+  const [expandedDocIds, setExpandedDocIds] = useState<Set<string>>(
+    () => new Set<string>(),
+  );
 
   const [activeDocId, setActiveDocId] = useState<string | null>(null);
 
