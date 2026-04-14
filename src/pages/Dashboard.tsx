@@ -206,7 +206,8 @@ export default function Dashboard() {
     | "settings"
     | "labels"
     | "skills"
-    | "memory"
+    | "profile"
+    | "rawdata"
   >(() => {
     const params = new URLSearchParams(window.location.search);
     const tab = params.get("tab");
@@ -220,7 +221,8 @@ export default function Dashboard() {
         "settings",
         "labels",
         "skills",
-        "memory",
+        "profile",
+        "rawdata",
       ].includes(tab)
     ) {
       return tab as
@@ -231,8 +233,10 @@ export default function Dashboard() {
         | "settings"
         | "labels"
         | "skills"
-        | "memory";
+        | "profile"
+        | "rawdata";
     }
+    if (tab === "memory") return "profile";
     return "documents";
   });
   const [copiedStates, setCopiedStates] = useState<Record<string, boolean>>({});
@@ -776,7 +780,7 @@ Analyze the following text strictly from the perspective of "Who am I" and to se
       localStorage.setItem(`mindx_raw_${item.id}`, item.content);
     }
     navigate(
-      `/document?type=text&backTab=memory&source=rawdata&rawId=${item.id}&title=${encodeURIComponent(item.name)}`,
+      `/document?type=text&backTab=rawdata&source=rawdata&rawId=${item.id}&title=${encodeURIComponent(item.name)}`,
     );
   };
 
@@ -823,7 +827,7 @@ Analyze the following text strictly from the perspective of "Who am I" and to se
   };
 
   const handleOpenKeyPointsDocument = () => {
-    navigate("/document?type=text&backTab=memory&source=keypoints_doc");
+    navigate("/document?type=text&backTab=profile&source=keypoints_doc");
   };
 
   const handleOpenExtractionPicker = () => {
@@ -848,7 +852,8 @@ Analyze the following text strictly from the perspective of "Who am I" and to se
       | "settings"
       | "labels"
       | "skills"
-      | "memory",
+      | "profile"
+      | "rawdata",
   ) => {
     setActiveTabState(tab);
     const params = new URLSearchParams(window.location.search);
@@ -1294,11 +1299,20 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
               </span>
             </div>
             <NavItem
-              icon={<Brain className="w-4 h-4" />}
-              label={lang === "zh" ? "记忆 (Memory)" : "Memory"}
-              active={activeTab === "memory"}
+              icon={<Sparkles className="w-4 h-4" />}
+              label="Profile"
+              active={activeTab === "profile"}
               onClick={() => {
-                setActiveTab("memory");
+                setActiveTab("profile");
+                setIsCreatingAgent(false);
+              }}
+            />
+            <NavItem
+              icon={<Database className="w-4 h-4" />}
+              label="Raw Data"
+              active={activeTab === "rawdata"}
+              onClick={() => {
+                setActiveTab("rawdata");
                 setIsCreatingAgent(false);
               }}
             />
@@ -1341,8 +1355,9 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
             {activeTab === "documents" && t("docs.title")}
             {activeTab === "activity" && t("activity.title")}
             {activeTab === "agents" && t("agent.title")}
-            {activeTab === "memory" &&
-              (lang === "zh" ? "记忆 (Memory)" : "Memory")}
+            {activeTab === "profile" && "Profile"}
+            {activeTab === "rawdata" &&
+              (lang === "zh" ? "原始数据 (Raw Data)" : "Raw Data")}
             {activeTab === "settings" && t("settings.title")}
             {activeTab === "skills" && "Skills"}
           </h1>
@@ -1491,8 +1506,9 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
               />
             )}
 
-            {activeTab === "memory" && (
+            {(activeTab === "profile" || activeTab === "rawdata") && (
               <MemoryTab
+                activeMemoryView={activeTab === "profile" ? "profile" : "rawdata"}
                 fileInputRef={fileInputRef}
                 whoAmIDocContent={whoAmIDocContent}
                 goalDocContent={goalDocContent}

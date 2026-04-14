@@ -51,7 +51,7 @@ export default function V2Layout() {
   const location = useLocation();
   const navigate = useNavigate();
   const backTarget = location.pathname.startsWith("/v2/memory")
-    ? "/dashboard?tab=memory"
+    ? "/dashboard?tab=profile"
     : "/dashboard";
 
   const copy =

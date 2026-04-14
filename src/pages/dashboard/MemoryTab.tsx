@@ -28,6 +28,7 @@ interface ExtractedKeyPoint {
 }
 
 export interface MemoryTabProps {
+  activeMemoryView: "profile" | "rawdata";
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   whoAmIDocContent: string;
   goalDocContent: string;
@@ -54,6 +55,7 @@ export interface MemoryTabProps {
 }
 
 export default function MemoryTab({
+  activeMemoryView,
   fileInputRef,
   whoAmIDocContent,
   goalDocContent,
@@ -85,6 +87,7 @@ export default function MemoryTab({
       className="w-full max-w-6xl"
     >
       <MemoryTabView
+        activeMemoryView={activeMemoryView}
         fileInputRef={fileInputRef}
         whoAmIDocContent={whoAmIDocContent}
         goalDocContent={goalDocContent}

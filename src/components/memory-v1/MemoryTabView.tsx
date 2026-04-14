@@ -66,6 +66,7 @@ type DataSourceRowRecord = {
 };
 
 type MemoryTabViewProps = {
+  activeMemoryView: 'profile' | 'rawdata';
   fileInputRef: RefObject<HTMLInputElement | null>;
   whoAmIDocContent: string;
   goalDocContent: string;
@@ -253,6 +254,7 @@ function BaseMemoryCard({
 }
 
 export default function MemoryTabView({
+  activeMemoryView,
   fileInputRef,
   whoAmIDocContent,
   goalDocContent,
@@ -636,14 +638,18 @@ export default function MemoryTabView({
         </div>
       </section>
 
-      <section className="space-y-4">
+      {/* ═══════════════════ PROFILE — 萃取给 Agent 读的数据 ═══════════════════ */}
+      {activeMemoryView === 'profile' && (
+      <section className="space-y-6">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-400">Base Memory</div>
-            <h3 className="mt-1 text-xl font-semibold tracking-tight text-stone-900">基础记忆</h3>
+            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-400">Profile</div>
+            <h3 className="mt-1 text-xl font-semibold tracking-tight text-stone-900">萃取数据</h3>
+            <p className="mt-1 text-xs text-stone-400">从原始数据中蒸馏出的结构化信息，供 Agent 随时读取</p>
           </div>
         </div>
 
+        {/* Base Memory Cards */}
         <div className="grid gap-4 md:grid-cols-3">
           <BaseMemoryCard
             icon={<User className="h-5 w-5" />}
@@ -651,12 +657,7 @@ export default function MemoryTabView({
             title="关于我"
             meta="Who am I"
             previewType="memory"
-            previewItems={[
-              {
-                title: '画像摘要',
-                body: baseWhoAmI,
-              },
-            ]}
+            previewItems={[{ title: '画像摘要', body: baseWhoAmI }]}
             onClick={() => onEditProfile('whoami')}
           />
           <BaseMemoryCard
@@ -665,10 +666,7 @@ export default function MemoryTabView({
             title="我的目标"
             meta="Goal"
             previewType="goals"
-            previewItems={baseGoals.map((goal, index) => ({
-              label: String(index + 1),
-              title: goal,
-            }))}
+            previewItems={baseGoals.map((goal, index) => ({ label: String(index + 1), title: goal }))}
             onClick={() => onEditProfile('goal')}
           />
           <BaseMemoryCard
@@ -683,22 +681,163 @@ export default function MemoryTabView({
                 : '等待首批卡片'
             }
             previewType="knowledge"
-            previewItems={knowledgeSummary.map(item => ({
-              title: item,
-            }))}
+            previewItems={knowledgeSummary.map(item => ({ title: item }))}
             onClick={onOpenKeyPointsDocument}
           />
         </div>
-      </section>
 
-      <section className="space-y-4">
-        <div className="flex items-center justify-between gap-4">
+        {/* Profile Insight Cards */}
+        {(isAllInsightsViewOpen ? allInsightKnowledgeCards : insightPreviewCards).length > 0 && (
+          <>
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              {(isAllInsightsViewOpen ? allInsightKnowledgeCards : insightPreviewCards).map(card => (
+                <div key={card.id}>
+                  <V2KnowledgeCard card={card} onCardClick={() => onOpenKeyPointsDocument()} />
+                </div>
+              ))}
+            </div>
+            {allInsightKnowledgeCards.length > 6 && !isAllInsightsViewOpen ? (
+              <div className="flex justify-center pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsAllInsightsViewOpen(true)}
+                  className="text-sm font-medium text-stone-500 transition-colors hover:text-stone-800"
+                >
+                  查看全部
+                </button>
+              </div>
+            ) : null}
+          </>
+        )}
+      </section>
+      )}
+
+      {/* ═══════════════════ RAW DATA — 导入的原始数据 ═══════════════════ */}
+      {activeMemoryView === 'rawdata' && (
+      <section className="space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-400">Custom Nodes</div>
-            <h3 className="mt-1 text-xl font-semibold tracking-tight text-stone-900">自定义记忆节点</h3>
+            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-400">Raw Data</div>
+            <h3 className="mt-1 text-xl font-semibold tracking-tight text-stone-900">原始数据</h3>
+            <p className="mt-1 text-xs text-stone-400">导入的文档、笔记等原始素材，等待蒸馏为 Profile</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={onOpenPasteModal}
+              className="rounded-full border border-stone-200 bg-white px-4 py-2 text-sm font-medium text-stone-700 transition-colors hover:border-stone-300 hover:bg-stone-50"
+            >
+              粘贴文本
+            </button>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="inline-flex items-center gap-2 rounded-full bg-stone-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-stone-800"
+            >
+              <Upload className="h-4 w-4" />
+              上传文件
+            </button>
           </div>
         </div>
 
+        {/* Data Sources Table */}
+        <div className="overflow-hidden rounded-[1.35rem] border border-stone-200 bg-white shadow-[0_10px_24px_rgba(28,25,23,0.04)]">
+          <div className="grid grid-cols-[minmax(0,1.8fr)_110px_140px_120px] border-b border-stone-200 bg-stone-50/80 px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-400">
+            <div>名称</div>
+            <div>类型</div>
+            <div>处理进度</div>
+            <div>更新时间</div>
+          </div>
+
+          {dataSourceRows.length === 0 ? (
+            <div className="px-6 py-12 text-center">
+              <Database className="mx-auto h-8 w-8 text-stone-300" />
+              <div className="mt-3 text-sm font-medium text-stone-500">还没有数据源</div>
+              <div className="mt-1 text-xs text-stone-400">先上传一份文档，或者直接粘贴一段内容。</div>
+            </div>
+          ) : (
+            <div className="divide-y divide-stone-100">
+              {dataSourceRows.map(row => (
+                <div
+                  key={row.id}
+                  className={`grid grid-cols-[minmax(0,1.8fr)_110px_140px_120px] items-center gap-4 px-5 py-4 text-left transition-colors ${
+                    row.sample ? 'bg-stone-50/30' : 'hover:bg-stone-50/70'
+                  }`}
+                >
+                  <div className="min-w-0">
+                    <div
+                      className={`flex items-start gap-3 ${row.onClick ? 'cursor-pointer' : ''}`}
+                      onClick={row.onClick}
+                    >
+                      <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-stone-100 text-stone-600">
+                        <FileText className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <div className="truncate text-sm font-semibold text-stone-900">{row.name}</div>
+                        </div>
+                        <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-stone-500">
+                          <span>{row.summaryMeta}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-sm text-stone-600">{row.typeLabel}</div>
+                  <div>
+                    <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold ${row.badgeClassName}`}>
+                      {row.badgeLabel}
+                    </span>
+                  </div>
+                  <div className="text-sm text-stone-500">{row.uploadedAtLabel}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Pipeline Logs */}
+        {(recentLogs.length > 0 || extractionRunning) && (
+          <div className="rounded-[1.25rem] border border-stone-200 bg-stone-50/80 p-4">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-400">Pipeline</div>
+            <div className="mt-3 space-y-2">
+              {recentLogs.map(log => (
+                <div key={log.id} className="flex items-start gap-3 text-sm text-stone-600">
+                  <span
+                    className={`mt-2 h-2 w-2 shrink-0 rounded-full ${
+                      log.status === 'running' ? 'bg-amber-500' : log.status === 'pending' ? 'bg-stone-300' : 'bg-emerald-500'
+                    }`}
+                  />
+                  <div className="min-w-0">
+                    <div>{log.text}</div>
+                    <div className="mt-1 text-xs text-stone-400">{log.time}</div>
+                  </div>
+                </div>
+              ))}
+              {extractionRunning ? <div className="text-sm font-medium text-stone-700">蒸馏正在进行中…</div> : null}
+            </div>
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={onOpenRawDataModal}
+            className="rounded-full border border-stone-200 bg-white px-4 py-2 text-sm font-medium text-stone-700 transition-colors hover:border-stone-300 hover:bg-stone-50"
+          >
+            查看全部资料
+          </button>
+          <button
+            type="button"
+            onClick={onOpenExtractionPicker}
+            className="inline-flex items-center gap-2 rounded-full border border-stone-200 bg-white px-4 py-2 text-sm font-medium text-stone-700 transition-colors hover:border-stone-300 hover:bg-stone-50"
+          >
+            <Wand2 className="h-4 w-4" />
+            开始蒸馏
+          </button>
+        </div>
+
+        {/* Custom Memory Nodes — inline within Raw Data */}
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {memoryNodes.map(node => (
             <button
@@ -735,12 +874,8 @@ export default function MemoryTabView({
                   value={memoryNodeInput}
                   onChange={event => onMemoryNodeInputChange(event.target.value)}
                   onKeyDown={event => {
-                    if (event.key === 'Enter' && memoryNodeInput.trim()) {
-                      void onCreateMemoryNode();
-                    }
-                    if (event.key === 'Escape') {
-                      onCancelMemoryNodeComposer();
-                    }
+                    if (event.key === 'Enter' && memoryNodeInput.trim()) { void onCreateMemoryNode(); }
+                    if (event.key === 'Escape') { onCancelMemoryNodeComposer(); }
                   }}
                   type="text"
                   placeholder="输入节点名称后回车..."
@@ -748,206 +883,29 @@ export default function MemoryTabView({
                   autoFocus
                 />
                 <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      void onCreateMemoryNode();
-                    }}
-                    className="flex-1 rounded-full bg-stone-900 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-stone-800"
-                  >
-                    保存
-                  </button>
-                  <button
-                    type="button"
-                    onClick={onCancelMemoryNodeComposer}
-                    className="flex-1 rounded-full border border-stone-200 bg-white px-3 py-2 text-sm font-medium text-stone-600 transition-colors hover:border-stone-300 hover:text-stone-900"
-                  >
-                    取消
-                  </button>
+                  <button type="button" onClick={() => { void onCreateMemoryNode(); }} className="flex-1 rounded-full bg-stone-900 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-stone-800">保存</button>
+                  <button type="button" onClick={onCancelMemoryNodeComposer} className="flex-1 rounded-full border border-stone-200 bg-white px-3 py-2 text-sm font-medium text-stone-600 transition-colors hover:border-stone-300 hover:text-stone-900">取消</button>
                 </div>
               </div>
             ) : (
               <button
                 type="button"
                 onClick={onOpenMemoryNodeComposer}
-                className="flex h-full min-h-[210px] w-full flex-col items-center justify-center gap-3 rounded-[1rem] text-center"
+                className="flex h-full min-h-[100px] w-full flex-col items-center justify-center gap-3 rounded-[1rem] text-center"
               >
                 <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-stone-500 shadow-sm">
                   <Plus className="h-5 w-5" />
                 </div>
                 <div>
                   <div className="text-sm font-semibold text-stone-700">新建记忆节点</div>
-                  <div className="mt-1 text-xs text-stone-400">保持 1.0 的自定义记忆方式不变</div>
+                  <div className="mt-1 text-xs text-stone-400">手动添加一条长期记忆</div>
                 </div>
               </button>
             )}
           </div>
         </div>
       </section>
-
-      <section className="space-y-4">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-400">Profile</div>
-            <h3 className="mt-1 text-xl font-semibold tracking-tight text-stone-900">Profile</h3>
-          </div>
-        </div>
-
-        {(isAllInsightsViewOpen ? allInsightKnowledgeCards : insightPreviewCards).length === 0 ? null : (
-          <>
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              {(isAllInsightsViewOpen ? allInsightKnowledgeCards : insightPreviewCards).map(card => (
-                <div key={card.id}>
-                  <V2KnowledgeCard
-                    card={card}
-                    onCardClick={() => onOpenKeyPointsDocument()}
-                  />
-                </div>
-              ))}
-            </div>
-
-            {allInsightKnowledgeCards.length > 6 && !isAllInsightsViewOpen ? (
-              <div className="flex justify-center pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsAllInsightsViewOpen(true)}
-                  className="text-sm font-medium text-stone-500 transition-colors hover:text-stone-800"
-                >
-                  查看全部
-                </button>
-              </div>
-            ) : null}
-          </>
-        )}
-      </section>
-
-      <section className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-400">Data Sources</div>
-            <h3 className="mt-1 text-xl font-semibold tracking-tight text-stone-900">知识库</h3>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={onOpenPasteModal}
-              className="rounded-full border border-stone-200 bg-white px-4 py-2 text-sm font-medium text-stone-700 transition-colors hover:border-stone-300 hover:bg-stone-50"
-            >
-              粘贴文本
-            </button>
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="inline-flex items-center gap-2 rounded-full bg-stone-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-stone-800"
-            >
-              <Upload className="h-4 w-4" />
-              上传文件
-            </button>
-          </div>
-        </div>
-
-        <div className="overflow-hidden rounded-[1.35rem] border border-stone-200 bg-white shadow-[0_10px_24px_rgba(28,25,23,0.04)]">
-          <div className="grid grid-cols-[minmax(0,1.8fr)_110px_140px_120px] border-b border-stone-200 bg-stone-50/80 px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-400">
-            <div>名称</div>
-            <div>类型</div>
-            <div>处理进度</div>
-            <div>更新时间</div>
-          </div>
-
-          {dataSourceRows.length === 0 ? (
-            <div className="px-6 py-12 text-center">
-              <Database className="mx-auto h-8 w-8 text-stone-300" />
-              <div className="mt-3 text-sm font-medium text-stone-500">还没有数据源</div>
-              <div className="mt-1 text-xs text-stone-400">先上传一份文档，或者直接粘贴一段内容。</div>
-            </div>
-          ) : (
-            <div className="divide-y divide-stone-100">
-              {dataSourceRows.map(row => {
-                return (
-                  <div
-                    key={row.id}
-                    className={`grid grid-cols-[minmax(0,1.8fr)_110px_140px_120px] items-center gap-4 px-5 py-4 text-left transition-colors ${
-                      row.sample ? 'bg-stone-50/30' : 'hover:bg-stone-50/70'
-                    }`}
-                  >
-                    <div className="min-w-0">
-                      <div
-                        className={`flex items-start gap-3 ${row.onClick ? 'cursor-pointer' : ''}`}
-                        onClick={row.onClick}
-                      >
-                        <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-stone-100 text-stone-600">
-                          <FileText className="h-4 w-4" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <div className="truncate text-sm font-semibold text-stone-900">{row.name}</div>
-                          </div>
-                          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-stone-500">
-                            <span>{row.summaryMeta}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-sm text-stone-600">{row.typeLabel}</div>
-                    <div>
-                      <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold ${row.badgeClassName}`}>
-                        {row.badgeLabel}
-                      </span>
-                    </div>
-                    <div className="text-sm text-stone-500">{row.uploadedAtLabel}</div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {(recentLogs.length > 0 || extractionRunning) && (
-          <div className="rounded-[1.25rem] border border-stone-200 bg-stone-50/80 p-4">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-400">Pipeline</div>
-            <div className="mt-3 space-y-2">
-              {recentLogs.map(log => (
-                <div key={log.id} className="flex items-start gap-3 text-sm text-stone-600">
-                  <span
-                    className={`mt-2 h-2 w-2 shrink-0 rounded-full ${
-                      log.status === 'running'
-                        ? 'bg-amber-500'
-                        : log.status === 'pending'
-                          ? 'bg-stone-300'
-                          : 'bg-emerald-500'
-                    }`}
-                  />
-                  <div className="min-w-0">
-                    <div>{log.text}</div>
-                    <div className="mt-1 text-xs text-stone-400">{log.time}</div>
-                  </div>
-                </div>
-              ))}
-              {extractionRunning ? (
-                <div className="text-sm font-medium text-stone-700">记忆提炼正在进行中…</div>
-              ) : null}
-            </div>
-          </div>
-        )}
-
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={onOpenRawDataModal}
-            className="rounded-full border border-stone-200 bg-white px-4 py-2 text-sm font-medium text-stone-700 transition-colors hover:border-stone-300 hover:bg-stone-50"
-          >
-            查看全部资料
-          </button>
-          <button
-            type="button"
-            onClick={onOpenExtractionPicker}
-            className="inline-flex items-center gap-2 rounded-full border border-stone-200 bg-white px-4 py-2 text-sm font-medium text-stone-700 transition-colors hover:border-stone-300 hover:bg-stone-50"
-          >
-            <Wand2 className="h-4 w-4" />
-            开始蒸馏
-          </button>
-        </div>
-      </section>
+      )}
 
       <section
         className="rounded-[1.5rem] border border-stone-200 bg-gradient-to-r from-stone-900 to-stone-800 p-6 text-white shadow-[0_16px_40px_rgba(28,25,23,0.18)]"
