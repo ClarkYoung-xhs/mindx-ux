@@ -53,6 +53,7 @@ export const tobClientPortalHtml = `<!DOCTYPE html>
     position: sticky;
     top: 0;
     z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   }
   .nav-brand {
     display: flex;
@@ -102,7 +103,7 @@ export const tobClientPortalHtml = `<!DOCTYPE html>
 
   /* ── Container ── */
   .container {
-    max-width: 1080px;
+    max-width: 1200px;
     margin: 0 auto;
     padding: 32px 24px;
   }
@@ -139,8 +140,45 @@ export const tobClientPortalHtml = `<!DOCTYPE html>
   .tag-s { background: rgba(106,27,154,0.1); color: #6A1B9A; border: 1px solid rgba(106,27,154,0.2); }
   .tag-discount { background: rgba(83,58,253,0.08); color: var(--stripe-purple); border: 1px solid rgba(83,58,253,0.15); }
 
+  /* ── Stats Grid ── */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .stat-card {
+    background: var(--stripe-white);
+    border: 1px solid var(--stripe-border);
+    border-radius: var(--radius-md);
+    padding: 20px;
+    box-shadow: rgba(23,23,23,0.04) 0px 6px 12px;
+  }
+  .stat-label {
+    font-size: 12px;
+    color: var(--stripe-body);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+  }
+  .stat-value {
+    font-size: 28px;
+    font-weight: 300;
+    color: var(--stripe-navy);
+    letter-spacing: -0.5px;
+    margin-bottom: 4px;
+  }
+  .stat-trend {
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .trend-up { color: var(--stripe-success-text); }
+  .trend-down { color: var(--stripe-ruby); }
+
   /* ── Section ── */
-  .section { margin-bottom: 24px; }
+  .section { margin-bottom: 32px; }
   .section-header {
     display: flex;
     align-items: center;
@@ -167,7 +205,99 @@ export const tobClientPortalHtml = `<!DOCTYPE html>
     font-family: 'SF Mono', 'SFMono-Regular', monospace;
   }
 
-  /* ── Table ── */
+  /* ── Product Grid ── */
+  .product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+  .product-card {
+    background: var(--stripe-white);
+    border: 1px solid var(--stripe-border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+  .product-card:hover {
+    border-color: var(--stripe-purple);
+    box-shadow: rgba(83,58,253,0.15) 0px 8px 24px;
+    transform: translateY(-2px);
+  }
+  .product-image {
+    width: 100%;
+    height: 200px;
+    background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 64px;
+    position: relative;
+    overflow: hidden;
+  }
+  .product-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: var(--stripe-ruby);
+    color: white;
+    padding: 4px 10px;
+    border-radius: var(--radius-sm);
+    font-size: 10px;
+    font-weight: 500;
+  }
+  .product-badge.low-stock { background: var(--stripe-ruby); }
+  .product-badge.hot { background: var(--stripe-purple); }
+  .product-info {
+    padding: 16px;
+  }
+  .product-name {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--stripe-navy);
+    margin-bottom: 6px;
+  }
+  .product-sku {
+    font-family: 'SF Mono', 'SFMono-Regular', monospace;
+    font-size: 11px;
+    color: var(--stripe-body);
+    margin-bottom: 8px;
+  }
+  .product-spec {
+    font-size: 12px;
+    color: var(--stripe-body);
+    margin-bottom: 12px;
+  }
+  .product-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 12px;
+    border-top: 1px solid var(--stripe-border);
+  }
+  .product-stock {
+    font-size: 12px;
+  }
+  .stock-ok { color: var(--stripe-success-text); }
+  .stock-low { color: var(--stripe-ruby); font-weight: 500; }
+  .product-price {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+  }
+  .price-original {
+    text-decoration: line-through;
+    color: #c0c8d2;
+    font-size: 11px;
+  }
+  .price-discount {
+    color: var(--stripe-purple);
+    font-weight: 500;
+    font-size: 16px;
+  }
+
+  /* ── Table Card ── */
   .card {
     background: var(--stripe-white);
     border: 1px solid var(--stripe-border);
@@ -195,24 +325,51 @@ export const tobClientPortalHtml = `<!DOCTYPE html>
   }
   tr:last-child td { border-bottom: none; }
   tr:hover { background: rgba(83,58,253,0.02); }
-  .sku-code { font-family: 'SF Mono', 'SFMono-Regular', monospace; font-size: 12px; color: var(--stripe-body); }
-  .price { font-variant-numeric: tabular-nums; }
-  .price-original { text-decoration: line-through; color: #c0c8d2; font-size: 12px; margin-right: 6px; }
-  .price-discount { color: var(--stripe-purple); font-weight: 400; }
-  .stock-ok { color: var(--stripe-success-text); }
-  .stock-low { color: var(--stripe-ruby); font-weight: 400; }
-  .sync-indicator {
-    display: inline-flex; align-items: center; gap: 4px;
-    font-size: 10px; color: var(--stripe-success-text);
-    background: rgba(21,190,83,0.1);
-    padding: 2px 6px;
-    border-radius: 2px;
+
+  /* ── Chart Container ── */
+  .chart-container {
+    background: var(--stripe-white);
+    border: 1px solid var(--stripe-border);
+    border-radius: var(--radius-md);
+    padding: 24px;
+    box-shadow: rgba(23,23,23,0.06) 0px 8px 16px;
   }
-  .sync-indicator::before {
-    content: '';
-    width: 4px; height: 4px;
-    background: var(--stripe-success);
-    border-radius: 50%;
+  .chart-title {
+    font-size: 16px;
+    font-weight: 400;
+    color: var(--stripe-navy);
+    margin-bottom: 16px;
+  }
+  .bar-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    height: 200px;
+    padding: 16px 0;
+  }
+  .bar {
+    flex: 1;
+    background: linear-gradient(to top, var(--stripe-purple), var(--stripe-ruby));
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+    position: relative;
+    min-width: 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
+  }
+  .bar-value {
+    position: absolute;
+    top: -24px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--stripe-navy);
+  }
+  .bar-label {
+    margin-top: 8px;
+    font-size: 11px;
+    color: var(--stripe-body);
+    text-align: center;
   }
 
   /* ── Order Tracking ── */
@@ -301,6 +458,8 @@ export const tobClientPortalHtml = `<!DOCTYPE html>
     .nav-brand h1 { font-size: 14px; }
     .container { padding: 16px 12px; }
     .dealer-bar { flex-direction: column; gap: 12px; align-items: flex-start; }
+    .stats-grid { grid-template-columns: 1fr; }
+    .product-grid { grid-template-columns: 1fr; }
     table { font-size: 13px; }
     th, td { padding: 10px 12px; }
     .order-row { flex-wrap: wrap; gap: 8px; }
@@ -332,7 +491,7 @@ export const tobClientPortalHtml = `<!DOCTYPE html>
       <div class="dealer-avatar">王</div>
       <div>
         <div class="dealer-name">华中区-星巴克加盟商-老王</div>
-        <div class="dealer-detail">账期：月结 30 天 · 合作始于 2024 年</div>
+        <div class="dealer-detail">账期：月结 30 天 · 合作始于 2024 年 · 运营 12 家门店</div>
       </div>
     </div>
     <div class="dealer-tags">
@@ -341,58 +500,167 @@ export const tobClientPortalHtml = `<!DOCTYPE html>
     </div>
   </div>
 
-  <!-- ── Live Catalog ── -->
+  <!-- ── Stats Overview ── -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">本月采购额</div>
+      <div class="stat-value">¥52.8万</div>
+      <div class="stat-trend trend-up">
+        ↗ +18.5% 环比上月
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">待处理订单</div>
+      <div class="stat-value">3 单</div>
+      <div class="stat-trend trend-up">
+        1 单待审核，2 单生产中
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">库存预警</div>
+      <div class="stat-value">2 项</div>
+      <div class="stat-trend trend-down">
+        陶瓷马克杯、玻璃杯需补货
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">累计采购额</div>
+      <div class="stat-value">¥386万</div>
+      <div class="stat-trend trend-up">
+        近 12 个月累计
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Hot Products ── -->
   <div class="section">
     <div class="section-header">
-      <h2 class="section-title">动态商品视图 · Live Catalog</h2>
+      <h2 class="section-title">热销商品推荐 · Hot Products</h2>
       <div class="section-subtitle">
         <span class="db-tag">sheet-inventory</span>
         <span class="db-tag">sheet-crm</span>
-        <span class="sync-indicator">实时同步</span>
       </div>
     </div>
-    <div class="card">
-      <table>
-        <thead>
-          <tr>
-            <th>品名</th>
-            <th>SKU</th>
-            <th>规格</th>
-            <th>可用库存</th>
-            <th>专属指导价</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>经典款陶瓷马克杯</td>
-            <td><span class="sku-code">SKU-2026-MUG-01</span></td>
-            <td>350ml / 白瓷</td>
-            <td><span class="stock-low">200 只</span> <span class="sync-indicator">Live</span></td>
-            <td class="price"><span class="price-original">¥15.00</span><span class="price-discount">¥13.50</span></td>
-          </tr>
-          <tr>
-            <td>简约白瓷餐盘</td>
-            <td><span class="sku-code">SKU-2026-PLT-01</span></td>
-            <td>10寸 / 纯白</td>
-            <td><span class="stock-ok">800 只</span> <span class="sync-indicator">Live</span></td>
-            <td class="price"><span class="price-original">¥22.00</span><span class="price-discount">¥19.80</span></td>
-          </tr>
-          <tr>
-            <td>双层隔热玻璃杯</td>
-            <td><span class="sku-code">SKU-2026-CUP-01</span></td>
-            <td>300ml / 高硼硅</td>
-            <td><span class="stock-ok">450 只</span> <span class="sync-indicator">Live</span></td>
-            <td class="price"><span class="price-original">¥45.00</span><span class="price-discount">¥40.50</span></td>
-          </tr>
-          <tr>
-            <td>手冲咖啡壶套装</td>
-            <td><span class="sku-code">SKU-2026-KTL-01</span></td>
-            <td>600ml / 含滤杯</td>
-            <td><span class="stock-ok">150 套</span> <span class="sync-indicator">Live</span></td>
-            <td class="price"><span class="price-original">¥68.00</span><span class="price-discount">¥61.20</span></td>
-          </tr>
-        </tbody>
-      </table>
+    
+    <div class="product-grid">
+      <div class="product-card">
+        <div class="product-image">
+          ☕
+          <span class="product-badge low-stock">库存紧张</span>
+        </div>
+        <div class="product-info">
+          <div class="product-name">经典款陶瓷马克杯</div>
+          <div class="product-sku">SKU-2026-MUG-01</div>
+          <div class="product-spec">350ml / 白瓷 / 适配洗碗机</div>
+          <div class="product-footer">
+            <span class="product-stock stock-low">⚠️ 仅剩 200 只</span>
+            <div class="product-price">
+              <span class="price-original">¥15.00</span>
+              <span class="price-discount">¥13.50</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="product-card">
+        <div class="product-image">
+          🍽️
+          <span class="product-badge hot">热销</span>
+        </div>
+        <div class="product-info">
+          <div class="product-name">简约白瓷餐盘</div>
+          <div class="product-sku">SKU-2026-PLT-01</div>
+          <div class="product-spec">10寸 / 纯白 / 微波炉适用</div>
+          <div class="product-footer">
+            <span class="product-stock stock-ok">✓ 库存充足 800 只</span>
+            <div class="product-price">
+              <span class="price-original">¥22.00</span>
+              <span class="price-discount">¥19.80</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="product-card">
+        <div class="product-image">
+          🥃
+          <span class="product-badge low-stock">库存紧张</span>
+        </div>
+        <div class="product-info">
+          <div class="product-name">双层隔热玻璃杯</div>
+          <div class="product-sku">SKU-2026-CUP-01</div>
+          <div class="product-spec">300ml / 高硼硅玻璃 / 防烫</div>
+          <div class="product-footer">
+            <span class="product-stock stock-ok">✓ 库存 450 只</span>
+            <div class="product-price">
+              <span class="price-original">¥45.00</span>
+              <span class="price-discount">¥40.50</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="product-card">
+        <div class="product-image">
+          ☕
+          <span class="product-badge hot">新品</span>
+        </div>
+        <div class="product-info">
+          <div class="product-name">手冲咖啡壶套装</div>
+          <div class="product-sku">SKU-2026-KTL-01</div>
+          <div class="product-spec">600ml / 含滤杯+滤纸</div>
+          <div class="product-footer">
+            <span class="product-stock stock-ok">✓ 库存 150 套</span>
+            <div class="product-price">
+              <span class="price-original">¥68.00</span>
+              <span class="price-discount">¥61.20</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Purchase Trend Chart ── -->
+  <div class="section">
+    <div class="section-header">
+      <h2 class="section-title">采购趋势分析 · Purchase Trend</h2>
+      <div class="section-subtitle">
+        <span class="db-tag">sheet-orders</span>
+        近 6 个月数据
+      </div>
+    </div>
+    
+    <div class="chart-container">
+      <div class="chart-title">月度采购金额（万元）</div>
+      <div class="bar-chart">
+        <div class="bar" style="height: 45%;">
+          <span class="bar-value">38.2</span>
+        </div>
+        <div class="bar" style="height: 52%;">
+          <span class="bar-value">42.5</span>
+        </div>
+        <div class="bar" style="height: 61%;">
+          <span class="bar-value">46.8</span>
+        </div>
+        <div class="bar" style="height: 55%;">
+          <span class="bar-value">44.6</span>
+        </div>
+        <div class="bar" style="height: 72%;">
+          <span class="bar-value">49.2</span>
+        </div>
+        <div class="bar" style="height: 100%;">
+          <span class="bar-value">52.8</span>
+        </div>
+      </div>
+      <div style="display: flex; justify-content: space-around; margin-top: -8px;">
+        <div class="bar-label">11月</div>
+        <div class="bar-label">12月</div>
+        <div class="bar-label">1月</div>
+        <div class="bar-label">2月</div>
+        <div class="bar-label">3月</div>
+        <div class="bar-label">4月</div>
+      </div>
     </div>
   </div>
 
@@ -402,7 +670,7 @@ export const tobClientPortalHtml = `<!DOCTYPE html>
       <h2 class="section-title">履约进度视图 · Order Tracking</h2>
       <div class="section-subtitle">
         <span class="db-tag">sheet-orders</span>
-        <span class="sync-indicator">实时同步</span>
+        <span style="background: rgba(21,190,83,0.1); color: var(--stripe-success-text); padding: 2px 8px; border-radius: 4px; font-size: 10px;">实时同步</span>
       </div>
     </div>
     <div class="card">
@@ -410,19 +678,37 @@ export const tobClientPortalHtml = `<!DOCTYPE html>
         <span class="order-id">ORD-20260408-001</span>
         <div class="order-detail">
           <div class="order-product">经典款陶瓷马克杯</div>
-          <div class="order-qty">需求 500 只 · 下单 2026-04-08</div>
+          <div class="order-qty">需求 500 只 · 下单 2026-04-08 · 预计交付 04-15</div>
         </div>
         <span class="order-status status-pending">待审核</span>
-        <span class="order-date">截止 04-10</span>
+        <span class="order-date">04-10 截止</span>
       </div>
       <div class="order-row">
-        <span class="order-id">ORD-20260403-002</span>
+        <span class="order-id">ORD-20260406-002</span>
+        <div class="order-detail">
+          <div class="order-product">双层隔热玻璃杯</div>
+          <div class="order-qty">需求 300 只 · 下单 2026-04-06 · 工厂排产中</div>
+        </div>
+        <span class="order-status status-production">生产中</span>
+        <span class="order-date">04-13 发货</span>
+      </div>
+      <div class="order-row">
+        <span class="order-id">ORD-20260405-003</span>
+        <div class="order-detail">
+          <div class="order-product">手冲咖啡壶套装</div>
+          <div class="order-qty">需求 50 套 · 下单 2026-04-05 · 物流配送中</div>
+        </div>
+        <span class="order-status status-shipped">已发货</span>
+        <span class="order-date">04-11 送达</span>
+      </div>
+      <div class="order-row">
+        <span class="order-id">ORD-20260403-004</span>
         <div class="order-detail">
           <div class="order-product">简约白瓷餐盘</div>
-          <div class="order-qty">需求 150 只 · 下单 2026-04-03</div>
+          <div class="order-qty">需求 150 只 · 下单 2026-04-03 · 已完成验收</div>
         </div>
         <span class="order-status status-received">已签收</span>
-        <span class="order-date">截止 04-06</span>
+        <span class="order-date">04-06 完成</span>
       </div>
     </div>
   </div>
@@ -430,15 +716,15 @@ export const tobClientPortalHtml = `<!DOCTYPE html>
   <!-- ── Restock CTA ── -->
   <div class="cta-section">
     <div class="cta-text">
-      <h3>需要补货？一键提交补货请求</h3>
-      <p>点击后将在 Order_DB 中自动生成待审核订单记录，内部团队将即时收到通知</p>
+      <h3>🚀 需要补货？一键提交补货请求</h3>
+      <p>点击后将在 Order_DB 中自动生成待审核订单记录，内部团队将即时收到通知并快速响应</p>
     </div>
     <button class="btn-restock" onclick="handleRestock()">⚡ 一键补货</button>
   </div>
 
   <!-- Footer -->
   <div class="footer">
-    Powered by <a href="#">MindX</a> · 数据来源：Smart Sheet · CRDT 实时同步协议
+    Powered by <a href="#">MindX</a> · 数据来源：Smart Sheet · CRDT 实时同步协议 · 最后更新：2026-04-14 15:48
   </div>
 </div>
 
@@ -447,14 +733,22 @@ export const tobClientPortalHtml = `<!DOCTYPE html>
 
 <script>
 function handleRestock() {
-  showToast('✅ 补货请求已提交，订单将在 Order_DB 中生成待审核记录');
+  showToast('✅ 补货请求已提交成功！订单将在 Order_DB 中生成待审核记录，预计 2 小时内响应');
 }
 function showToast(msg) {
   var t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.add('show');
-  setTimeout(function() { t.classList.remove('show'); }, 3000);
+  setTimeout(function() { t.classList.remove('show'); }, 3500);
 }
+
+// Add interaction to product cards
+document.querySelectorAll('.product-card').forEach(function(card) {
+  card.addEventListener('click', function() {
+    var productName = this.querySelector('.product-name').textContent;
+    showToast('📦 ' + productName + ' - 点击"一键补货"可快速下单');
+  });
+});
 </script>
 </body>
 </html>`;
@@ -894,3 +1188,9 @@ export const tocWealthDashboardHtml = `<!DOCTYPE html>
 
 </body>
 </html>`;
+
+// ─── All Pages Map (for V2 document detail page resolution) ──────────────
+export const allPages: Record<string, string> = {
+  "page-tob-client-portal": tobClientPortalHtml,
+  "toc-page-wealth-dashboard": tocWealthDashboardHtml,
+};

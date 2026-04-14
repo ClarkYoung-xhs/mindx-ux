@@ -7,11 +7,13 @@ import {
   Inbox,
   Package2,
   Settings,
+  Plus,
 } from "lucide-react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import { currentUser } from "../../data/mindxDemo";
+import { currentUser, type WorkspaceDoc } from "../../data/mindxDemo";
 import { LanguageSwitcher, useLanguage } from "../../i18n/LanguageContext";
 import WorkspaceTree from "./WorkspaceTree";
+import { useMindXDemo } from "../../data/mindxDemoContext";
 
 interface NavItemConfig {
   label: string;
@@ -50,9 +52,31 @@ export default function V2Layout() {
   const { lang } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
+  const { activeWorkspaceId, addDocument } = useMindXDemo();
   const backTarget = location.pathname.startsWith("/v2/memory")
     ? "/dashboard?tab=profile"
     : "/dashboard";
+
+  // Create a new top-level document in Workspace
+  const handleCreateDocument = () => {
+    const newDoc: WorkspaceDoc = {
+      id: `doc-${Date.now()}`,
+      workspaceId: activeWorkspaceId,
+      name: "无标题",
+      type: "Smart Canvas",
+      date: new Date().toISOString(),
+      lastModified: new Date().toISOString(),
+      lastViewed: new Date().toISOString(),
+      labels: [],
+      creatorName: "当前用户",
+      creatorType: "human",
+      size: 0,
+      blocks: [],
+    };
+    
+    addDocument(newDoc);
+    navigate(`/v2/doc/${newDoc.id}`);
+  };
 
   const copy =
     lang === "zh"
@@ -143,10 +167,17 @@ export default function V2Layout() {
 
           {/* 2. Workspace directory tree */}
           <div className="space-y-1">
-            <div className="px-3 mb-2">
+            <div className="px-3 mb-2 flex items-center justify-between group">
               <span className="text-[11px] font-bold text-stone-400 uppercase tracking-widest">
                 {copy.workspace}
               </span>
+              <button
+                onClick={handleCreateDocument}
+                className="w-5 h-5 flex items-center justify-center rounded hover:bg-stone-200 text-stone-400 hover:text-stone-700 transition-colors opacity-0 group-hover:opacity-100"
+                title={lang === 'zh' ? '新建文档' : 'New document'}
+              >
+                <Plus className="w-4 h-4" />
+              </button>
             </div>
             <WorkspaceTree />
           </div>
