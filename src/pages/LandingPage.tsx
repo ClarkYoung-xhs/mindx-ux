@@ -155,22 +155,12 @@ export default function LandingPage() {
             transition={{ duration: 0.5, delay: 0.3 }}
             className="flex flex-col sm:flex-row items-center justify-center gap-4"
           >
-            <div className="flex items-stretch rounded-md overflow-hidden">
-              <button
-                onClick={() => setShowAuth(true)}
-                className="flex items-center gap-2 bg-stone-900 text-white px-5 py-3 font-medium hover:bg-stone-800 transition-colors border-r border-stone-700"
-              >
-                V1
-              </button>
-              <a
-                href="https://mindx-ux.vercel.app/v2"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 bg-stone-900 text-white px-5 py-3 font-medium hover:bg-stone-800 transition-colors"
-              >
-                V2 <span className="text-[9px] font-bold text-orange-400 bg-orange-400/15 px-1.5 py-0.5 rounded">NEW</span>
-              </a>
-            </div>
+            <button
+              onClick={() => setShowAuth(true)}
+              className="flex items-center gap-2 bg-stone-900 text-white px-6 py-3 rounded-md font-medium hover:bg-stone-800 transition-colors"
+            >
+              开始使用
+            </button>
             <a
               href="/mindx-presentation.html"
               target="_blank"
