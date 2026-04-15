@@ -220,6 +220,7 @@ export default function V2DocumentDetailPage() {
           publishCopy: "复制链接",
           publishCopied: "已复制",
           publishClose: "关闭",
+          exportHTML: "HTML",
           exportMarkdown: "Markdown",
           exportPDF: "PDF",
           exportImage: "图片",
@@ -239,6 +240,7 @@ export default function V2DocumentDetailPage() {
           publishCopy: "Copy link",
           publishCopied: "Copied",
           publishClose: "Close",
+          exportHTML: "HTML",
           exportMarkdown: "Markdown",
           exportPDF: "PDF",
           exportImage: "Image",
@@ -254,7 +256,15 @@ export default function V2DocumentDetailPage() {
         { label: copy.exportImage, icon: FileImage, action: "image" },
       ];
     }
-    // For Smart Canvas and Page
+    if (isPage) {
+      // Page type: HTML, PDF, Image
+      return [
+        { label: copy.exportHTML, icon: Code, action: "html" },
+        { label: copy.exportPDF, icon: FileText, action: "pdf" },
+        { label: copy.exportImage, icon: FileImage, action: "image" },
+      ];
+    }
+    // For Smart Canvas: Markdown, PDF, Image
     return [
       { label: copy.exportMarkdown, icon: FileText, action: "markdown" },
       { label: copy.exportPDF, icon: FileText, action: "pdf" },

@@ -117,6 +117,7 @@ interface TreeNodeProps {
   onAddChild: (parentDoc: WorkspaceDoc) => void;
   onDelete: (doc: WorkspaceDoc) => void;
   onDuplicate: (doc: WorkspaceDoc) => void;
+  onMove: (sourceId: string, targetId: string, asChild: boolean) => void;
 }
 
 /** Recursive tree node for a document */
@@ -130,10 +131,12 @@ function TreeNode({
   onAddChild,
   onDelete,
   onDuplicate,
+  onMove,
 }: TreeNodeProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
+  const [dragOver, setDragOver] = useState<'none' | 'before' | 'inside'>('none');
 
   const hasChildren = doc.children && doc.children.length > 0;
   const isExpanded = expandedIds.has(doc.id);
@@ -164,6 +167,54 @@ function TreeNode({
     // TODO: Show toast notification
   };
 
+  // Drag and drop handlers
+  const handleDragStart = (e: React.DragEvent) => {
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', doc.id);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const rect = e.currentTarget.getBoundingClientRect();
+    const mouseY = e.clientY - rect.top;
+    const height = rect.height;
+    
+    // Determine drop zone
+    if (mouseY < height * 0.25) {
+      setDragOver('before');
+    } else if (!isSheet) {
+      // Can only drop inside non-sheet documents
+      setDragOver('inside');
+    } else {
+      setDragOver('none');
+    }
+  };
+
+  const handleDragLeave = () => {
+    setDragOver('none');
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const sourceId = e.dataTransfer.getData('text/plain');
+    if (sourceId === doc.id) {
+      setDragOver('none');
+      return;
+    }
+    
+    if (dragOver === 'before') {
+      onMove(sourceId, doc.id, false);
+    } else if (dragOver === 'inside' && !isSheet) {
+      onMove(sourceId, doc.id, true);
+    }
+    
+    setDragOver('none');
+  };
+
   return (
     <div>
       <div
@@ -171,7 +222,17 @@ function TreeNode({
         onMouseLeave={() => setIsHovered(false)}
         className="relative group/item"
       >
+        {/* Drop indicator - before */}
+        {dragOver === 'before' && (
+          <div className="absolute left-0 right-0 top-0 h-0.5 bg-blue-500 z-10" />
+        )}
+        
         <button
+          draggable
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
           onClick={() => {
             onSelect(doc);
             if (hasChildren) onToggle(doc.id);
@@ -179,6 +240,8 @@ function TreeNode({
           className={`w-full flex items-center gap-1.5 py-1.5 pr-2 rounded-md text-[13px] transition-all duration-150 ${
             isActive
               ? "bg-white text-stone-900 shadow-[0_1px_2px_rgba(0,0,0,0.05)] font-medium"
+              : dragOver === 'inside'
+              ? "bg-blue-50 text-stone-900 border-2 border-blue-400"
               : "text-stone-600 hover:bg-stone-200/40 hover:text-stone-900"
           }`}
           style={{ paddingLeft: `${12 + depth * 16}px` }}
@@ -269,6 +332,7 @@ function TreeNode({
               onAddChild={onAddChild}
               onDelete={onDelete}
               onDuplicate={onDuplicate}
+              onMove={onMove}
             />
           ))}
         </div>
@@ -396,6 +460,73 @@ export default function WorkspaceTree() {
     [addDocument, navigate],
   );
 
+  // Move a document (drag and drop)
+  const handleMove = useCallback(
+    (sourceId: string, targetId: string, asChild: boolean) => {
+      setDocuments((prev) => {
+        // Helper: find and extract the source document
+        let sourceDoc: WorkspaceDoc | null = null;
+        const removeSource = (nodes: WorkspaceDoc[]): WorkspaceDoc[] => {
+          const result: WorkspaceDoc[] = [];
+          for (const node of nodes) {
+            if (node.id === sourceId) {
+              sourceDoc = node;
+            } else {
+              result.push({
+                ...node,
+                children: node.children ? removeSource(node.children) : undefined,
+              });
+            }
+          }
+          return result;
+        };
+
+        // Helper: insert source as child of target or as sibling before target
+        const insertSource = (
+          nodes: WorkspaceDoc[],
+          source: WorkspaceDoc,
+        ): WorkspaceDoc[] => {
+          const result: WorkspaceDoc[] = [];
+          for (const node of nodes) {
+            if (node.id === targetId) {
+              if (asChild) {
+                // Insert as child of target
+                result.push({
+                  ...node,
+                  children: [...(node.children || []), { ...source, parentId: node.id }],
+                });
+              } else {
+                // Insert before target (as sibling)
+                result.push({ ...source, parentId: node.parentId });
+                result.push(node);
+              }
+            } else {
+              result.push({
+                ...node,
+                children: node.children ? insertSource(node.children, source) : undefined,
+              });
+            }
+          }
+          return result;
+        };
+
+        // Step 1: Remove source from tree
+        const withoutSource = removeSource(prev);
+        if (!sourceDoc) return prev; // Source not found
+
+        // Step 2: Insert source at new location
+        const withSource = insertSource(withoutSource, sourceDoc);
+        return withSource;
+      });
+
+      // Auto-expand target if moved as child
+      if (asChild) {
+        setExpandedDocIds((prev) => new Set(prev).add(targetId));
+      }
+    },
+    [setDocuments],
+  );
+
   return (
     <div className="space-y-0.5">
       {documents.map((doc) => (
@@ -410,6 +541,7 @@ export default function WorkspaceTree() {
           onAddChild={handleAddChild}
           onDelete={handleDelete}
           onDuplicate={handleDuplicate}
+          onMove={handleMove}
         />
       ))}
     </div>

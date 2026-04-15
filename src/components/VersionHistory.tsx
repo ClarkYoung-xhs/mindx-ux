@@ -1,14 +1,13 @@
 import { useState } from "react";
-import { X, Clock, User, ChevronDown } from "lucide-react";
+import { X, Clock, User, ChevronDown, Bot } from "lucide-react";
 import { useLanguage } from "../i18n/LanguageContext";
 
 interface VersionRecord {
   id: string;
   timestamp: string;
   userName: string;
+  userType: "human" | "agent";
   userAvatar?: string;
-  action: string;
-  changes: string[];
 }
 
 interface VersionHistoryProps {
@@ -23,29 +22,31 @@ const mockVersionHistory: VersionRecord[] = [
     id: "v-001",
     timestamp: "2026-04-14 14:30",
     userName: "张三",
-    action: "编辑内容",
-    changes: ["修改了第 3 段落", "添加了 2 张图片"],
+    userType: "human",
   },
   {
     id: "v-002",
     timestamp: "2026-04-14 10:15",
-    userName: "李四",
-    action: "添加评论",
-    changes: ["在第 5 段添加了评论"],
+    userName: "Claude Assistant",
+    userType: "agent",
   },
   {
     id: "v-003",
     timestamp: "2026-04-13 16:45",
-    userName: "王五",
-    action: "编辑标题",
-    changes: ["更新了文档标题"],
+    userName: "李四",
+    userType: "human",
   },
   {
     id: "v-004",
     timestamp: "2026-04-13 09:20",
+    userName: "Research Bot",
+    userType: "agent",
+  },
+  {
+    id: "v-005",
+    timestamp: "2026-04-12 15:30",
     userName: "张三",
-    action: "创建文档",
-    changes: ["创建了空白文档"],
+    userType: "human",
   },
 ];
 
@@ -62,8 +63,6 @@ export default function VersionHistory({
     lang === "zh"
       ? {
           title: "版本历史",
-          action: "操作",
-          changes: "变更",
           restoreVersion: "恢复此版本",
           filterByTime: "时间",
           filterByUser: "编辑人",
@@ -75,8 +74,6 @@ export default function VersionHistory({
         }
       : {
           title: "Version History",
-          action: "Action",
-          changes: "Changes",
           restoreVersion: "Restore this version",
           filterByTime: "Time",
           filterByUser: "Editor",
@@ -157,47 +154,41 @@ export default function VersionHistory({
             {mockVersionHistory.map((version) => (
               <div
                 key={version.id}
-                className="group bg-white border border-stone-200 rounded-lg p-2.5 hover:border-stone-300 hover:shadow-sm transition-all duration-200"
+                className="group bg-white border border-stone-200 rounded-lg p-3 hover:border-stone-300 hover:shadow-sm transition-all duration-200"
               >
                 {/* Version info */}
-                <div className="flex gap-2.5 items-start">
+                <div className="flex gap-3 items-center">
                   <div className="shrink-0">
-                    <div className="w-6 h-6 rounded-full bg-stone-100 flex items-center justify-center">
-                      <User className="w-3 h-3 text-stone-600" />
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center ${
+                      version.userType === "agent" 
+                        ? "bg-purple-100" 
+                        : "bg-stone-100"
+                    }`}>
+                      {version.userType === "agent" ? (
+                        <Bot className="w-4 h-4 text-purple-600" />
+                      ) : (
+                        <User className="w-4 h-4 text-stone-600" />
+                      )}
                     </div>
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <span className="text-xs font-medium text-stone-900">
-                        {version.userName}
-                      </span>
-                      <span className="text-xs text-stone-400">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-sm text-stone-500">
                         {version.timestamp}
                       </span>
+                      <span className={`text-sm font-medium ${
+                        version.userType === "agent"
+                          ? "text-purple-600"
+                          : "text-stone-900"
+                      }`}>
+                        {version.userName}
+                      </span>
                     </div>
-
-                    <p className="text-xs text-stone-600 mb-1">
-                      {version.action}
-                    </p>
-
-                    {/* Changes list */}
-                    {version.changes.length > 0 && (
-                      <div className="space-y-0.5">
-                        {version.changes.map((change, idx) => (
-                          <div
-                            key={idx}
-                            className="text-xs text-stone-500"
-                          >
-                            · {change}
-                          </div>
-                        ))}
-                      </div>
-                    )}
                   </div>
 
                   {/* Restore button on right side */}
-                  <div className="shrink-0 self-center">
+                  <div className="shrink-0">
                     <button className="text-xs font-medium text-stone-600 hover:text-stone-900 py-1.5 px-2.5 bg-stone-50 hover:bg-stone-100 rounded border border-stone-200 transition-colors opacity-0 group-hover:opacity-100 whitespace-nowrap">
                       {copy.restoreVersion}
                     </button>
