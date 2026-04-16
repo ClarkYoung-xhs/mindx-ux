@@ -284,7 +284,7 @@ export default function MemoryTabView({
 
   const recentLogs = extractionLogs.slice(0, 3);
   const showSampleBaseMemory = !whoAmIDocContent.trim() && !goalDocContent.trim();
-  const showSampleSources = rawDataItems.length === 0;
+
 
   const baseWhoAmI = whoAmIDocContent.trim()
     ? compactPreview(whoAmIDocContent, '')
@@ -426,70 +426,39 @@ export default function MemoryTabView({
 
 
   const dataSourceRows = useMemo<DataSourceRowRecord[]>(() => {
-    if (!showSampleSources) {
-      return rawDataItems.map(item => {
-        const linkedInsights = extractedKeyPoints.filter(point =>
-          normalize(point.source).includes(normalize(item.name))
-        );
-        const badge =
-          extractionRunning
-            ? {
-                badgeLabel: '提炼中',
-                badgeClassName: 'border-amber-200 bg-amber-50 text-amber-700',
-              }
-            : linkedInsights.length > 0
-              ? {
-                  badgeLabel: '已沉淀',
-                  badgeClassName: 'border-emerald-200 bg-emerald-50 text-emerald-700',
-                }
-              : {
-                  badgeLabel: '待处理',
-                  badgeClassName: 'border-stone-200 bg-stone-100 text-stone-600',
-                };
-
-        return {
-          id: item.id,
-          name: item.name,
-          typeLabel: item.type,
-          summaryMeta: `${formatBytes(item.size)} · ${item.source === 'file' ? '文件' : '粘贴'}${linkedInsights.length > 0 ? ` · ${linkedInsights.length} 条洞察` : ''}`,
-          uploadedAtLabel: formatDateLabel(item.uploadedAt),
-          badgeLabel: badge.badgeLabel,
-          badgeClassName: badge.badgeClassName,
-          sample: false,
-          onClick: () => onOpenRawData(item),
-        };
-      });
-    }
-
-    return memoryDataSources.slice(0, 4).map(source => {
+    return rawDataItems.map(item => {
+      const linkedInsights = extractedKeyPoints.filter(point =>
+        normalize(point.source).includes(normalize(item.name))
+      );
       const badge =
-        source.status === 'syncing'
+        extractionRunning
           ? {
               badgeLabel: '提炼中',
               badgeClassName: 'border-amber-200 bg-amber-50 text-amber-700',
             }
-          : source.status === 'reviewing'
+          : linkedInsights.length > 0
             ? {
-                badgeLabel: '待复核',
-                badgeClassName: 'border-sky-200 bg-sky-50 text-sky-700',
-              }
-            : {
                 badgeLabel: '已沉淀',
                 badgeClassName: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+              }
+            : {
+                badgeLabel: '待处理',
+                badgeClassName: 'border-stone-200 bg-stone-100 text-stone-600',
               };
 
       return {
-        id: source.id,
-        name: source.name,
-        typeLabel: source.typeLabel,
-        summaryMeta: source.summary,
-        uploadedAtLabel: source.freshness,
+        id: item.id,
+        name: item.name,
+        typeLabel: item.type,
+        summaryMeta: `${formatBytes(item.size)} · ${item.source === 'file' ? '文件' : '粘贴'}${linkedInsights.length > 0 ? ` · ${linkedInsights.length} 条洞察` : ''}`,
+        uploadedAtLabel: formatDateLabel(item.uploadedAt),
         badgeLabel: badge.badgeLabel,
         badgeClassName: badge.badgeClassName,
-        sample: true,
+        sample: false,
+        onClick: () => onOpenRawData(item),
       };
     });
-  }, [extractedKeyPoints, extractionRunning, memoryDataSources, onOpenRawData, rawDataItems, showSampleSources]);
+  }, [extractedKeyPoints, extractionRunning, onOpenRawData, rawDataItems]);
 
 
   return (
