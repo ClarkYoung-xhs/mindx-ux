@@ -956,27 +956,6 @@ export default function SettingsTab(props: SettingsTabProps) {
                     />
                   </div>
 
-                  {/* Extraction Prompt Template */}
-                  <div className="pt-1">
-                    <label className="text-xs font-semibold text-stone-600 mb-1.5 flex items-center justify-between">
-                      <span>
-                        {lang === "zh"
-                          ? "系统提示词 (Prompt Template)"
-                          : "System Prompt Template"}
-                      </span>
-                    </label>
-                    <textarea
-                      value={extractionSkillPrompt}
-                      onChange={(e) => setExtractionSkillPrompt(e.target.value)}
-                      placeholder="You are an expert analyst..."
-                      className="w-full px-3 py-2.5 border border-stone-200 rounded-lg text-[13px] leading-relaxed font-mono focus:outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-200 transition-colors h-48 resize-y"
-                    />
-                    <p className="text-[11px] text-stone-500 mt-1.5 leading-relaxed">
-                      {lang === "zh"
-                        ? "支持的变量：{{LOCALE}} (当前语言), {{WHO_AM_I}} (我的身份信息), {{MY_GOALS}} (我的长期目标)"
-                        : "Supported variables: {{LOCALE}}, {{WHO_AM_I}}, {{MY_GOALS}}"}
-                    </p>
-                  </div>
 
                   {/* Save */}
                   <div className="flex items-center justify-between pt-2">
