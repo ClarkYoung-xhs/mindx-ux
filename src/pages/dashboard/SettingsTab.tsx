@@ -1,27 +1,46 @@
-import React from "react";
+import React, { useState } from "react";
 import { motion } from "motion/react";
 import {
+  Globe,
+  Monitor,
+  Moon,
+  Sun,
+  User as UserIcon,
+  Bell,
+  Lock,
+  LogOut,
+  BrainCircuit,
+  MessageSquare,
   Bot,
-  ArrowLeft,
-  Copy,
-  Check,
-  Shield,
-  Clock,
+  Plug,
+  Terminal,
+  Activity as ActivityIcon,
   Plus,
+  Trash2,
+  Copy,
+  CheckCircle2,
+  AlertCircle,
+  Eye,
+  EyeOff,
+  MoreVertical,
+  Key,
+  Shield,
+  PlayCircle,
+  StopCircle,
+  Wand2,
+  ArrowLeft,
+  Check,
+  Clock,
   Sparkles,
   FileText,
   Database,
   CalendarDays,
-  MoreVertical,
-  StopCircle,
-  Trash2,
   ExternalLink,
-  LogOut,
-  Activity as ActivityIcon,
 } from "lucide-react";
 import { getAgentAvatar } from "../../components/AgentAvatars";
 import { useLanguage } from "../../i18n/LanguageContext";
 import type { Activity, DemoMode, WorkspaceDoc } from "./types";
+import { activeWorkspaceIdGlobal } from "./constants";
 
 interface Agent {
   id: string;
@@ -56,8 +75,6 @@ export interface SettingsTabProps {
   setExtractionApiKey: (v: string) => void;
   extractionBaseUrl: string;
   setExtractionBaseUrl: (v: string) => void;
-  extractionSkillPrompt: string;
-  setExtractionSkillPrompt: (v: string) => void;
   setActiveTab: (tab: string) => void;
 }
 
@@ -86,11 +103,10 @@ export default function SettingsTab(props: SettingsTabProps) {
     setExtractionApiKey,
     extractionBaseUrl,
     setExtractionBaseUrl,
-    extractionSkillPrompt,
-    setExtractionSkillPrompt,
     setActiveTab,
   } = props;
   const { t, lang } = useLanguage();
+  const [isAgentMenuOpen, setIsAgentMenuOpen] = useState(false);
 
   return (
     <motion.div
@@ -232,6 +248,7 @@ export default function SettingsTab(props: SettingsTabProps) {
                       >
                         <MoreVertical className="w-4 h-4" />
                       </button>
+
                       {isAgentMenuOpen && (
                         <>
                           <div
@@ -260,6 +277,7 @@ export default function SettingsTab(props: SettingsTabProps) {
                                 setAgents((prev) =>
                                   prev.filter((a) => a.id !== selectedAgentId),
                                 );
+                                fetch(`/api/agents?id=${selectedAgentId}`, { method: "DELETE" }).catch(() => {});
                                 setSelectedAgentId(null);
                               }}
                               className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
@@ -274,47 +292,6 @@ export default function SettingsTab(props: SettingsTabProps) {
                   </div>
 
                   <div className="space-y-6">
-                    {/* Integration Prompt */}
-                    <div>
-                      <h3 className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                        <Wand2 className="w-3.5 h-3.5" />{" "}
-                        {t("agent.integrationPrompt")}
-                      </h3>
-                      <p className="text-xs text-stone-500 mb-2">
-                        💡{" "}
-                        {lang === "zh"
-                          ? "点击复制按钮，粘贴到你的 Agent 中回车即可。"
-                          : "Click copy, paste into your Agent and hit Enter."}
-                      </p>
-                      <div className="relative">
-                        <div className="bg-stone-50 border border-stone-200 rounded-xl p-4 pr-24 text-sm font-mono text-stone-700 whitespace-pre-wrap max-h-36 overflow-y-auto leading-relaxed">
-                          {generatePrompt(agent.token)}
-                        </div>
-                        <button
-                          onClick={() =>
-                            copyToClipboard(
-                              generatePrompt(agent.token),
-                              `prompt-${agent.id}`,
-                            )
-                          }
-                          className="absolute right-3 bottom-3 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-stone-900 hover:bg-stone-800 text-white text-xs font-medium transition-colors shadow-sm"
-                        >
-                          {copiedStates[`prompt-${agent.id}`] ? (
-                            <>
-                              <Check className="w-3.5 h-3.5" />
-                              {lang === "zh" ? "已复制" : "Copied"}
-                            </>
-                          ) : (
-                            <>
-                              <Copy className="w-3.5 h-3.5" />
-                              {lang === "zh" ? "复制" : "Copy"}
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Agent Token */}
                     <div>
                       <h3 className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-2">
                         {t("agent.token")}
@@ -361,6 +338,18 @@ export default function SettingsTab(props: SettingsTabProps) {
                                       : a,
                                   ),
                                 );
+                                fetch("/api/agents", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({
+                                    workspace_id: activeWorkspaceIdGlobal,
+                                    id: agent.id,
+                                    name: agent.name,
+                                    token: newToken,
+                                    installed_skills: agent.installedSkills,
+                                    connected: agent.connected,
+                                  }),
+                                }).catch(() => {});
                               }}
                               className="p-1.5 rounded-md hover:bg-white hover:shadow-sm text-stone-500 transition-all"
                             >
@@ -645,6 +634,7 @@ export default function SettingsTab(props: SettingsTabProps) {
                                                 (a) => a.id !== agent.id,
                                               ),
                                             );
+                                            fetch(`/api/agents?id=${agent.id}`, { method: "DELETE" }).catch(() => {});
                                           }}
                                           className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
                                         >

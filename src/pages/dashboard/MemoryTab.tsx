@@ -2,37 +2,45 @@ import React from "react";
 import { motion } from "motion/react";
 import MemoryTabView from "../../components/memory-v1/MemoryTabView";
 
-interface MemoryNode {
-  id: string;
-  content: string;
-  source: string;
-  timestamp: string;
-  tags?: string[];
-}
-
-interface RawDataItem {
+type MemoryNode = {
   id: string;
   title: string;
   content: string;
-  type: string;
-  addedAt: string;
-  size: number;
-}
+  createdAt: string;
+  updatedAt: string;
+};
 
-interface ExtractedKeyPoint {
+type RawDataItem = {
   id: string;
-  content: string;
+  name: string;
+  type: string;
+  size: number;
+  uploadedAt: string;
+  source: 'file' | 'paste';
+};
+
+type ExtractedKeyPoint = {
+  id: string;
+  title: string;
+  type: string;
+  text: string;
   source: string;
-  confidence: number;
-  timestamp: string;
-}
+  createdAt: string;
+};
+
+type ExtractionLog = {
+  id: string;
+  text: string;
+  time: string;
+  status: 'done' | 'running' | 'pending';
+};
 
 export interface MemoryTabProps {
   activeMemoryView: "profile" | "rawdata";
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   whoAmIDocContent: string;
   goalDocContent: string;
-  handleOpenProfileEditor: () => void;
+  handleOpenProfileEditor: (key: "whoami" | "goal") => void;
   memoryNodes: MemoryNode[];
   memoryNodeInput: string;
   isMemoryNodesExpanded: boolean;
@@ -46,7 +54,7 @@ export interface MemoryTabProps {
   rawDataItems: RawDataItem[];
   rawDataLoading: boolean;
   extractionRunning: boolean;
-  extractionLogs: string[];
+  extractionLogs: ExtractionLog[];
   setIsPasteModalOpen: (v: boolean) => void;
   setIsRawDataModalOpen: (v: boolean) => void;
   openRawDataInEditor: (item: RawDataItem) => void;

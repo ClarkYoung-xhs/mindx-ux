@@ -108,7 +108,7 @@ export default function Dashboard() {
   const [activeWorkspaceId, setActiveWorkspaceId] = useState(
     initialWorkspaces[0]?.id ?? "w1",
   );
-  const [agents, setAgents] = useState(() => {
+  const [agents, setAgents] = useState<any[]>(() => {
     try {
       const saved = localStorage.getItem("mindx_agents");
       if (saved) return JSON.parse(saved);
@@ -118,6 +118,47 @@ export default function Dashboard() {
   useEffect(() => {
     localStorage.setItem("mindx_agents", JSON.stringify(agents));
   }, [agents]);
+
+  // Fetch agents from DB on mount; migrate local to DB
+  useEffect(() => {
+    fetch(`/api/agents?workspace_id=${activeWorkspaceIdGlobal}`)
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((rows: any[]) => {
+        if (rows.length > 0) {
+          setAgents(
+            rows.map((r) => ({
+              id: r.id,
+              name: r.name,
+              token: r.token,
+              installedSkills: r.installed_skills,
+              connected: r.connected,
+              createdAt: r.created_at,
+              updatedAt: r.updated_at,
+            })),
+          );
+        } else {
+          try {
+            const saved = localStorage.getItem("mindx_agents");
+            const localAgents = saved ? JSON.parse(saved) : (isNewUser ? [] : initialAgents);
+            for (const a of localAgents) {
+              fetch("/api/agents", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  workspace_id: activeWorkspaceIdGlobal,
+                  id: a.id,
+                  name: a.name,
+                  token: a.token,
+                  installed_skills: a.installedSkills || [],
+                  connected: !!a.connected,
+                }),
+              }).catch(() => {});
+            }
+          } catch {}
+        }
+      })
+      .catch(() => {});
+  }, [isNewUser]);
   const [permissions, setPermissions] = useState(() => {
     if (isNewUser) {
       return [
@@ -669,6 +710,44 @@ export default function Dashboard() {
     }
   });
 
+  // Fetch memory nodes from DB on mount; migrate localStorage → DB if DB is empty
+  useEffect(() => {
+    fetch(`/api/memory_nodes?workspace_id=${activeWorkspaceIdGlobal}`)
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((rows: any[]) => {
+        if (rows.length > 0) {
+          setMemoryNodes(
+            rows.map((r) => ({
+              id: r.id,
+              title: r.type,
+              content: r.content,
+              createdAt: r.created_at,
+              updatedAt: r.updated_at,
+            })),
+          );
+        } else {
+          try {
+            const saved = localStorage.getItem("mindx_memory_nodes");
+            const localNodes = saved ? JSON.parse(saved) : [];
+            for (const node of localNodes) {
+              const content = node.content || localStorage.getItem(`mindx_raw_${node.id}`) || "";
+              fetch("/api/memory_nodes", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  workspace_id: activeWorkspaceIdGlobal,
+                  id: node.id,
+                  type: node.title, // using title as type
+                  content: content,
+                }),
+              }).catch(() => {});
+            }
+          } catch {}
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   // Database-backed profile (Who am I + Goal)
   const { profile, updateProfile } = useProfile(activeWorkspaceIdGlobal);
   const whoAmIRaw =
@@ -840,6 +919,17 @@ Analyze the following text strictly from the perspective of "Who am I" and to se
 
     setMemoryNodes((prev) => [...prev, newNode]);
     localStorage.setItem(`mindx_raw_${newNode.id}`, "");
+    // Sync to DB
+    fetch("/api/memory_nodes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        workspace_id: activeWorkspaceIdGlobal,
+        id: newNode.id,
+        type: newNode.title,
+        content: "",
+      }),
+    }).catch(() => {});
     setMemoryNodeInput("");
     setIsMemoryNodesExpanded(false);
   };
@@ -945,6 +1035,18 @@ Analyze the following text strictly from the perspective of "Who am I" and to se
     };
 
     setAgents([newAgent, ...agents]);
+    fetch("/api/agents", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        workspace_id: activeWorkspaceIdGlobal,
+        id: newAgent.id,
+        name: newAgent.name,
+        token: newAgent.token,
+        installed_skills: newAgent.installedSkills,
+        connected: newAgent.connected,
+      }),
+    }).catch(() => {});
 
     const newPermission = {
       id: `p${Date.now()}`,
@@ -1119,6 +1221,19 @@ Analyze the following text strictly from the perspective of "Who am I" and to se
     };
 
     setAgents([newAgent, ...agents]);
+    fetch("/api/agents", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        workspace_id: activeWorkspaceIdGlobal,
+        id: newAgent.id,
+        name: newAgent.name,
+        token: newAgent.token,
+        installed_skills: newAgent.installedSkills,
+        connected: newAgent.connected,
+      }),
+    }).catch(() => {});
+
 
     // Automatically add to the current space as Editor
     const newPermission = {
@@ -1526,8 +1641,6 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                 setExtractionApiKey={setExtractionApiKey}
                 extractionBaseUrl={extractionBaseUrl}
                 setExtractionBaseUrl={setExtractionBaseUrl}
-                extractionSkillPrompt={extractionSkillPrompt}
-                setExtractionSkillPrompt={setExtractionSkillPrompt}
                 setActiveTab={setActiveTab}
               />
             )}
@@ -2207,6 +2320,8 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                       prev.filter((n) => n.id !== nodeEditId),
                     );
                     localStorage.removeItem(`mindx_raw_${nodeEditId}`);
+                    // Sync to DB
+                    fetch(`/api/memory_nodes?id=${nodeEditId}`, { method: "DELETE" }).catch(() => {});
                     setNodeEditId(null);
                   }}
                   className="text-xs text-red-400 hover:text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors"
@@ -2225,6 +2340,7 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                       `mindx_raw_${nodeEditId}`,
                       nodeEditDraft,
                     );
+                    const updateNode = memoryNodes.find((n) => n.id === nodeEditId);
                     setMemoryNodes((prev) =>
                       prev.map((n) =>
                         n.id === nodeEditId
@@ -2236,6 +2352,17 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                           : n,
                       ),
                     );
+                    // Sync to DB
+                    fetch("/api/memory_nodes", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        workspace_id: activeWorkspaceIdGlobal,
+                        id: nodeEditId,
+                        type: updateNode?.title || "Node",
+                        content: nodeEditDraft,
+                      }),
+                    }).catch(() => {});
                     setNodeEditId(null);
                   }}
                   className="text-xs font-bold text-white bg-stone-900 hover:bg-stone-800 px-4 py-1.5 rounded-lg transition-colors"

@@ -47,3 +47,26 @@
 - `src/pages/Dashboard.tsx`
 - `.env.example`
 - `package.json`
+
+## 版本号 / 日期
+**v1.9.0** - 2026-04-17
+
+## 核心变更点 (Core Changes)
+1. **记忆节点和独立 Agent 的后端数据全量持久化**：
+   - 在后端新增 `api/memory_nodes.ts` 和 `api/agents.ts` 来支撑对 Supabase 的直接联通。
+   - 在 `supabase_schema.sql` 增补这两张核心设定业务表的建表规范与结构定义。
+2. **渐进式前端重构与存储兜底自动迁移**：
+   - 前端 Dashboard.tsx 在加载时会优先拉取云端节点数据，若云端为空且带有之前写在 `localStorage` 里的本地缓存，会触发热迁移自动全量推送同步至 DB 中。
+   - 针对所有涉及到 Memory Nodes 和 Agents 的具体 CRUD 操作（新建/编辑/销毁等）全线增补了并发持久化的 API Hook。
+3. **消除历史技术债与核心类型纠偏**：
+   - 清理了存在于 `SettingsTab.tsx` 和 Dashboard 下发过程中因为废除提取引擎引起的陈旧遗留错误（重置 `isAgentMenuOpen` 及 `generatePrompt` 断链报错）。
+   - 拉平了独立拆分组件被隔空调用时的类型定义映射（修正 `MemoryTab.tsx` 中定义的独立声明 Interface 与父级 Dashboard 实参不匹配的 TypeScript `tsc` 报错连带问题）。
+
+## 涉及修改的文件 (File Changes)
+- `supabase_schema.sql`
+- `api/memory_nodes.ts` (NEW)
+- `api/agents.ts` (NEW)
+- `src/pages/Dashboard.tsx`
+- `src/pages/dashboard/SettingsTab.tsx`
+- `src/pages/dashboard/MemoryTab.tsx`
+- `.env.local`

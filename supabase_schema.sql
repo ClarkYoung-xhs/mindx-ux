@@ -66,3 +66,25 @@ CREATE TABLE IF NOT EXISTS documents (
   last_viewed TIMESTAMPTZ,
   last_modified TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- 6. Memory Nodes
+CREATE TABLE IF NOT EXISTS memory_nodes (
+  id TEXT PRIMARY KEY,
+  workspace_id TEXT NOT NULL DEFAULT 'w1',
+  type TEXT NOT NULL,
+  content TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 7. Agents
+CREATE TABLE IF NOT EXISTS agents (
+  id TEXT PRIMARY KEY,
+  workspace_id TEXT NOT NULL DEFAULT 'w1',
+  name TEXT NOT NULL,
+  token TEXT NOT NULL,
+  installed_skills JSONB DEFAULT '[]',
+  connected BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
