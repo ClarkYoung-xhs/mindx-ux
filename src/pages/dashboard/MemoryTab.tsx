@@ -51,6 +51,7 @@ export interface MemoryTabProps {
   setIsRawDataModalOpen: (v: boolean) => void;
   openRawDataInEditor: (item: RawDataItem) => void;
   deleteRawDataItem: (id: string) => void;
+  renameRawDataItem: (id: string, newName: string) => void;
   setIsPricingModalOpen: (v: boolean) => void;
   setIsModelConfigOpen: (v: boolean) => void;
   handleOpenExtractionPicker: () => void;
@@ -80,6 +81,7 @@ export default function MemoryTab({
   setIsRawDataModalOpen,
   openRawDataInEditor,
   deleteRawDataItem,
+  renameRawDataItem,
   setIsPricingModalOpen,
   setIsModelConfigOpen,
   handleOpenExtractionPicker,
@@ -114,6 +116,7 @@ export default function MemoryTab({
         onOpenRawDataModal={() => setIsRawDataModalOpen(true)}
         onOpenRawData={openRawDataInEditor}
         onDeleteRawData={deleteRawDataItem}
+        onRenameRawData={renameRawDataItem}
         onOpenPricing={() => setIsPricingModalOpen(true)}
         onOpenModelConfig={() => setIsModelConfigOpen(true)}
         onOpenExtractionPicker={handleOpenExtractionPicker}

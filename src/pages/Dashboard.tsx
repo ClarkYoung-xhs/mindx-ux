@@ -798,6 +798,17 @@ Analyze the following text strictly from the perspective of "Who am I" and to se
     fetch(`/api/rawdata?id=${id}`, { method: "DELETE" }).catch(() => {});
   };
 
+  const renameRawDataItem = (id: string, newName: string) => {
+    setRawDataItems((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, name: newName } : item)),
+    );
+    fetch("/api/rawdata", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, name: newName }),
+    }).catch(() => {});
+  };
+
   const handleOpenProfileEditor = (key: "whoami" | "goal") => {
     setProfileEditKey(key);
     setProfileEditDraft(
@@ -1556,6 +1567,7 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                 setIsRawDataModalOpen={setIsRawDataModalOpen}
                 openRawDataInEditor={openRawDataInEditor}
                 deleteRawDataItem={deleteRawDataItem}
+                renameRawDataItem={renameRawDataItem}
                 setIsPricingModalOpen={setIsPricingModalOpen}
                 setIsModelConfigOpen={setIsModelConfigOpen}
                 handleOpenExtractionPicker={handleOpenExtractionPicker}

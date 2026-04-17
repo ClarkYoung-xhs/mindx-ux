@@ -3,6 +3,7 @@ import {
   Database,
   FileText,
   MessageSquareText,
+  Pencil,
   Plus,
   Search,
   Sparkles,
@@ -90,6 +91,7 @@ type MemoryTabViewProps = {
   onOpenRawDataModal: () => void;
   onOpenRawData: (item: RawDataItem) => void;
   onDeleteRawData?: (id: string) => void;
+  onRenameRawData?: (id: string, newName: string) => void;
   onOpenPricing: () => void;
   onOpenModelConfig: () => void;
   onOpenExtractionPicker: () => void;
@@ -280,12 +282,14 @@ export default function MemoryTabView({
   onOpenRawDataModal,
   onOpenRawData,
   onDeleteRawData,
+  onRenameRawData,
   onOpenPricing,
   onOpenModelConfig,
   onOpenExtractionPicker,
 }: MemoryTabViewProps) {
   const { memoryAssets, memoryDataSources, memorySourceLinks } = useMindXDemo();
   const [isAllInsightsViewOpen, setIsAllInsightsViewOpen] = useState(false);
+  const [editingRowId, setEditingRowId] = useState<string | null>(null);
 
   const recentLogs = extractionLogs.slice(0, 3);
   const showSampleBaseMemory = !whoAmIDocContent.trim() && !goalDocContent.trim();
@@ -626,7 +630,36 @@ export default function MemoryTabView({
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                          <div className="truncate text-sm font-semibold text-stone-900">{row.name}</div>
+                          {editingRowId === row.id ? (
+                            <input
+                              autoFocus
+                              className="text-sm font-semibold text-stone-900 bg-white border border-stone-300 rounded-md px-2 py-0.5 outline-none focus:border-stone-500 focus:ring-1 focus:ring-stone-300 w-full"
+                              defaultValue={row.name}
+                              onBlur={(e) => {
+                                const v = e.target.value.trim();
+                                if (v && v !== row.name && onRenameRawData) onRenameRawData(row.id, v);
+                                setEditingRowId(null);
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') { (e.target as HTMLInputElement).blur(); }
+                                if (e.key === 'Escape') { setEditingRowId(null); }
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          ) : (
+                            <>
+                              <div className="truncate text-sm font-semibold text-stone-900">{row.name}</div>
+                              {onRenameRawData && !row.sample && (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); setEditingRowId(row.id); }}
+                                  className="opacity-0 group-hover/row:opacity-100 p-0.5 rounded text-stone-400 hover:text-stone-600 transition-all shrink-0"
+                                  title="重命名"
+                                >
+                                  <Pencil className="h-3 w-3" />
+                                </button>
+                              )}
+                            </>
+                          )}
                         </div>
                         <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-stone-500">
                           <span>{row.summaryMeta}</span>
