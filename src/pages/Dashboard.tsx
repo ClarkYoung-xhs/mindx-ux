@@ -624,15 +624,38 @@ export default function Dashboard() {
         .then((rows: any[]) => {
           if (rows.length > 0) {
             setRawDataItems(
-              rows.map((r) => ({
-                id: r.id,
-                name: r.name,
-                type: r.type,
-                size: r.size,
-                uploadedAt: r.created_at,
-                source: r.source as "file" | "paste",
-                content: r.content,
-              })),
+              rows.map((r) => {
+                let content = r.content;
+                // Silent self-healing: if DB content is empty, try to recover from localStorage
+                if (!content) {
+                  const localContent = localStorage.getItem(`mindx_raw_${r.id}`);
+                  if (localContent) {
+                    content = localContent;
+                    fetch("/api/rawdata", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        workspace_id: activeWorkspaceIdGlobal,
+                        id: r.id,
+                        name: r.name,
+                        type: r.type,
+                        size: r.size,
+                        source: r.source,
+                        content: localContent,
+                      }),
+                    }).catch(() => {});
+                  }
+                }
+                return {
+                  id: r.id,
+                  name: r.name,
+                  type: r.type,
+                  size: r.size,
+                  uploadedAt: r.created_at,
+                  source: r.source as "file" | "paste",
+                  content: content,
+                };
+              }),
             );
           } else {
             // DB empty — migrate localStorage items to DB
