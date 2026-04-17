@@ -1,4 +1,5 @@
-import { supabase } from './_supabase';
+import { createClient } from '@supabase/supabase-js';
+const supabase = createClient(process.env.SUPABASE_URL || '', process.env.SUPABASE_ANON_KEY || '');
 import type { IncomingMessage, ServerResponse } from 'http';
 
 type Req = IncomingMessage & { method?: string; query: Record<string, string | string[]>; body: any };
