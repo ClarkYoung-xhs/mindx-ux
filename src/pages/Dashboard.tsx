@@ -792,6 +792,12 @@ Analyze the following text strictly from the perspective of "Who am I" and to se
     );
   };
 
+  const deleteRawDataItem = (id: string) => {
+    setRawDataItems((prev) => prev.filter((item) => item.id !== id));
+    localStorage.removeItem(`mindx_raw_${id}`);
+    fetch(`/api/rawdata?id=${id}`, { method: "DELETE" }).catch(() => {});
+  };
+
   const handleOpenProfileEditor = (key: "whoami" | "goal") => {
     setProfileEditKey(key);
     setProfileEditDraft(
@@ -1549,6 +1555,7 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                 setIsPasteModalOpen={setIsPasteModalOpen}
                 setIsRawDataModalOpen={setIsRawDataModalOpen}
                 openRawDataInEditor={openRawDataInEditor}
+                deleteRawDataItem={deleteRawDataItem}
                 setIsPricingModalOpen={setIsPricingModalOpen}
                 setIsModelConfigOpen={setIsModelConfigOpen}
                 handleOpenExtractionPicker={handleOpenExtractionPicker}

@@ -7,6 +7,7 @@ import {
   Search,
   Sparkles,
   Target,
+  Trash2,
   Upload,
   User,
   Wand2,
@@ -88,6 +89,7 @@ type MemoryTabViewProps = {
   onOpenPasteModal: () => void;
   onOpenRawDataModal: () => void;
   onOpenRawData: (item: RawDataItem) => void;
+  onDeleteRawData?: (id: string) => void;
   onOpenPricing: () => void;
   onOpenModelConfig: () => void;
   onOpenExtractionPicker: () => void;
@@ -277,6 +279,7 @@ export default function MemoryTabView({
   onOpenPasteModal,
   onOpenRawDataModal,
   onOpenRawData,
+  onDeleteRawData,
   onOpenPricing,
   onOpenModelConfig,
   onOpenExtractionPicker,
@@ -570,7 +573,7 @@ export default function MemoryTabView({
 
         {/* Data Sources Table */}
         <div className="overflow-hidden rounded-[1.35rem] border border-stone-200 bg-white shadow-[0_10px_24px_rgba(28,25,23,0.04)]">
-          <div className="grid grid-cols-[minmax(0,1.8fr)_110px_140px_120px] border-b border-stone-200 bg-stone-50/80 px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-400">
+          <div className="grid grid-cols-[minmax(0,1.8fr)_110px_140px_120px_40px] border-b border-stone-200 bg-stone-50/80 px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-400">
             <div>名称</div>
             <div>类型</div>
             <div>处理进度</div>
@@ -609,7 +612,7 @@ export default function MemoryTabView({
               {dataSourceRows.map(row => (
                 <div
                   key={row.id}
-                  className={`grid grid-cols-[minmax(0,1.8fr)_110px_140px_120px] items-center gap-4 px-5 py-4 text-left transition-colors ${
+                  className={`group/row grid grid-cols-[minmax(0,1.8fr)_110px_140px_120px_40px] items-center gap-4 px-5 py-4 text-left transition-colors ${
                     row.sample ? 'bg-stone-50/30' : 'hover:bg-stone-50/70'
                   }`}
                 >
@@ -638,6 +641,17 @@ export default function MemoryTabView({
                     </span>
                   </div>
                   <div className="text-sm text-stone-500">{row.uploadedAtLabel}</div>
+                  <div className="flex justify-end">
+                    {onDeleteRawData && !row.sample && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onDeleteRawData(row.id); }}
+                        className="opacity-0 group-hover/row:opacity-100 p-1.5 rounded-lg text-stone-400 hover:text-red-500 hover:bg-red-50 transition-all"
+                        title="删除"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
