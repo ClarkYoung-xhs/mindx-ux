@@ -75,7 +75,35 @@ import {
   getDemoMode,
 } from "./dashboard/constants";
 
-// All constants, mock data, and utility functions imported from ./dashboard/constants
+const DEFAULT_EXTRACTION_SKILLS = [
+  {
+    id: "profile",
+    name: "Profile",
+    desc: "提炼用户画像、偏好与行为模式",
+    descEn: "Extract user profile, preferences & patterns",
+    repo: "https://github.com/ClarkYoung-xhs/profile-distill-skill",
+    fullContent: "从原始数据中提炼用户画像。\n\n输入：用户上传的所有原始文档（会议纪要、聊天记录、笔记等）\n\n输出：\n• 核心身份：职业、角色、团队定位\n• 专业领域：擅长的技术栈、行业知识\n• 工作风格：决策模式、沟通偏好、协作方式\n• 关注重点：当前阶段的核心关切与目标\n• 价值观与原则：反复体现的理念与底线\n\n处理规则：\n1. 仅基于原始数据推断，不做无依据假设\n2. 如果多份数据有冲突，取最新/最频繁的表述\n3. 输出结构化的 JSON 格式，便于前端展示",
+    fullContentEn: "Extract user profile from raw data.\n\nInput: All uploaded raw documents (meeting notes, chat logs, notes, etc.)\n\nOutput:\n• Core identity: role, position, team\n• Expertise: tech stack, domain knowledge\n• Work style: decision patterns, communication preferences\n• Focus areas: current priorities and goals\n• Values & principles: recurring themes\n\nRules:\n1. Only infer from raw data, no assumptions\n2. Resolve conflicts by recency/frequency\n3. Output structured JSON",
+  },
+  {
+    id: "knowledge-graph",
+    name: "Knowledge Graph",
+    desc: "构建实体关系图谱与知识网络",
+    descEn: "Build entity-relationship graph & knowledge network",
+    repo: null,
+    fullContent: "从原始资料中提取实体与关系，构建知识图谱。\n\n输入：用户上传的所有原始文档\n\n输出：\n• 实体节点：人物、项目、产品、技术、组织\n• 关系边：协作、负责、使用、属于、影响\n• 属性标注：时间、状态、重要程度\n\n处理规则：\n1. 实体去重：同一实体的不同称呼合并\n2. 关系权重：出现频次越高权重越大\n3. 时序标注：标记关系的时间范围\n4. 输出 nodes + edges 的 JSON 结构",
+    fullContentEn: "Extract entities and relationships to build a knowledge graph.\n\nInput: All uploaded raw documents\n\nOutput:\n• Entity nodes: people, projects, products, technologies, organizations\n• Relationship edges: collaborates, responsible for, uses, belongs to, influences\n• Attribute annotations: time, status, importance\n\nRules:\n1. Deduplicate entities with different names\n2. Weight relationships by frequency\n3. Annotate temporal ranges\n4. Output nodes + edges JSON structure",
+  },
+  {
+    id: "action-items",
+    name: "Action Items",
+    desc: "提取待办事项与行动计划",
+    descEn: "Extract action items & plans",
+    repo: null,
+    fullContent: "从原始资料中提取可执行的待办事项。\n\n输入：用户上传的所有原始文档（尤其是会议纪要、沟通记录）\n\n输出：\n• 待办事项：具体的行动描述\n• 负责人：谁需要执行\n• 截止时间：明确或推断的 deadline\n• 优先级：P0/P1/P2/P3\n• 上下文：来源文档和相关背景\n\n处理规则：\n1. 只提取明确的行动承诺，不包含讨论性内容\n2. 如无明确负责人，标记为'待分配'\n3. 按优先级和截止时间排序\n4. 去重：合并重复的待办",
+    fullContentEn: "Extract actionable to-do items from raw data.\n\nInput: All uploaded raw documents (especially meeting notes, chat logs)\n\nOutput:\n• Action items: specific action descriptions\n• Assignee: who needs to execute\n• Deadline: explicit or inferred\n• Priority: P0/P1/P2/P3\n• Context: source document and background\n\nRules:\n1. Only extract explicit commitments, not discussions\n2. Mark unassigned items as 'TBD'\n3. Sort by priority and deadline\n4. Deduplicate merged items",
+  },
+];
 
 export default function Dashboard() {
   const { t, lang } = useLanguage();
@@ -108,6 +136,18 @@ export default function Dashboard() {
   const [activeWorkspaceId, setActiveWorkspaceId] = useState(
     initialWorkspaces[0]?.id ?? "w1",
   );
+  
+  const [extractionSkills, setExtractionSkills] = useState<any[]>(() => {
+    try {
+      const saved = localStorage.getItem("mindx_extraction_skills");
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return DEFAULT_EXTRACTION_SKILLS;
+  });
+  useEffect(() => {
+    localStorage.setItem("mindx_extraction_skills", JSON.stringify(extractionSkills));
+  }, [extractionSkills]);
+
   const [agents, setAgents] = useState<any[]>(() => {
     try {
       const saved = localStorage.getItem("mindx_agents");
@@ -318,6 +358,8 @@ export default function Dashboard() {
     Set<string>
   >(new Set());
   const [selectedExtractionSkill, setSelectedExtractionSkill] = useState<string>("profile");
+  const [editingExtractionSkillId, setEditingExtractionSkillId] = useState<string | null>(null);
+  const [editSkillDraft, setEditSkillDraft] = useState<{name: string, desc: string, fullContent: string}>({name: "", desc: "", fullContent: ""});
   const [expandedSkillId, setExpandedSkillId] = useState<string | null>(null);
   const [docSceneFilter, setDocSceneFilter] = useState<
     "all" | "today" | "unread" | "scheduled" | "webclip" | "memory"
@@ -488,8 +530,12 @@ export default function Dashboard() {
         const whoAmI = localStorage.getItem("mindx_raw_whoami_doc") || "";
         const goal = localStorage.getItem("mindx_raw_goal_doc") || "";
 
-        const prompt =
-          extractionSkillPrompt
+        const activeSkill = extractionSkills.find((s: any) => s.id === selectedExtractionSkill);
+        const skillPromptTpl = activeSkill 
+          ? (lang === "zh" ? activeSkill.fullContent : (activeSkill.fullContentEn || activeSkill.fullContent)) 
+          : "";
+
+        const prompt = skillPromptTpl
             .replace("{{LOCALE}}", lang === "zh" ? "Chinese" : "English")
             .replace("{{WHO_AM_I}}", whoAmI)
             .replace("{{MY_GOALS}}", goal) + `\n\nText:\n${item.content}`;
@@ -780,21 +826,6 @@ export default function Dashboard() {
   const whoAmIDocContent = isProfilePlaceholder(whoAmIRaw) ? "" : whoAmIRaw;
   const goalDocContent = isProfilePlaceholder(goalRaw) ? "" : goalRaw;
 
-  // Extraction Prompt
-  const [extractionSkillPrompt, setExtractionSkillPrompt] = useState(
-    () =>
-      localStorage.getItem("mindx_extraction_prompt") ||
-      `You are an expert analyst. Extract key viewpoints, decision points, directions, or principles from the provided text that align with the user's goals. Return ONLY a valid JSON object with a single property "insights" containing an array of objects, each with "title" and "text" (in {{LOCALE}}).
-IMPORTANT CONTEXT:
-Who am I:
-{{WHO_AM_I}}
-My Goals:
-{{MY_GOALS}}
-Analyze the following text strictly from the perspective of "Who am I" and to serve "My Goals".`,
-  );
-  useEffect(() => {
-    localStorage.setItem("mindx_extraction_prompt", extractionSkillPrompt);
-  }, [extractionSkillPrompt]);
 
   useEffect(() => {
     localStorage.setItem("mindx_memory_nodes", JSON.stringify(memoryNodes));
@@ -2444,83 +2475,158 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                   {lang === "zh" ? "选择蒸馏 Skill" : "Select Distillation Skill"}
                 </div>
                 <div className="space-y-1.5">
-                  {[
-                    {
-                      id: "profile",
-                      name: "Profile",
-                      desc: lang === "zh" ? "提炼用户画像、偏好与行为模式" : "Extract user profile, preferences & patterns",
-                      repo: "https://github.com/ClarkYoung-xhs/profile-distill-skill",
-                      fullContent: lang === "zh"
-                        ? "从原始数据中提炼用户画像。\n\n输入：用户上传的所有原始文档（会议纪要、聊天记录、笔记等）\n\n输出：\n• 核心身份：职业、角色、团队定位\n• 专业领域：擅长的技术栈、行业知识\n• 工作风格：决策模式、沟通偏好、协作方式\n• 关注重点：当前阶段的核心关切与目标\n• 价值观与原则：反复体现的理念与底线\n\n处理规则：\n1. 仅基于原始数据推断，不做无依据假设\n2. 如果多份数据有冲突，取最新/最频繁的表述\n3. 输出结构化的 JSON 格式，便于前端展示"
-                        : "Extract user profile from raw data.\n\nInput: All uploaded raw documents (meeting notes, chat logs, notes, etc.)\n\nOutput:\n• Core identity: role, position, team\n• Expertise: tech stack, domain knowledge\n• Work style: decision patterns, communication preferences\n• Focus areas: current priorities and goals\n• Values & principles: recurring themes\n\nRules:\n1. Only infer from raw data, no assumptions\n2. Resolve conflicts by recency/frequency\n3. Output structured JSON",
-                    },
-                    {
-                      id: "knowledge-graph",
-                      name: "Knowledge Graph",
-                      desc: lang === "zh" ? "构建实体关系图谱与知识网络" : "Build entity-relationship graph & knowledge network",
-                      repo: null as string | null,
-                      fullContent: lang === "zh"
-                        ? "从原始资料中提取实体与关系，构建知识图谱。\n\n输入：用户上传的所有原始文档\n\n输出：\n• 实体节点：人物、项目、产品、技术、组织\n• 关系边：协作、负责、使用、属于、影响\n• 属性标注：时间、状态、重要程度\n\n处理规则：\n1. 实体去重：同一实体的不同称呼合并\n2. 关系权重：出现频次越高权重越大\n3. 时序标注：标记关系的时间范围\n4. 输出 nodes + edges 的 JSON 结构"
-                        : "Extract entities and relationships to build a knowledge graph.\n\nInput: All uploaded raw documents\n\nOutput:\n• Entity nodes: people, projects, products, technologies, organizations\n• Relationship edges: collaborates, responsible for, uses, belongs to, influences\n• Attribute annotations: time, status, importance\n\nRules:\n1. Deduplicate entities with different names\n2. Weight relationships by frequency\n3. Annotate temporal ranges\n4. Output nodes + edges JSON structure",
-                    },
-                    {
-                      id: "action-items",
-                      name: "Action Items",
-                      desc: lang === "zh" ? "提取待办事项与行动计划" : "Extract action items & plans",
-                      repo: null as string | null,
-                      fullContent: lang === "zh"
-                        ? "从原始资料中提取可执行的待办事项。\n\n输入：用户上传的所有原始文档（尤其是会议纪要、沟通记录）\n\n输出：\n• 待办事项：具体的行动描述\n• 负责人：谁需要执行\n• 截止时间：明确或推断的 deadline\n• 优先级：P0/P1/P2/P3\n• 上下文：来源文档和相关背景\n\n处理规则：\n1. 只提取明确的行动承诺，不包含讨论性内容\n2. 如无明确负责人，标记为'待分配'\n3. 按优先级和截止时间排序\n4. 去重：合并重复的待办"
-                        : "Extract actionable to-do items from raw data.\n\nInput: All uploaded raw documents (especially meeting notes, chat logs)\n\nOutput:\n• Action items: specific action descriptions\n• Assignee: who needs to execute\n• Deadline: explicit or inferred\n• Priority: P0/P1/P2/P3\n• Context: source document and background\n\nRules:\n1. Only extract explicit commitments, not discussions\n2. Mark unassigned items as 'TBD'\n3. Sort by priority and deadline\n4. Deduplicate merged items",
-                    },
-                  ].map((skill) => (
+                  {extractionSkills.map((skill) => (
                     <div key={skill.id}>
-                      <label
-                        className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all border ${
-                          selectedExtractionSkill === skill.id
-                            ? "border-blue-200 bg-blue-50/50"
-                            : "border-stone-100 hover:border-stone-200 hover:bg-stone-50/50"
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name="extraction-skill"
-                          value={skill.id}
-                          checked={selectedExtractionSkill === skill.id}
-                          onChange={() => setSelectedExtractionSkill(skill.id)}
-                          className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                        />
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center justify-between">
-                            <div className="text-xs font-semibold text-stone-800">{skill.name}</div>
+                      {editingExtractionSkillId === skill.id ? (
+                        <div className="p-3 rounded-xl border border-blue-200 bg-blue-50/30 space-y-2.5">
+                          <input
+                            autoFocus
+                            type="text"
+                            value={editSkillDraft.name}
+                            onChange={(e) => setEditSkillDraft({ ...editSkillDraft, name: e.target.value })}
+                            placeholder={lang === "zh" ? "Skill 名称" : "Skill Name"}
+                            className="w-full text-xs p-1.5 border border-stone-200 rounded focus:border-blue-400 focus:outline-none bg-white font-semibold"
+                          />
+                          <input
+                            type="text"
+                            value={editSkillDraft.desc}
+                            onChange={(e) => setEditSkillDraft({ ...editSkillDraft, desc: e.target.value })}
+                            placeholder={lang === "zh" ? "简介 (如: 提取行动项)" : "Description"}
+                            className="w-full text-[10px] p-1.5 border border-stone-200 rounded focus:border-blue-400 focus:outline-none bg-white text-stone-500"
+                          />
+                          <textarea
+                            value={editSkillDraft.fullContent}
+                            onChange={(e) => setEditSkillDraft({ ...editSkillDraft, fullContent: e.target.value })}
+                            placeholder={lang === "zh" ? "系统提示词设定及规则..." : "Prompt roles and rules..."}
+                            rows={5}
+                            className="w-full text-[10px] py-1 px-1.5 border border-stone-200 rounded focus:border-blue-400 focus:outline-none bg-white text-stone-600 resize-none font-mono"
+                          />
+                          <div className="flex justify-end gap-2 pt-1">
                             <button
                               type="button"
-                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setExpandedSkillId(prev => prev === skill.id ? null : skill.id); }}
-                              className="text-[10px] text-blue-500 hover:text-blue-700 transition-colors shrink-0"
+                              onClick={() => {
+                                // If it was just created (empty name/content) and canceled, we might want to remove it, but for simplicity just cancel
+                                setEditingExtractionSkillId(null);
+                              }}
+                              className="px-2 py-1 text-[10px] font-medium text-stone-500 hover:text-stone-700 bg-stone-100 hover:bg-stone-200 rounded transition-colors"
                             >
-                              {expandedSkillId === skill.id ? (lang === "zh" ? "收起" : "Collapse") : (lang === "zh" ? "查看详情" : "Details")}
+                              {lang === "zh" ? "取消" : "Cancel"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setExtractionSkills(prev => 
+                                  prev.map(s => s.id === skill.id 
+                                    ? { ...s, name: editSkillDraft.name, desc: editSkillDraft.desc, fullContent: editSkillDraft.fullContent }
+                                    : s
+                                  )
+                                );
+                                setEditingExtractionSkillId(null);
+                              }}
+                              className="px-2 py-1 text-[10px] font-medium text-white bg-blue-500 hover:bg-blue-600 rounded transition-colors"
+                            >
+                              {lang === "zh" ? "保存" : "Save"}
                             </button>
                           </div>
-                          <div className="text-[10px] text-stone-400">{skill.desc}</div>
-                          {skill.repo && (
-                            <a
-                              href={skill.repo}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                              className="inline-flex items-center gap-1 mt-1 text-[10px] text-blue-500 hover:text-blue-700 transition-colors"
-                            >
-                              ↗ GitHub
-                            </a>
+                        </div>
+                      ) : (
+                        <>
+                          <label
+                            className={`flex items-start gap-3 p-3 rounded-xl cursor-pointer transition-all border ${
+                              selectedExtractionSkill === skill.id
+                                ? "border-blue-200 bg-blue-50/50"
+                                : "border-stone-100 hover:border-stone-200 hover:bg-stone-50/50"
+                            }`}
+                          >
+                            <div className="pt-0.5">
+                              <input
+                                type="radio"
+                                name="extraction-skill"
+                                value={skill.id}
+                                checked={selectedExtractionSkill === skill.id}
+                                onChange={() => setSelectedExtractionSkill(skill.id)}
+                                className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                              />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center justify-between">
+                                <div className="text-xs font-semibold text-stone-800">{skill.name}</div>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      setEditSkillDraft({ name: skill.name, desc: skill.desc || skill.descEn || "", fullContent: skill.fullContent || "" });
+                                      setEditingExtractionSkillId(skill.id);
+                                    }}
+                                    className="text-[10px] text-stone-400 hover:text-blue-500 transition-colors"
+                                  >
+                                    ✏️
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      if (confirm(lang === "zh" ? "确定删除这个 Skill 吗？" : "Delete this skill?")) {
+                                        setExtractionSkills(prev => prev.filter(s => s.id !== skill.id));
+                                        if (selectedExtractionSkill === skill.id) {
+                                          setSelectedExtractionSkill("profile"); // fallback
+                                        }
+                                      }
+                                    }}
+                                    className="text-[10px] text-stone-400 hover:text-red-500 transition-colors"
+                                  >
+                                    🗑️
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setExpandedSkillId(prev => prev === skill.id ? null : skill.id); }}
+                                    className="text-[10px] text-blue-500 hover:text-blue-700 transition-colors shrink-0 ml-1"
+                                  >
+                                    {expandedSkillId === skill.id ? (lang === "zh" ? "收起" : "Collapse") : (lang === "zh" ? "查看详情" : "Details")}
+                                  </button>
+                                </div>
+                              </div>
+                              <div className="text-[10px] text-stone-400 mt-0.5">{lang === "zh" ? skill.desc : (skill.descEn || skill.desc)}</div>
+                              {skill.repo && (
+                                <a
+                                  href={skill.repo}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="inline-flex items-center gap-1 mt-1 text-[10px] text-blue-500 hover:text-blue-700 transition-colors"
+                                >
+                                  ↗ GitHub
+                                </a>
+                              )}
+                            </div>
+                          </label>
+                          {expandedSkillId === skill.id && !editingExtractionSkillId && (
+                            <div className="mt-1 ml-7 mr-1 p-3 rounded-lg bg-stone-50 border border-stone-100 text-[11px] text-stone-600 leading-relaxed whitespace-pre-wrap">
+                              {lang === "zh" ? skill.fullContent : (skill.fullContentEn || skill.fullContent)}
+                            </div>
                           )}
-                        </div>
-                      </label>
-                      {expandedSkillId === skill.id && (
-                        <div className="mt-1 ml-7 mr-1 p-3 rounded-lg bg-stone-50 border border-stone-100 text-[11px] text-stone-600 leading-relaxed whitespace-pre-wrap">
-                          {skill.fullContent}
-                        </div>
+                        </>
                       )}
                     </div>
                   ))}
+                  {/* Add New Skill Button */}
+                  {!editingExtractionSkillId && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newId = `skill-${Date.now()}`;
+                        setExtractionSkills(prev => [...prev, { id: newId, name: "", desc: "", fullContent: "" }]);
+                        setEditSkillDraft({ name: "", desc: "", fullContent: "" });
+                        setEditingExtractionSkillId(newId);
+                      }}
+                      className="w-full mt-2 py-2 border border-dashed border-stone-200 rounded-xl text-xs text-stone-500 hover:text-stone-700 hover:border-stone-300 hover:bg-stone-50 transition-colors flex items-center justify-center gap-1"
+                    >
+                      <span className="text-lg leading-none">+</span> {lang === "zh" ? "新增 Skill" : "New Skill"}
+                    </button>
+                  )}
                 </div>
               </div>
 
