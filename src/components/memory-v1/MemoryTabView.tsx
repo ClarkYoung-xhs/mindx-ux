@@ -578,9 +578,25 @@ export default function MemoryTabView({
           </div>
 
           {rawDataLoading ? (
-            <div className="px-6 py-12 text-center">
-              <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-stone-200 border-t-stone-500" />
-              <div className="mt-3 text-sm font-medium text-stone-400">加载中…</div>
+            <div className="divide-y divide-stone-100">
+              {[0, 1, 2].map(i => (
+                <div
+                  key={i}
+                  className="grid grid-cols-[minmax(0,1.8fr)_110px_140px_120px] items-center gap-4 px-5 py-4"
+                  style={{ animationDelay: `${i * 120}ms` }}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="h-9 w-9 rounded-lg bg-stone-100 animate-pulse" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-3.5 rounded-full bg-stone-100 animate-pulse" style={{ width: `${70 - i * 12}%`, animationDelay: `${i * 120}ms` }} />
+                      <div className="h-2.5 rounded-full bg-stone-50 animate-pulse" style={{ width: `${45 - i * 8}%`, animationDelay: `${i * 120 + 60}ms` }} />
+                    </div>
+                  </div>
+                  <div className="h-3 w-16 rounded-full bg-stone-100 animate-pulse" style={{ animationDelay: `${i * 120 + 40}ms` }} />
+                  <div className="h-5 w-14 rounded-full bg-stone-50 animate-pulse" style={{ animationDelay: `${i * 120 + 80}ms` }} />
+                  <div className="h-3 w-16 rounded-full bg-stone-100 animate-pulse" style={{ animationDelay: `${i * 120 + 100}ms` }} />
+                </div>
+              ))}
             </div>
           ) : dataSourceRows.length === 0 ? (
             <div className="px-6 py-12 text-center">
