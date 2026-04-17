@@ -82,6 +82,7 @@ type MemoryTabViewProps = {
   extractedKeyPoints: ExtractedKeyPoint[];
   onOpenKeyPointsDocument: () => void;
   rawDataItems: RawDataItem[];
+  rawDataLoading?: boolean;
   extractionRunning: boolean;
   extractionLogs: ExtractionLog[];
   onOpenPasteModal: () => void;
@@ -270,6 +271,7 @@ export default function MemoryTabView({
   extractedKeyPoints,
   onOpenKeyPointsDocument,
   rawDataItems,
+  rawDataLoading,
   extractionRunning,
   extractionLogs,
   onOpenPasteModal,
@@ -575,7 +577,12 @@ export default function MemoryTabView({
             <div>更新时间</div>
           </div>
 
-          {dataSourceRows.length === 0 ? (
+          {rawDataLoading ? (
+            <div className="px-6 py-12 text-center">
+              <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-stone-200 border-t-stone-500" />
+              <div className="mt-3 text-sm font-medium text-stone-400">加载中…</div>
+            </div>
+          ) : dataSourceRows.length === 0 ? (
             <div className="px-6 py-12 text-center">
               <Database className="mx-auto h-8 w-8 text-stone-300" />
               <div className="mt-3 text-sm font-medium text-stone-500">还没有数据源</div>

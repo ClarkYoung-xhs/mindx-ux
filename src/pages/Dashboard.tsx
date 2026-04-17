@@ -571,10 +571,12 @@ export default function Dashboard() {
       content?: string;
     }[]
   >([]);
+  const [rawDataLoading, setRawDataLoading] = useState(true);
 
   // Fetch raw data from DB on mount; migrate localStorage → DB if DB is empty
   useEffect(() => {
     const fetchRawData = () => {
+      setRawDataLoading(true);
       fetch(`/api/rawdata?workspace_id=${activeWorkspaceIdGlobal}`)
         .then((r) => (r.ok ? r.json() : Promise.reject()))
         .then((rows: any[]) => {
@@ -620,7 +622,8 @@ export default function Dashboard() {
             } catch {}
           }
         })
-        .catch(() => {});
+        .catch(() => {})
+        .finally(() => setRawDataLoading(false));
     };
     fetchRawData();
     // Poll every 30s + visibility change for external updates
@@ -1540,6 +1543,7 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                 extractedKeyPoints={extractedKeyPoints}
                 handleOpenKeyPointsDocument={handleOpenKeyPointsDocument}
                 rawDataItems={rawDataItems}
+                rawDataLoading={rawDataLoading}
                 extractionRunning={extractionRunning}
                 extractionLogs={extractionLogs}
                 setIsPasteModalOpen={setIsPasteModalOpen}

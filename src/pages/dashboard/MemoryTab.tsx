@@ -44,6 +44,7 @@ export interface MemoryTabProps {
   extractedKeyPoints: ExtractedKeyPoint[];
   handleOpenKeyPointsDocument: () => void;
   rawDataItems: RawDataItem[];
+  rawDataLoading: boolean;
   extractionRunning: boolean;
   extractionLogs: string[];
   setIsPasteModalOpen: (v: boolean) => void;
@@ -71,6 +72,7 @@ export default function MemoryTab({
   extractedKeyPoints,
   handleOpenKeyPointsDocument,
   rawDataItems,
+  rawDataLoading,
   extractionRunning,
   extractionLogs,
   setIsPasteModalOpen,
@@ -103,6 +105,7 @@ export default function MemoryTab({
         extractedKeyPoints={extractedKeyPoints}
         onOpenKeyPointsDocument={handleOpenKeyPointsDocument}
         rawDataItems={rawDataItems}
+        rawDataLoading={rawDataLoading}
         extractionRunning={extractionRunning}
         extractionLogs={extractionLogs}
         onOpenPasteModal={() => setIsPasteModalOpen(true)}
