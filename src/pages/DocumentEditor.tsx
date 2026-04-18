@@ -835,40 +835,10 @@ export default function DocumentEditor() {
       return [
         {
           id: "p1",
-          text: "## Q2 产品迭代计划",
-          author: currentUserName,
-          authorType: "human",
-        },
-        {
-          id: "p2",
-          text: "5月底前完成核心UI重构，由设计部牵头",
-          author: currentUserName,
-          authorType: "human",
-        },
-        {
-          id: "p3",
-          text: "## 客户 A 反馈汇总",
-          author: currentUserName,
-          authorType: "human",
-        },
-        {
-          id: "p4",
-          text: "客户核心诉求：性能优化、数据安全、多端协同",
-          author: currentUserName,
-          authorType: "human",
-        },
-        {
-          id: "p5",
-          text: "## 行业竞品分析报告",
-          author: currentUserName,
-          authorType: "human",
-        },
-        {
-          id: "p6",
-          text: "竞品在移动端体验上更流畅，我们的差异化优势在于AI原生协作",
-          author: currentUserName,
-          authorType: "human",
-        },
+          text: localStorage.getItem("mindx_lang") === "zh" ? "## 已提炼洞察摘要\n加载中..." : "## Extracted Insights\nLoading...",
+          author: "System",
+          authorType: "agent",
+        }
       ];
     }
 
@@ -1114,6 +1084,40 @@ export default function DocumentEditor() {
       (window as any).__profileSaveTimer = setTimeout(() => {
         updateProfile(profileKey, content);
       }, 1000);
+    }
+
+    // Dynamic fetching for keypoints doc
+    if (source === "keypoints_doc" && paragraphs.length === 1 && paragraphs[0].text.includes("Loading...")) {
+      const activeWorkspaceIdGlobal = localStorage.getItem("mindx_workspace_id") || "w1";
+      fetch(`/api/keypoints?workspace_id=${activeWorkspaceIdGlobal}`)
+        .then((res) => res.json())
+        .then((data: any[]) => {
+          if (!data || data.length === 0) {
+            setParagraphs([{
+              id: "p1",
+              text: localStorage.getItem("mindx_lang") === "zh" ? "## 知识库暂空\n请在工作台导入并提炼文档以生成画像与分析结论。" : "## Empty Knowledge Base\nImport and extract documents to yield insights and behavior anchors.",
+              author: "System",
+              authorType: "agent" as const
+            }]);
+          } else {
+            const result: any[] = [{ id: "p1", text: "## Knowledge Report (Profile Signals)\n", author: "System", authorType: "agent" as const }];
+            data.forEach((kp, idx) => {
+              result.push({
+                id: `kp-${idx}-t`,
+                text: `### [${kp.type}] ${kp.title || kp.text}`,
+                author: "Agent",
+                authorType: "agent" as const
+              });
+              if (kp.context) {
+                result.push({ id: `kp-${idx}-c`, text: `**场景设定**: ${kp.context}`, author: "Agent", authorType: "agent" as const });
+              }
+              if (kp.original_quote) {
+                result.push({ id: `kp-${idx}-q`, text: `> ${kp.original_quote}`, author: "Agent", authorType: "agent" as const });
+              }
+            });
+            setParagraphs(result);
+          }
+        }).catch(() => {});
     }
   }, [paragraphs, isProfileSource, profileLoading, profileKey, updateProfile]);
 
