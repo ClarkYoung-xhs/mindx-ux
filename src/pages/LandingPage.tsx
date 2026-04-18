@@ -47,13 +47,13 @@ export default function LandingPage() {
     localStorage.setItem('mindx_workspace_id', wsId);
     localStorage.setItem('mindx_user_name', userName);
     setShowAuth(false);
-    navigate('/dashboard?onboarding=true');
+    window.location.href = '/dashboard?onboarding=true';
   };
 
   useEffect(() => {
     const savedEmail = localStorage.getItem('mindx_logged_in');
     if (savedEmail) {
-      navigate('/dashboard');
+      window.location.href = '/dashboard';
     }
   }, []);
 

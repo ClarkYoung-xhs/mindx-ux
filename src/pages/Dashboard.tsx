@@ -34,6 +34,9 @@ import {
   Brain,
   Database,
   MessageSquareText,
+  Menu,
+  Command,
+  ArrowRight,
 } from "lucide-react";
 import WorkspaceSwitcher from "../components/WorkspaceSwitcher";
 import { useMindXDemo } from "../data/mindxDemoContext";
@@ -1551,6 +1554,18 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
               title={t("sidebar.settings")}
             >
               <Settings className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => {
+                localStorage.removeItem('mindx_logged_in');
+                localStorage.removeItem('mindx_workspace_id');
+                localStorage.removeItem('mindx_user_name');
+                window.location.href = '/';
+              }}
+              className="p-1.5 rounded-md text-stone-400 hover:text-red-500 transition-colors"
+              title={lang === "zh" ? "退出登录" : "Sign Out"}
+            >
+              <LogOut className="w-4 h-4" />
             </button>
           </div>
         </div>
