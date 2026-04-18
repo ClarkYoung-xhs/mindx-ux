@@ -2594,17 +2594,6 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                                 </div>
                               </div>
                               <div className="text-[10px] text-stone-400 mt-0.5">{lang === "zh" ? skill.desc : (skill.descEn || skill.desc)}</div>
-                              {skill.repo && (
-                                <a
-                                  href={skill.repo}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="inline-flex items-center gap-1 mt-1 text-[10px] text-blue-500 hover:text-blue-700 transition-colors"
-                                >
-                                  ↗ GitHub
-                                </a>
-                              )}
                             </div>
                           </label>
                           {expandedSkillId === skill.id && !editingExtractionSkillId && (
