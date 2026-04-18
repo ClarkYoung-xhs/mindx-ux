@@ -535,7 +535,11 @@ export default function Dashboard() {
           ? (lang === "zh" ? activeSkill.fullContent : (activeSkill.fullContentEn || activeSkill.fullContent)) 
           : "";
 
-        const prompt = skillPromptTpl
+        const baseInstruction = lang === "zh"
+          ? `\n\n【核心约束】：\n1. 请严格围绕上述任务进行分析提取。\n2. 你的回答必须是合法的 JSON 格式！必须包含一个唯一的根级属性 "insights"，其值为数组，数组每一项都必须包含 "type" (短分类名词) 和 "text" (详细洞察)。不要返回除 JSON 之外的任何寒暄文本。`
+          : `\n\n[CORE CONSTRAINT]:\n1. Strictly perform the analysis on the task above.\n2. You MUST return ONLY a valid JSON object. It MUST contain a single root property "insights" which is an array of objects. Each object MUST have a "type" (short category) and "text" (detailed insight). Do not return any other text.`;
+
+        const prompt = skillPromptTpl + baseInstruction
             .replace("{{LOCALE}}", lang === "zh" ? "Chinese" : "English")
             .replace("{{WHO_AM_I}}", whoAmI)
             .replace("{{MY_GOALS}}", goal) + `\n\nText:\n${item.content}`;
