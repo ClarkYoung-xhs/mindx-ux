@@ -438,95 +438,144 @@ export default function MemoryTabView({
   return (
     <div className="space-y-8 pb-12">
 
-      {/* ═══════════════════ PROFILE — 萃取给 Agent 读的数据 ═══════════════════ */}
+      {/* ═══════════════════ PROFILE ENGINE — 行为预测引擎 ═══════════════════ */}
       {activeMemoryView === 'profile' && (
-      <section className="space-y-6">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-400">Profile</div>
-            <h3 className="mt-1 text-xl font-semibold tracking-tight text-stone-900">萃取数据</h3>
-            <p className="mt-1 text-xs text-stone-400">从原始数据中蒸馏出的结构化信息，供 Agent 随时读取</p>
+      <section className="space-y-8">
+        {/* Engine Header */}
+        <div className="relative overflow-hidden rounded-2xl border border-stone-200 bg-gradient-to-br from-stone-900 via-stone-800 to-stone-900 px-8 py-7">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(139,92,246,0.15),transparent_60%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(16,185,129,0.1),transparent_60%)]" />
+          <div className="relative z-10">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="h-6 w-6 rounded-lg bg-white/10 flex items-center justify-center">
+                <Brain className="h-3.5 w-3.5 text-violet-300" />
+              </div>
+              <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-violet-300/80">Profile Engine</div>
+            </div>
+            <h3 className="text-xl font-bold tracking-tight text-white">行为预测引擎</h3>
+            <p className="mt-1.5 text-sm text-stone-400 max-w-2xl">
+              不存常识，只存大模型不知道的、独属于你的行为特征。从原始数据中蒸馏出行为信号，让 Agent 能精准预测你的下一步决策。
+            </p>
+            {extractedKeyPoints.length > 0 && (
+              <div className="mt-4 flex items-center gap-6">
+                {[
+                  { label: '偏好', type: 'preference', color: 'text-emerald-400' },
+                  { label: '判断', type: 'judgment', color: 'text-blue-400' },
+                  { label: '选择', type: 'choice', color: 'text-amber-400' },
+                  { label: '决策', type: 'decision', color: 'text-purple-400' },
+                ].map(d => {
+                  const count = extractedKeyPoints.filter(p => p.type?.toLowerCase() === d.type).length;
+                  return (
+                    <div key={d.type} className="flex items-center gap-1.5">
+                      <span className={`text-lg font-bold ${d.color}`}>{count}</span>
+                      <span className="text-xs text-stone-500">{d.label}</span>
+                    </div>
+                  );
+                })}
+                <div className="flex items-center gap-1.5 border-l border-stone-700 pl-6">
+                  <span className="text-lg font-bold text-white">{extractedKeyPoints.length}</span>
+                  <span className="text-xs text-stone-500">总信号</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Base Memory Cards */}
-        <div className="grid gap-4 md:grid-cols-3">
-          <BaseMemoryCard
-            icon={<User className="h-5 w-5" />}
-            eyebrow="Identity"
-            title="关于我"
-            meta="Who am I"
-            previewType="memory"
-            previewItems={[{ title: '画像摘要', body: baseWhoAmI }]}
-            onClick={() => onEditProfile('whoami')}
-          />
-          <BaseMemoryCard
-            icon={<Target className="h-5 w-5" />}
-            eyebrow="Goals"
-            title="我的目标"
-            meta="Goal"
-            previewType="goals"
-            previewItems={baseGoals.map((goal, index) => ({ label: String(index + 1), title: goal }))}
-            onClick={() => onEditProfile('goal')}
-          />
-          <BaseMemoryCard
-            icon={<Sparkles className="h-5 w-5" />}
-            eyebrow="Knowledge"
-            title="知识摘要"
-            meta={
-              extractedKeyPoints.length > 0
-                ? `${extractedKeyPoints.length} 张卡片`
-                : allInsightKnowledgeCards.length > 0
-                ? `${Math.min(allInsightKnowledgeCards.length, 6)} 张卡片`
-                : '等待首批卡片'
-            }
-            previewType="knowledge"
-            previewItems={knowledgeSummary.map(item => ({ title: item }))}
-            onClick={onOpenKeyPointsDocument}
-          />
+        {/* ── Seed Layer: Identity Cards ── */}
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <div className="h-1 w-1 rounded-full bg-stone-400" />
+            <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-stone-400">Seed Identity · 种子档案</span>
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            <BaseMemoryCard
+              icon={<User className="h-5 w-5" />}
+              eyebrow="Role"
+              title="职业身份"
+              meta="Professional Role"
+              previewType="memory"
+              previewItems={[{ title: '身份档案', body: baseWhoAmI }]}
+              onClick={() => onEditProfile('whoami')}
+            />
+            <BaseMemoryCard
+              icon={<Target className="h-5 w-5" />}
+              eyebrow="Goal"
+              title="当前目标"
+              meta="Current Goal"
+              previewType="goals"
+              previewItems={baseGoals.map((goal, index) => ({ label: String(index + 1), title: goal }))}
+              onClick={() => onEditProfile('goal')}
+            />
+            <BaseMemoryCard
+              icon={<Sparkles className="h-5 w-5" />}
+              eyebrow="Engine"
+              title="行为信号库"
+              meta={
+                extractedKeyPoints.length > 0
+                  ? `${extractedKeyPoints.length} 条信号`
+                  : '等待首批信号'
+              }
+              previewType="knowledge"
+              previewItems={knowledgeSummary.map(item => ({ title: item }))}
+              onClick={onOpenKeyPointsDocument}
+            />
+          </div>
         </div>
 
-        {/* Profile 4-Dimension Signal Cards */}
+        {/* ── Engine Layer: 4-Dimension Behavioral Signals ── */}
         {extractedKeyPoints.length > 0 && (
-          <div className="space-y-8 mt-8">
+          <div>
+            <div className="flex items-center gap-2 mb-5">
+              <div className="h-1 w-1 rounded-full bg-stone-400" />
+              <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-stone-400">Behavioral Signals · 行为信号</span>
+            </div>
+            <div className="space-y-6">
             {[
-              { type: 'preference', label: '偏好', desc: '对某类问题的倾向，未触发的决策', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-              { type: 'judgment', label: '判断', desc: '对特定问题的理解与结论', color: 'bg-blue-50 text-blue-700 border-blue-200' },
-              { type: 'choice', label: '选择', desc: '在具体情境下做了什么或放弃了什么', color: 'bg-amber-50 text-amber-700 border-amber-200' },
-              { type: 'decision', label: '决策', desc: '承诺了什么，基于什么约束', color: 'bg-purple-50 text-purple-700 border-purple-200' },
+              { type: 'preference', label: '偏好 Preference', desc: '无明确对错时的感性/理性倾向', icon: '❤️', borderColor: 'border-l-emerald-500', bgColor: 'bg-emerald-50', textColor: 'text-emerald-700', badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
+              { type: 'judgment', label: '判断 Judgment', desc: '评估好坏时的客观价值标准', icon: '⚖️', borderColor: 'border-l-blue-500', bgColor: 'bg-blue-50', textColor: 'text-blue-700', badgeColor: 'bg-blue-100 text-blue-800 border-blue-200' },
+              { type: 'choice', label: '选择 Choice', desc: '面对路径分歧时的路线轨迹', icon: '🔀', borderColor: 'border-l-amber-500', bgColor: 'bg-amber-50', textColor: 'text-amber-700', badgeColor: 'bg-amber-100 text-amber-800 border-amber-200' },
+              { type: 'decision', label: '决策 Decision', desc: '最终落实的行动指令', icon: '⚡', borderColor: 'border-l-purple-500', bgColor: 'bg-purple-50', textColor: 'text-purple-700', badgeColor: 'bg-purple-100 text-purple-800 border-purple-200' },
             ].map((pt) => {
               const pointsForType = extractedKeyPoints.filter(p => p.type?.toLowerCase() === pt.type || p.type === pt.label);
               if (pointsForType.length === 0) return null;
               
               return (
-                <div key={pt.type} className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <span className={`px-2.5 py-1 text-xs font-semibold rounded-md border ${pt.color}`}>
-                      {pt.label}
-                    </span>
-                    <span className="text-sm text-stone-500">{pt.desc}</span>
+                <div key={pt.type} className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-base">{pt.icon}</span>
+                      <span className={`px-2.5 py-1 text-xs font-bold rounded-md border ${pt.badgeColor}`}>
+                        {pt.label}
+                      </span>
+                      <span className="text-xs text-stone-400">{pt.desc}</span>
+                    </div>
+                    <span className={`text-xs font-semibold ${pt.textColor}`}>{pointsForType.length} 条</span>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {pointsForType.map(point => (
-                      <div key={point.id} className="relative flex flex-col justify-between overflow-hidden rounded-[1.25rem] border border-stone-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md cursor-pointer" onClick={() => onOpenKeyPointsDocument()}>
+                      <div
+                        key={point.id}
+                        className={`relative flex flex-col justify-between overflow-hidden rounded-xl border border-stone-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg cursor-pointer border-l-4 ${pt.borderColor}`}
+                        onClick={() => onOpenKeyPointsDocument()}
+                      >
                         <div className="space-y-3">
-                          <h4 className="text-[15px] font-semibold leading-snug text-stone-900 border-l-[3px] pl-3 border-stone-800">
+                          <h4 className="text-[14px] font-semibold leading-snug text-stone-900">
                             {point.text || point.title}
                           </h4>
                           {point.context && (
-                            <div className="rounded-lg bg-stone-50 px-3 py-2 text-sm text-stone-600 border border-stone-100">
-                              <span className="font-semibold text-stone-700">场景设定：</span>
+                            <div className={`rounded-lg px-3 py-2.5 text-[13px] text-stone-600 ${pt.bgColor} border border-stone-100`}>
+                              <span className={`font-bold ${pt.textColor} mr-1`}>场景：</span>
                               {point.context}
                             </div>
                           )}
                           {point.original_quote && (
-                            <div className="text-[13px] italic text-stone-400">
+                            <div className="text-[12px] italic text-stone-400 border-l-2 border-stone-200 pl-3 py-1">
                               "{point.original_quote}"
                             </div>
                           )}
                         </div>
-                        <div className="mt-4 flex items-center justify-between text-xs text-stone-400">
-                          <span className="flex items-center gap-1.5"><FileText className="w-3.5 h-3.5"/> {point.source || "Unknown"}</span>
+                        <div className="mt-4 flex items-center justify-between text-[11px] text-stone-400">
+                          <span className="flex items-center gap-1.5"><FileText className="w-3 h-3"/> {point.source || "Unknown"}</span>
                           <span>{point.createdAt ? new Date(point.createdAt).toLocaleDateString() : '刚刚'}</span>
                         </div>
                       </div>
@@ -535,6 +584,7 @@ export default function MemoryTabView({
                 </div>
               );
             })}
+            </div>
           </div>
         )}
       </section>
