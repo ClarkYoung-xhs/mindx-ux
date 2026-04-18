@@ -686,12 +686,10 @@ export default function Dashboard() {
 
   // Database-backed profile (Who am I + Goal)
   const { profile, updateProfile } = useProfile(activeWorkspaceIdGlobal);
-  const whoAmIRaw =
-    profile.whoami || localStorage.getItem("mindx_raw_whoami_doc") || "";
-  const goalRaw =
-    profile.goal || localStorage.getItem("mindx_raw_goal_doc") || "";
-  const whoAmIDocContent = isProfilePlaceholder(whoAmIRaw) ? "" : whoAmIRaw;
-  const goalDocContent = isProfilePlaceholder(goalRaw) ? "" : goalRaw;
+  const whoAmIRaw = profile.whoami || "";
+  const goalRaw = profile.goal || "";
+  const whoAmIDocContent = whoAmIRaw;
+  const goalDocContent = goalRaw;
 
 
 
