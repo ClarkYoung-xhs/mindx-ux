@@ -15,13 +15,41 @@ export default async function handler(req: Req, res: Res) {
         .eq('workspace_id', workspaceId)
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return res.status(200).json(data);
+
+      // Handle JSON deserialization fallback for new struct
+      const mappedData = data.map((item: any) => {
+        let textBody = item.text;
+        let context = '';
+        let original_quote = '';
+        try {
+          const parsed = JSON.parse(item.text);
+          if (parsed && typeof parsed === 'object' && parsed._isProfileSignal) {
+            textBody = parsed.text || '';
+            context = parsed.context || '';
+            original_quote = parsed.original_quote || '';
+          }
+        } catch {
+          // backward compatibility: use raw string if not JSON
+        }
+        return { ...item, text: textBody, context, original_quote };
+      });
+
+      return res.status(200).json(mappedData);
     }
 
     if (req.method === 'POST') {
-      const { workspace_id, id, title, type, text, source } = req.body;
+      const { workspace_id, id, title, type, text, source, context, original_quote } = req.body;
       if (!title || !text) return res.status(400).json({ error: 'title and text are required' });
       const kpId = id || `kp-${Date.now()}`;
+
+      // Handle JSON serialization fallback
+      const serializedText = JSON.stringify({
+        _isProfileSignal: true,
+        text,
+        context: context || '',
+        original_quote: original_quote || ''
+      });
+
       const { data, error } = await supabase
         .from('keypoints')
         .upsert({
@@ -29,13 +57,13 @@ export default async function handler(req: Req, res: Res) {
           workspace_id: workspace_id || 'w1',
           title,
           type: type || 'insight',
-          text,
-          source: source || '',
+          text: serializedText,
+          source: source || ''
         }, { onConflict: 'id' })
         .select()
         .single();
       if (error) throw error;
-      return res.status(201).json(data);
+      return res.status(200).json(data);
     }
 
     if (req.method === 'DELETE') {

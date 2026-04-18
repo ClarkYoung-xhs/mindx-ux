@@ -478,8 +478,8 @@ export default function Dashboard() {
           : "";
 
         const baseInstruction = lang === "zh"
-          ? `\n\n【核心约束】：\n1. 请严格围绕上述任务进行分析提取。\n2. 你的回答必须是合法的 JSON 格式！必须包含一个唯一的根级属性 "insights"，其值为数组，数组每一项都必须包含 "type" (短分类名词) 和 "text" (详细洞察)。不要返回除 JSON 之外的任何寒暄文本。`
-          : `\n\n[CORE CONSTRAINT]:\n1. Strictly perform the analysis on the task above.\n2. You MUST return ONLY a valid JSON object. It MUST contain a single root property "insights" which is an array of objects. Each object MUST have a "type" (short category) and "text" (detailed insight). Do not return any other text.`;
+          ? `\n\n【核心约束】：\n1. 请严格从给定的 Text 中提取出主体的行为与思维 Profile 信号（能够改变我们预测该主体未来会怎么做的关键线索）。\n2. 抛弃一切宏大的常识，唯心地将信号严格归入以下四大分类其一："preference"（偏好）、"judgment"（判断）、"choice"（选择）、"decision"（决策）。\n3. 你的回答必须是合法的 JSON 格式！包含唯一的根级属性 "insights" (值为数组)。\n   数组的每一项都必须包含如下四个结构字段：\n   - "type": 只能为 "preference" | "judgment" | "choice" | "decision"\n   - "text": (详细抽离出的客观第三人称事实描述)\n   - "context": (短句归纳：这种倾向/判断是在何种情境/前提/业务语境下发生的？)\n   - "original_quote": (来自文本片段的一字不差的原话摘录)\n4. 除了只输出合法的 JSON 对象外，严禁夹带任何文本。`
+          : `\n\n[CORE CONSTRAINT]:\n1. Strictly extract behavioral and mental Profile signals from the given Text that uniquely predict the subject's future actions.\n2. Force classifying them into ONE of the exactly four types: "preference", "judgment", "choice", "decision".\n3. You MUST return ONLY a valid JSON. Contain a root "insights" array property.\n   EACH item MUST strictly have these four keys:\n   - "type": explicitly exactly "preference" | "judgment" | "choice" | "decision"\n   - "text": (Objective 3rd-person summary of the signal)\n   - "context": (Under what situational premise/condition is this formed?)\n   - "original_quote": (The exact explicit sub-string quote from the Text)\n4. Do not output anything except the JSON payload.`;
 
         const prompt = skillPromptTpl + baseInstruction
             .replace("{{LOCALE}}", lang === "zh" ? "Chinese" : "English")
@@ -525,8 +525,10 @@ export default function Dashboard() {
               allKPs.push({
                 id: `kp-${Date.now()}-${item.id}-${index}`,
                 title: item.name,
-                type: insight.type || (lang === "zh" ? "洞察" : "Insight"),
+                type: insight.type || "judgment",
                 text: insight.text || "Unknown insight",
+                context: insight.context || "",
+                original_quote: insight.original_quote || "",
                 source: item.name,
                 createdAt: new Date().toISOString(),
               });
@@ -568,6 +570,8 @@ export default function Dashboard() {
               type: kp.type,
               text: kp.text,
               source: kp.source,
+              context: kp.context || "",
+              original_quote: kp.original_quote || "",
             }),
           }).catch(() => {});
         }

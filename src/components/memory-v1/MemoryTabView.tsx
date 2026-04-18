@@ -36,6 +36,8 @@ type ExtractedKeyPoint = {
   type: string;
   text: string;
   source: string;
+  context?: string;
+  original_quote?: string;
   createdAt: string;
 };
 
@@ -484,28 +486,56 @@ export default function MemoryTabView({
           />
         </div>
 
-        {/* Profile Insight Cards */}
-        {(isAllInsightsViewOpen ? allInsightKnowledgeCards : insightPreviewCards).length > 0 && (
-          <>
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              {(isAllInsightsViewOpen ? allInsightKnowledgeCards : insightPreviewCards).map(card => (
-                <div key={card.id}>
-                  <V2KnowledgeCard card={card} onCardClick={() => onOpenKeyPointsDocument()} />
+        {/* Profile 4-Dimension Signal Cards */}
+        {extractedKeyPoints.length > 0 && (
+          <div className="space-y-8 mt-8">
+            {[
+              { type: 'preference', label: '偏好', desc: '对某类问题的倾向，未触发的决策', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+              { type: 'judgment', label: '判断', desc: '对特定问题的理解与结论', color: 'bg-blue-50 text-blue-700 border-blue-200' },
+              { type: 'choice', label: '选择', desc: '在具体情境下做了什么或放弃了什么', color: 'bg-amber-50 text-amber-700 border-amber-200' },
+              { type: 'decision', label: '决策', desc: '承诺了什么，基于什么约束', color: 'bg-purple-50 text-purple-700 border-purple-200' },
+            ].map((pt) => {
+              const pointsForType = extractedKeyPoints.filter(p => p.type?.toLowerCase() === pt.type || p.type === pt.label);
+              if (pointsForType.length === 0) return null;
+              
+              return (
+                <div key={pt.type} className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <span className={`px-2.5 py-1 text-xs font-semibold rounded-md border ${pt.color}`}>
+                      {pt.label}
+                    </span>
+                    <span className="text-sm text-stone-500">{pt.desc}</span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {pointsForType.map(point => (
+                      <div key={point.id} className="relative flex flex-col justify-between overflow-hidden rounded-[1.25rem] border border-stone-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md cursor-pointer" onClick={() => onOpenKeyPointsDocument()}>
+                        <div className="space-y-3">
+                          <h4 className="text-[15px] font-semibold leading-snug text-stone-900 border-l-[3px] pl-3 border-stone-800">
+                            {point.text || point.title}
+                          </h4>
+                          {point.context && (
+                            <div className="rounded-lg bg-stone-50 px-3 py-2 text-sm text-stone-600 border border-stone-100">
+                              <span className="font-semibold text-stone-700">场景设定：</span>
+                              {point.context}
+                            </div>
+                          )}
+                          {point.original_quote && (
+                            <div className="text-[13px] italic text-stone-400">
+                              "{point.original_quote}"
+                            </div>
+                          )}
+                        </div>
+                        <div className="mt-4 flex items-center justify-between text-xs text-stone-400">
+                          <span className="flex items-center gap-1.5"><FileText className="w-3.5 h-3.5"/> {point.source || "Unknown"}</span>
+                          <span>{point.createdAt ? new Date(point.createdAt).toLocaleDateString() : '刚刚'}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              ))}
-            </div>
-            {allInsightKnowledgeCards.length > 6 && !isAllInsightsViewOpen ? (
-              <div className="flex justify-center pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsAllInsightsViewOpen(true)}
-                  className="text-sm font-medium text-stone-500 transition-colors hover:text-stone-800"
-                >
-                  查看全部
-                </button>
-              </div>
-            ) : null}
-          </>
+              );
+            })}
+          </div>
         )}
       </section>
       )}
