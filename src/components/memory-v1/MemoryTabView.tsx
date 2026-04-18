@@ -297,12 +297,11 @@ export default function MemoryTabView({
 
   const baseWhoAmI = whoAmIDocContent.trim()
     ? compactPreview(whoAmIDocContent, '')
-    : '前沿科技创业者，独立产品经理。偏好极致体验和极简设计，推崇 Agent-Native 理念。';
+    : '暂未设定核心身份画像';
   const baseGoals = goalDocContent.trim()
     ? listPreview(goalDocContent, '')
     : [
-        '构建 Agent-Native 记忆中枢',
-        '完善全平台交互与多端适配体验',
+        '当前还未明确长期目标',
       ];
 
   const sampleKnowledgeSummary = useMemo(() => {
@@ -315,9 +314,7 @@ export default function MemoryTabView({
         return ['当前已经接入数据源', '完成第一轮提炼后，洞察卡片会出现在这里'];
       }
 
-      return sampleKnowledgeSummary.length > 0
-        ? sampleKnowledgeSummary
-        : ['还没有沉淀出的记忆卡片', '先从数据源里提炼第一批洞察'];
+      return ['还没有沉淀出的记忆卡片', '先从数据源里提炼第一批洞察'];
     }
 
     return extractedKeyPoints.slice(0, 2).map(point => point.title || point.text);
@@ -391,42 +388,8 @@ export default function MemoryTabView({
       });
     }
 
-    return memoryAssets.map(asset => {
-      const linkedSources = asset.sourceIds
-        .map(sourceId => memorySourceLinks.find(source => source.id === sourceId))
-        .filter((source): source is NonNullable<typeof source> => Boolean(source));
-      const primarySource = linkedSources[0];
-
-      return {
-        id: asset.id,
-        timestamp: asset.freshness,
-        typeLabel: formatAssetTypeLabel(asset.libraryCategory),
-        title: asset.title,
-        content: asset.summary,
-        tags: asset.tags.slice(0, 3),
-        sources: primarySource
-          ? [
-              {
-                id: primarySource.id,
-                label: primarySource.docName,
-                kind: primarySource.kind,
-                storage: primarySource.storage,
-                docId: primarySource.docId,
-                dataSourceId: primarySource.dataSourceId,
-                quote: primarySource.quote,
-              },
-            ]
-          : [],
-        people: toPeople(
-          linkedSources.flatMap(source => source.participants),
-          { name: 'Me', kind: 'human' }
-        ),
-        relatedIds: asset.relatedAssetIds,
-        evidence: asset.evidence,
-        statusLabel: `${asset.layer} · ${formatAssetStatusLabel(asset.status)}`,
-      };
-    });
-  }, [extractedKeyPoints, memoryAssets, memorySourceLinks]);
+    return [];
+  }, [extractedKeyPoints, memorySourceLinks]);
 
   const insightPreviewCards = useMemo(
     () => allInsightKnowledgeCards.slice(0, 6),
