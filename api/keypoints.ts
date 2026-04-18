@@ -9,56 +9,63 @@ export default async function handler(req: Req, res: Res) {
   try {
     if (req.method === 'GET') {
       const workspaceId = (req.query.workspace_id as string) || 'w1';
-      const { data, error } = await supabase
-        .from('keypoints')
+      const dimension = req.query.dimension as string | undefined;
+
+      let query = supabase
+        .from('profile_signals')
         .select('*')
         .eq('workspace_id', workspaceId)
         .order('created_at', { ascending: false });
+
+      if (dimension) {
+        query = query.eq('dimension', dimension);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
 
-      // Handle JSON deserialization fallback for new struct
-      const mappedData = data.map((item: any) => {
-        let textBody = item.text;
-        let context = '';
-        let original_quote = '';
-        try {
-          const parsed = JSON.parse(item.text);
-          if (parsed && typeof parsed === 'object' && parsed._isProfileSignal) {
-            textBody = parsed.text || '';
-            context = parsed.context || '';
-            original_quote = parsed.original_quote || '';
-          }
-        } catch {
-          // backward compatibility: use raw string if not JSON
-        }
-        return { ...item, text: textBody, context, original_quote };
-      });
+      // Backward-compat mapping: expose `type` alias for `dimension`, `text` for `summary`, `title` for `source_doc_name`
+      const mapped = (data || []).map((row: any) => ({
+        ...row,
+        type: row.dimension?.toLowerCase(),
+        text: row.summary,
+        title: row.source_doc_name || '',
+        source: row.source_doc_name || '',
+        context: row.context || '',
+        original_quote: row.original_quote || '',
+      }));
 
-      return res.status(200).json(mappedData);
+      return res.status(200).json(mapped);
     }
 
     if (req.method === 'POST') {
-      const { workspace_id, id, title, type, text, source, context, original_quote } = req.body;
-      if (!title || !text) return res.status(400).json({ error: 'title and text are required' });
-      const kpId = id || `kp-${Date.now()}`;
+      const {
+        workspace_id, id, dimension, summary, context, original_quote,
+        source_doc_id, source_doc_name, confidence, weight,
+        // Backward-compat aliases
+        type, text, title, source,
+      } = req.body;
 
-      // Handle JSON serialization fallback
-      const serializedText = JSON.stringify({
-        _isProfileSignal: true,
-        text,
-        context: context || '',
-        original_quote: original_quote || ''
-      });
+      const signalDimension = dimension || (type ? type.charAt(0).toUpperCase() + type.slice(1) : 'Judgment');
+      const signalSummary = summary || text;
+      if (!signalSummary) return res.status(400).json({ error: 'summary (or text) is required' });
+
+      const signalId = id || `sig-${Date.now()}`;
 
       const { data, error } = await supabase
-        .from('keypoints')
+        .from('profile_signals')
         .upsert({
-          id: kpId,
+          id: signalId,
           workspace_id: workspace_id || 'w1',
-          title,
-          type: type || 'insight',
-          text: serializedText,
-          source: source || ''
+          dimension: signalDimension,
+          summary: signalSummary,
+          context: context || '',
+          original_quote: original_quote || '',
+          source_doc_id: source_doc_id || '',
+          source_doc_name: source_doc_name || title || source || '',
+          confidence: confidence ?? 1.0,
+          weight: weight ?? 1,
+          updated_at: new Date().toISOString(),
         }, { onConflict: 'id' })
         .select()
         .single();
@@ -69,14 +76,14 @@ export default async function handler(req: Req, res: Res) {
     if (req.method === 'DELETE') {
       const id = req.query.id as string;
       if (!id) return res.status(400).json({ error: 'id is required' });
-      const { error } = await supabase.from('keypoints').delete().eq('id', id);
+      const { error } = await supabase.from('profile_signals').delete().eq('id', id);
       if (error) throw error;
       return res.status(204).end();
     }
 
     return res.status(405).json({ error: 'Method not allowed' });
   } catch (error: any) {
-    console.error('[API /keypoints]', error);
+    console.error('[API /keypoints → profile_signals]', error);
     return res.status(500).json({ error: error.message });
   }
 }

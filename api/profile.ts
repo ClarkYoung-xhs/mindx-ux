@@ -7,34 +7,43 @@ type Res = ServerResponse & { status: (code: number) => Res; json: (data: any) =
 
 export default async function handler(req: Req, res: Res) {
   try {
+    const workspaceId = ((req.query.workspace_id as string) || req.body?.workspace_id || 'w1');
+
     if (req.method === 'GET') {
-      const workspaceId = (req.query.workspace_id as string) || 'w1';
       const { data, error } = await supabase
-        .from('user_profile')
-        .select('key, value')
-        .eq('workspace_id', workspaceId);
-      if (error) throw error;
-      const result: Record<string, string> = {};
-      for (const row of data || []) {
-        result[row.key] = row.value;
+        .from('profile_identity')
+        .select('*')
+        .eq('workspace_id', workspaceId)
+        .single();
+
+      if (error && error.code === 'PGRST116') {
+        // No row yet — return empty seed
+        return res.status(200).json({
+          workspace_id: workspaceId,
+          professional_role: '',
+          current_goal: '',
+          core_boundary: '',
+        });
       }
-      return res.status(200).json(result);
+      if (error) throw error;
+      return res.status(200).json(data);
     }
 
     if (req.method === 'PUT') {
-      const { workspace_id, key, value } = req.body;
-      if (!key) return res.status(400).json({ error: 'key is required' });
-      const wid = workspace_id || 'w1';
-      const { error } = await supabase
-        .from('user_profile')
+      const { professional_role, current_goal, core_boundary } = req.body;
+      const { data, error } = await supabase
+        .from('profile_identity')
         .upsert({
-          workspace_id: wid,
-          key,
-          value: value || '',
+          workspace_id: workspaceId,
+          professional_role: professional_role ?? '',
+          current_goal: current_goal ?? '',
+          core_boundary: core_boundary ?? '',
           updated_at: new Date().toISOString(),
-        }, { onConflict: 'workspace_id,key' });
+        }, { onConflict: 'workspace_id' })
+        .select()
+        .single();
       if (error) throw error;
-      return res.status(200).json({ key, value });
+      return res.status(200).json(data);
     }
 
     return res.status(405).json({ error: 'Method not allowed' });

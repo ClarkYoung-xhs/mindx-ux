@@ -13,25 +13,31 @@ CREATE TABLE IF NOT EXISTS rawdata (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 2. User Profile
-CREATE TABLE IF NOT EXISTS user_profile (
-  workspace_id TEXT NOT NULL DEFAULT 'w1',
-  key TEXT NOT NULL,
-  value TEXT DEFAULT '',
-  updated_at TIMESTAMPTZ DEFAULT NOW(),
-  PRIMARY KEY (workspace_id, key)
+-- 2. Profile Identity (Seed Layer)
+CREATE TABLE IF NOT EXISTS profile_identity (
+  workspace_id TEXT PRIMARY KEY,
+  professional_role TEXT NOT NULL DEFAULT '',
+  current_goal TEXT NOT NULL DEFAULT '',
+  core_boundary TEXT DEFAULT '',
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 3. Key Points
-CREATE TABLE IF NOT EXISTS keypoints (
+-- 3. Profile Signals (Behavioral Engine)
+CREATE TABLE IF NOT EXISTS profile_signals (
   id TEXT PRIMARY KEY,
   workspace_id TEXT NOT NULL DEFAULT 'w1',
-  title TEXT NOT NULL,
-  type TEXT DEFAULT 'insight',
-  text TEXT NOT NULL,
-  source TEXT DEFAULT '',
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  dimension TEXT CHECK (dimension IN ('Preference', 'Judgment', 'Choice', 'Decision')) NOT NULL,
+  summary TEXT NOT NULL,
+  context TEXT NOT NULL DEFAULT '',
+  original_quote TEXT NOT NULL DEFAULT '',
+  source_doc_id TEXT DEFAULT '',
+  source_doc_name TEXT DEFAULT '',
+  confidence FLOAT DEFAULT 1.0,
+  weight INTEGER DEFAULT 1,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+CREATE INDEX IF NOT EXISTS idx_profile_signals_workspace_dim ON profile_signals(workspace_id, dimension);
 
 -- 4. Activities
 CREATE TABLE IF NOT EXISTS activities (
@@ -58,21 +64,16 @@ CREATE TABLE IF NOT EXISTS documents (
   type TEXT DEFAULT 'Markdown',
   content TEXT DEFAULT '',
   labels TEXT DEFAULT '{}',
-  creator_name TEXT,
-  creator_type TEXT DEFAULT 'human',
-  source TEXT DEFAULT 'normal',
-  size INTEGER DEFAULT 0,
-  is_read BOOLEAN DEFAULT FALSE,
-  last_viewed TIMESTAMPTZ,
-  last_modified TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- 6. Memory Nodes
 CREATE TABLE IF NOT EXISTS memory_nodes (
   id TEXT PRIMARY KEY,
   workspace_id TEXT NOT NULL DEFAULT 'w1',
-  type TEXT NOT NULL,
-  content TEXT NOT NULL,
+  type TEXT NOT NULL DEFAULT 'Node',
+  content TEXT DEFAULT '',
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -88,3 +89,24 @@ CREATE TABLE IF NOT EXISTS agents (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- ====================================================================
+-- Migration: from old schema to Profile Engine
+-- Run these statements if you have existing data to migrate:
+-- ====================================================================
+
+-- Migrate whoami/goal from user_profile KV → profile_identity
+-- INSERT INTO profile_identity (workspace_id, professional_role, current_goal)
+--   SELECT workspace_id, 
+--     COALESCE(MAX(CASE WHEN key='whoami' THEN value END), ''),
+--     COALESCE(MAX(CASE WHEN key='goal' THEN value END), '')
+--   FROM user_profile GROUP BY workspace_id
+--   ON CONFLICT (workspace_id) DO NOTHING;
+
+-- Migrate keypoints → profile_signals
+-- INSERT INTO profile_signals (id, workspace_id, dimension, summary, context, original_quote, source_doc_name)
+--   SELECT id, workspace_id,
+--     CASE WHEN type IN ('preference','judgment','choice','decision') THEN INITCAP(type) ELSE 'Judgment' END,
+--     text, '', '', source
+--   FROM keypoints
+--   ON CONFLICT (id) DO NOTHING;
