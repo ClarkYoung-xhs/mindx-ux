@@ -706,7 +706,7 @@ export default function SettingsTab(props: SettingsTabProps) {
 
                       {/* Progress Bar */}
                       <div className="w-full h-3 bg-stone-100 rounded-full overflow-hidden">
-                        <div
+                        <motion.div
                           initial={{ width: 0 }}
                           animate={{ width: `${usedPercentage}%` }}
                           transition={{
