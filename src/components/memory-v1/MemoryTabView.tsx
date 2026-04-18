@@ -457,25 +457,9 @@ export default function MemoryTabView({
               不存常识，只存大模型不知道的、独属于你的行为特征。从原始数据中蒸馏出行为信号，让 Agent 能精准预测你的下一步决策。
             </p>
             {extractedKeyPoints.length > 0 && (
-              <div className="mt-4 flex items-center gap-6">
-                {[
-                  { label: '偏好', type: 'preference', color: 'text-emerald-400' },
-                  { label: '判断', type: 'judgment', color: 'text-blue-400' },
-                  { label: '选择', type: 'choice', color: 'text-amber-400' },
-                  { label: '决策', type: 'decision', color: 'text-purple-400' },
-                ].map(d => {
-                  const count = extractedKeyPoints.filter(p => p.type?.toLowerCase() === d.type).length;
-                  return (
-                    <div key={d.type} className="flex items-center gap-1.5">
-                      <span className={`text-lg font-bold ${d.color}`}>{count}</span>
-                      <span className="text-xs text-stone-500">{d.label}</span>
-                    </div>
-                  );
-                })}
-                <div className="flex items-center gap-1.5 border-l border-stone-700 pl-6">
-                  <span className="text-lg font-bold text-white">{extractedKeyPoints.length}</span>
-                  <span className="text-xs text-stone-500">总信号</span>
-                </div>
+              <div className="mt-4 flex items-center gap-4">
+                <span className="text-2xl font-bold text-white">{extractedKeyPoints.length}</span>
+                <span className="text-sm text-stone-400">条行为信号已入库</span>
               </div>
             )}
           </div>
@@ -522,68 +506,59 @@ export default function MemoryTabView({
           </div>
         </div>
 
-        {/* ── Engine Layer: 4-Dimension Behavioral Signals ── */}
+        {/* ── Unified Signal Feed ── */}
         {extractedKeyPoints.length > 0 && (
           <div>
-            <div className="flex items-center gap-2 mb-5">
-              <div className="h-1 w-1 rounded-full bg-stone-400" />
-              <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-stone-400">Behavioral Signals · 行为信号</span>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <div className="h-1 w-1 rounded-full bg-stone-400" />
+                <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-stone-400">Signal Feed · 信号流</span>
+              </div>
+              <span className="text-xs text-stone-400">{extractedKeyPoints.length} 条</span>
             </div>
-            <div className="space-y-6">
-            {[
-              { type: 'preference', label: '偏好 Preference', desc: '无明确对错时的感性/理性倾向', icon: '❤️', borderColor: 'border-l-emerald-500', bgColor: 'bg-emerald-50', textColor: 'text-emerald-700', badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
-              { type: 'judgment', label: '判断 Judgment', desc: '评估好坏时的客观价值标准', icon: '⚖️', borderColor: 'border-l-blue-500', bgColor: 'bg-blue-50', textColor: 'text-blue-700', badgeColor: 'bg-blue-100 text-blue-800 border-blue-200' },
-              { type: 'choice', label: '选择 Choice', desc: '面对路径分歧时的路线轨迹', icon: '🔀', borderColor: 'border-l-amber-500', bgColor: 'bg-amber-50', textColor: 'text-amber-700', badgeColor: 'bg-amber-100 text-amber-800 border-amber-200' },
-              { type: 'decision', label: '决策 Decision', desc: '最终落实的行动指令', icon: '⚡', borderColor: 'border-l-purple-500', bgColor: 'bg-purple-50', textColor: 'text-purple-700', badgeColor: 'bg-purple-100 text-purple-800 border-purple-200' },
-            ].map((pt) => {
-              const pointsForType = extractedKeyPoints.filter(p => p.type?.toLowerCase() === pt.type || p.type === pt.label);
-              if (pointsForType.length === 0) return null;
-              
-              return (
-                <div key={pt.type} className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <span className="text-base">{pt.icon}</span>
-                      <span className={`px-2.5 py-1 text-xs font-bold rounded-md border ${pt.badgeColor}`}>
-                        {pt.label}
-                      </span>
-                      <span className="text-xs text-stone-400">{pt.desc}</span>
-                    </div>
-                    <span className={`text-xs font-semibold ${pt.textColor}`}>{pointsForType.length} 条</span>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {pointsForType.map(point => (
-                      <div
-                        key={point.id}
-                        className={`relative flex flex-col justify-between overflow-hidden rounded-xl border border-stone-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg cursor-pointer border-l-4 ${pt.borderColor}`}
-                        onClick={() => onOpenKeyPointsDocument()}
-                      >
-                        <div className="space-y-3">
-                          <h4 className="text-[14px] font-semibold leading-snug text-stone-900">
-                            {point.text || point.title}
-                          </h4>
-                          {point.context && (
-                            <div className={`rounded-lg px-3 py-2.5 text-[13px] text-stone-600 ${pt.bgColor} border border-stone-100`}>
-                              <span className={`font-bold ${pt.textColor} mr-1`}>场景：</span>
-                              {point.context}
-                            </div>
-                          )}
-                          {point.original_quote && (
-                            <div className="text-[12px] italic text-stone-400 border-l-2 border-stone-200 pl-3 py-1">
-                              "{point.original_quote}"
-                            </div>
-                          )}
-                        </div>
-                        <div className="mt-4 flex items-center justify-between text-[11px] text-stone-400">
-                          <span className="flex items-center gap-1.5"><FileText className="w-3 h-3"/> {point.source || "Unknown"}</span>
-                          <span>{point.createdAt ? new Date(point.createdAt).toLocaleDateString() : '刚刚'}</span>
-                        </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {extractedKeyPoints.map(point => {
+                const typeColor: Record<string, string> = {
+                  preference: 'bg-emerald-100 text-emerald-800',
+                  judgment: 'bg-blue-100 text-blue-800',
+                  choice: 'bg-amber-100 text-amber-800',
+                  decision: 'bg-purple-100 text-purple-800',
+                };
+                const badge = typeColor[point.type?.toLowerCase()] || 'bg-stone-100 text-stone-600';
+                return (
+                  <div
+                    key={point.id}
+                    className="relative flex flex-col justify-between overflow-hidden rounded-xl border border-stone-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg cursor-pointer"
+                    onClick={() => onOpenKeyPointsDocument()}
+                  >
+                    <div className="space-y-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <h4 className="text-[14px] font-semibold leading-snug text-stone-900 flex-1">
+                          {point.text || point.title}
+                        </h4>
+                        <span className={`shrink-0 px-2 py-0.5 text-[10px] font-bold rounded-full ${badge}`}>
+                          {point.type || 'signal'}
+                        </span>
                       </div>
-                    ))}
+                      {point.context && (
+                        <div className="rounded-lg bg-stone-50 px-3 py-2.5 text-[13px] text-stone-600 border border-stone-100">
+                          <span className="font-bold text-stone-700 mr-1">场景：</span>
+                          {point.context}
+                        </div>
+                      )}
+                      {point.original_quote && (
+                        <div className="text-[12px] italic text-stone-400 border-l-2 border-stone-200 pl-3 py-1">
+                          "{point.original_quote}"
+                        </div>
+                      )}
+                    </div>
+                    <div className="mt-4 flex items-center justify-between text-[11px] text-stone-400">
+                      <span className="flex items-center gap-1.5"><FileText className="w-3 h-3"/> {point.source || "Unknown"}</span>
+                      <span>{point.createdAt ? new Date(point.createdAt).toLocaleDateString() : '刚刚'}</span>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
             </div>
           </div>
         )}

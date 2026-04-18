@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS profile_identity (
 CREATE TABLE IF NOT EXISTS profile_signals (
   id TEXT PRIMARY KEY,
   workspace_id TEXT NOT NULL DEFAULT 'w1',
-  dimension TEXT CHECK (dimension IN ('Preference', 'Judgment', 'Choice', 'Decision')) NOT NULL,
+  dimension TEXT NOT NULL DEFAULT 'Signal',
   summary TEXT NOT NULL,
   context TEXT NOT NULL DEFAULT '',
   original_quote TEXT NOT NULL DEFAULT '',
