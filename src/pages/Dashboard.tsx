@@ -907,8 +907,9 @@ export default function Dashboard() {
       // Clear the onboarding parameter from URL
       params.delete("onboarding");
       navigate(`/dashboard?${params.toString()}`, { replace: true });
-    } else if (agents.length === 0) {
+    } else if (agents.length === 0 && !localStorage.getItem("mindx_has_seen_onboarding")) {
       setShowOnboarding(true);
+      localStorage.setItem("mindx_has_seen_onboarding", "true");
     }
   }, []);
 
@@ -1001,6 +1002,7 @@ export default function Dashboard() {
     localStorage.setItem("mindx_absence_dismissed", "true");
     localStorage.setItem("mindx_is_new_user", "true");
 
+    localStorage.setItem("mindx_has_seen_onboarding", "true");
     setShowOnboarding(false);
     setActiveTab("documents");
   };
@@ -1205,7 +1207,10 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
       {showOnboarding && (
         <OnboardingWizard
           onComplete={handleOnboardingComplete}
-          onClose={() => setShowOnboarding(false)}
+          onClose={() => {
+            localStorage.setItem("mindx_has_seen_onboarding", "true");
+            setShowOnboarding(false);
+          }}
         />
       )}
 
