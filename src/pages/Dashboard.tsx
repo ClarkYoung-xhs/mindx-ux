@@ -151,16 +151,7 @@ export default function Dashboard() {
     localStorage.setItem("mindx_extraction_skills", JSON.stringify(extractionSkills));
   }, [extractionSkills]);
 
-  const [agents, setAgents] = useState<any[]>(() => {
-    try {
-      const saved = localStorage.getItem("mindx_agents");
-      if (saved) return JSON.parse(saved);
-    } catch {}
-    return isNewUser ? [] : initialAgents;
-  });
-  useEffect(() => {
-    localStorage.setItem("mindx_agents", JSON.stringify(agents));
-  }, [agents]);
+  const [agents, setAgents] = useState<any[]>([]);
 
   // Fetch agents from DB on mount; migrate local to DB
   useEffect(() => {
@@ -179,25 +170,6 @@ export default function Dashboard() {
               updatedAt: r.updated_at,
             })),
           );
-        } else {
-          try {
-            const saved = localStorage.getItem("mindx_agents");
-            const localAgents = saved ? JSON.parse(saved) : (isNewUser ? [] : initialAgents);
-            for (const a of localAgents) {
-              fetch("/api/agents", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  workspace_id: activeWorkspaceIdGlobal,
-                  id: a.id,
-                  name: a.name,
-                  token: a.token,
-                  installed_skills: a.installedSkills || [],
-                  connected: !!a.connected,
-                }),
-              }).catch(() => {});
-            }
-          } catch {}
         }
       })
       .catch(() => {});
@@ -446,20 +418,7 @@ export default function Dashboard() {
       source: string;
       createdAt: string;
     }[]
-  >(() => {
-    try {
-      const saved = localStorage.getItem("mindx_extracted_keypoints");
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
-  useEffect(() => {
-    localStorage.setItem(
-      "mindx_extracted_keypoints",
-      JSON.stringify(extractedKeyPoints),
-    );
-  }, [extractedKeyPoints]);
+  >([]);
 
   // Fetch key points from DB on mount; migrate localStorage → DB if DB is empty
   useEffect(() => {
@@ -477,26 +436,6 @@ export default function Dashboard() {
               createdAt: r.created_at,
             })),
           );
-        } else {
-          // DB empty — migrate localStorage keypoints to DB
-          try {
-            const saved = localStorage.getItem("mindx_extracted_keypoints");
-            const localKPs = saved ? JSON.parse(saved) : [];
-            for (const kp of localKPs) {
-              fetch("/api/keypoints", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  workspace_id: activeWorkspaceIdGlobal,
-                  id: kp.id,
-                  title: kp.title,
-                  type: kp.type,
-                  text: kp.text,
-                  source: kp.source,
-                }),
-              }).catch(() => {});
-            }
-          } catch {}
         }
       })
       .catch(() => {});
@@ -679,26 +618,6 @@ export default function Dashboard() {
             setRawDataItems(
               rows.map((r) => {
                 let content = r.content;
-                // Silent self-healing: if DB content is empty, try to recover from localStorage
-                if (!content) {
-                  const localContent = localStorage.getItem(`mindx_raw_${r.id}`);
-                  if (localContent) {
-                    content = localContent;
-                    fetch("/api/rawdata", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({
-                        workspace_id: activeWorkspaceIdGlobal,
-                        id: r.id,
-                        name: r.name,
-                        type: r.type,
-                        size: r.size,
-                        source: r.source,
-                        content: localContent,
-                      }),
-                    }).catch(() => {});
-                  }
-                }
                 return {
                   id: r.id,
                   name: r.name,
@@ -710,34 +629,6 @@ export default function Dashboard() {
                 };
               }),
             );
-          } else {
-            // DB empty — migrate localStorage items to DB
-            try {
-              const saved = localStorage.getItem("mindx_raw_data_items");
-              const localItems = saved ? JSON.parse(saved) : [];
-              if (localItems.length > 0) {
-                setRawDataItems(localItems);
-                for (const item of localItems) {
-                  const content =
-                    localStorage.getItem(`mindx_raw_${item.id}`) ||
-                    item.content ||
-                    "";
-                  fetch("/api/rawdata", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      workspace_id: activeWorkspaceIdGlobal,
-                      id: item.id,
-                      name: item.name,
-                      type: item.type,
-                      size: item.size,
-                      source: item.source,
-                      content,
-                    }),
-                  }).catch(() => {});
-                }
-              }
-            } catch {}
           }
         })
         .catch(() => {})
@@ -756,13 +647,7 @@ export default function Dashboard() {
     };
   }, []);
 
-  // Persist rawDataItems to localStorage as cache
-  useEffect(() => {
-    localStorage.setItem(
-      "mindx_raw_data_items",
-      JSON.stringify(rawDataItems.map(({ content, ...rest }) => rest)),
-    );
-  }, [rawDataItems]);
+
   const [isPasteModalOpen, setIsPasteModalOpen] = useState(false);
   const [isRawDataModalOpen, setIsRawDataModalOpen] = useState(false);
 
@@ -777,14 +662,7 @@ export default function Dashboard() {
       createdAt: string;
       updatedAt: string;
     }[]
-  >(() => {
-    try {
-      const saved = localStorage.getItem("mindx_memory_nodes");
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+  >([]);
 
   // Fetch memory nodes from DB on mount; migrate localStorage → DB if DB is empty
   useEffect(() => {
@@ -801,24 +679,6 @@ export default function Dashboard() {
               updatedAt: r.updated_at,
             })),
           );
-        } else {
-          try {
-            const saved = localStorage.getItem("mindx_memory_nodes");
-            const localNodes = saved ? JSON.parse(saved) : [];
-            for (const node of localNodes) {
-              const content = node.content || localStorage.getItem(`mindx_raw_${node.id}`) || "";
-              fetch("/api/memory_nodes", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  workspace_id: activeWorkspaceIdGlobal,
-                  id: node.id,
-                  type: node.title, // using title as type
-                  content: content,
-                }),
-              }).catch(() => {});
-            }
-          } catch {}
         }
       })
       .catch(() => {});
@@ -834,9 +694,7 @@ export default function Dashboard() {
   const goalDocContent = isProfilePlaceholder(goalRaw) ? "" : goalRaw;
 
 
-  useEffect(() => {
-    localStorage.setItem("mindx_memory_nodes", JSON.stringify(memoryNodes));
-  }, [memoryNodes]);
+
   const [pasteTitle, setPasteTitle] = useState("");
   const [pasteContent, setPasteContent] = useState("");
 
