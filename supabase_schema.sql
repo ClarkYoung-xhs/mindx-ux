@@ -13,14 +13,20 @@ CREATE TABLE IF NOT EXISTS rawdata (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 2. Profile Identity (Seed Layer)
+-- 2. Profile Identity (Seed Layer) — WorkBuddy-inspired 4-field design
 CREATE TABLE IF NOT EXISTS profile_identity (
   workspace_id TEXT PRIMARY KEY,
-  professional_role TEXT NOT NULL DEFAULT '',
-  current_goal TEXT NOT NULL DEFAULT '',
-  core_boundary TEXT DEFAULT '',
+  professional_role TEXT NOT NULL DEFAULT '',  -- 稳定：工作背景 / 角色
+  current_focus     TEXT NOT NULL DEFAULT '',  -- 中频：当前关注
+  recent_context    TEXT NOT NULL DEFAULT '',  -- 高频：近期动态
+  core_boundary     TEXT NOT NULL DEFAULT '',  -- 稳定：个人底线
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+-- Migration (run in Supabase SQL Editor if table already exists):
+-- ALTER TABLE profile_identity ADD COLUMN IF NOT EXISTS current_focus TEXT NOT NULL DEFAULT '';
+-- ALTER TABLE profile_identity ADD COLUMN IF NOT EXISTS recent_context TEXT NOT NULL DEFAULT '';
+-- UPDATE profile_identity SET current_focus = current_goal WHERE current_focus = '' AND current_goal IS NOT NULL;
+-- ALTER TABLE profile_identity DROP COLUMN IF EXISTS current_goal;
 
 -- 3. Profile Signals (Behavioral Engine)
 CREATE TABLE IF NOT EXISTS profile_signals (

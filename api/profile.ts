@@ -5,6 +5,14 @@ import type { IncomingMessage, ServerResponse } from 'http';
 type Req = IncomingMessage & { method?: string; query: Record<string, string | string[]>; body: any };
 type Res = ServerResponse & { status: (code: number) => Res; json: (data: any) => void; end: () => void };
 
+const EMPTY_SEED = (workspaceId: string) => ({
+  workspace_id: workspaceId,
+  professional_role: '',
+  current_focus: '',
+  recent_context: '',
+  core_boundary: '',
+});
+
 export default async function handler(req: Req, res: Res) {
   try {
     const workspaceId = ((req.query.workspace_id as string) || req.body?.workspace_id || 'w1');
@@ -17,27 +25,28 @@ export default async function handler(req: Req, res: Res) {
         .single();
 
       if (error && error.code === 'PGRST116') {
-        // No row yet — return empty seed
-        return res.status(200).json({
-          workspace_id: workspaceId,
-          professional_role: '',
-          current_goal: '',
-          core_boundary: '',
-        });
+        return res.status(200).json(EMPTY_SEED(workspaceId));
       }
       if (error) throw error;
-      return res.status(200).json(data);
+
+      // Backward-compat: if old row has current_goal but not current_focus, migrate on read
+      const row = data as any;
+      if (!row.current_focus && row.current_goal) {
+        row.current_focus = row.current_goal;
+      }
+      return res.status(200).json(row);
     }
 
     if (req.method === 'PUT') {
-      const { professional_role, current_goal, core_boundary } = req.body;
+      const { professional_role, current_focus, recent_context, core_boundary } = req.body;
       const { data, error } = await supabase
         .from('profile_identity')
         .upsert({
           workspace_id: workspaceId,
           professional_role: professional_role ?? '',
-          current_goal: current_goal ?? '',
-          core_boundary: core_boundary ?? '',
+          current_focus:     current_focus     ?? '',
+          recent_context:    recent_context    ?? '',
+          core_boundary:     core_boundary     ?? '',
           updated_at: new Date().toISOString(),
         }, { onConflict: 'workspace_id' })
         .select()

@@ -4,10 +4,11 @@ const API_BASE = '/api/profile';
 
 export interface ProfileIdentity {
   workspace_id: string;
-  professional_role: string;
-  current_goal: string;
-  core_boundary: string;
-  [key: string]: string; // allow future custom fields
+  professional_role: string;   // 稳定 — 角色标签，手动填
+  current_focus: string;       // 中频 — 这段时间在关注什么，每周更新
+  recent_context: string;      // 高频 — 近期动态，可自动生成
+  core_boundary: string;       // 稳定 — 底线约束，手动填
+  [key: string]: string;
 }
 
 /**
@@ -26,23 +27,31 @@ export interface SeedCardMeta {
 export const SEED_CARD_DEFS: SeedCardMeta[] = [
   {
     field: 'professional_role',
-    label: '职业身份',
-    labelEn: 'Professional Role',
-    eyebrow: 'Role',
+    label: '工作背景',
+    labelEn: 'Work Background',
+    eyebrow: 'Background',
     profileKey: 'whoami',
     previewType: 'memory',
   },
   {
-    field: 'current_goal',
-    label: '当前目标',
-    labelEn: 'Current Goal',
-    eyebrow: 'Goal',
-    profileKey: 'goal',
+    field: 'current_focus',
+    label: '当前关注',
+    labelEn: 'Current Focus',
+    eyebrow: 'Focus',
+    profileKey: 'focus',
+    previewType: 'memory',
+  },
+  {
+    field: 'recent_context',
+    label: '近期动态',
+    labelEn: 'Recent Activity',
+    eyebrow: 'Activity',
+    profileKey: 'recent',
     previewType: 'goals',
   },
   {
     field: 'core_boundary',
-    label: '底线约束',
+    label: '个人底线',
     labelEn: 'Core Boundary',
     eyebrow: 'Boundary',
     profileKey: 'boundary',
@@ -57,7 +66,8 @@ export interface SeedCard extends SeedCardMeta {
 const EMPTY_PROFILE: ProfileIdentity = {
   workspace_id: 'w1',
   professional_role: '',
-  current_goal: '',
+  current_focus: '',
+  recent_context: '',
   core_boundary: '',
 };
 
@@ -92,12 +102,17 @@ export function useProfile(workspaceId: string) {
 
   const updateProfile = useCallback(async (key: string, value: string) => {
     const fieldMap: Record<string, string> = {
-      whoami: 'professional_role',
-      goal: 'current_goal',
-      boundary: 'core_boundary',
+      whoami:            'professional_role',
+      focus:             'current_focus',
+      recent:            'recent_context',
+      boundary:          'core_boundary',
       professional_role: 'professional_role',
-      current_goal: 'current_goal',
-      core_boundary: 'core_boundary',
+      current_focus:     'current_focus',
+      recent_context:    'recent_context',
+      core_boundary:     'core_boundary',
+      // legacy compat
+      goal:              'current_focus',
+      current_goal:      'current_focus',
     };
     const field = fieldMap[key] || key;
 
