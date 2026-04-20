@@ -1,6 +1,7 @@
 import React from "react";
 import { motion } from "motion/react";
 import MemoryTabView from "../../components/memory-v1/MemoryTabView";
+import type { SeedCard } from "../../hooks/useProfile";
 
 type MemoryNode = {
   id: string;
@@ -42,6 +43,7 @@ export interface MemoryTabProps {
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   whoAmIDocContent: string;
   goalDocContent: string;
+  seedCards: SeedCard[];
   handleOpenProfileEditor: (key: "whoami" | "goal") => void;
   memoryNodes: MemoryNode[];
   memoryNodeInput: string;
@@ -73,6 +75,7 @@ export default function MemoryTab({
   fileInputRef,
   whoAmIDocContent,
   goalDocContent,
+  seedCards,
   handleOpenProfileEditor,
   memoryNodes,
   memoryNodeInput,
@@ -109,6 +112,7 @@ export default function MemoryTab({
         fileInputRef={fileInputRef}
         whoAmIDocContent={whoAmIDocContent}
         goalDocContent={goalDocContent}
+        seedCards={seedCards}
         onEditProfile={handleOpenProfileEditor}
         memoryNodes={memoryNodes}
         memoryNodeInput={memoryNodeInput}

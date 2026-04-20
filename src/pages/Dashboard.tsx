@@ -689,7 +689,7 @@ export default function Dashboard() {
   }, []);
 
   // Database-backed profile (Who am I + Goal)
-  const { profile, updateProfile } = useProfile(activeWorkspaceIdGlobal);
+  const { profile, seedCards, updateProfile } = useProfile(activeWorkspaceIdGlobal);
   const whoAmIRaw = profile.whoami || "";
   const goalRaw = profile.goal || "";
   const whoAmIDocContent = whoAmIRaw;
@@ -1611,6 +1611,7 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                 fileInputRef={fileInputRef}
                 whoAmIDocContent={whoAmIDocContent}
                 goalDocContent={goalDocContent}
+                seedCards={seedCards}
                 handleOpenProfileEditor={handleOpenProfileEditor}
                 memoryNodes={memoryNodes}
                 memoryNodeInput={memoryNodeInput}

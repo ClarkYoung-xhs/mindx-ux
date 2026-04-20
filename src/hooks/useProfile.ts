@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 
 const API_BASE = '/api/profile';
 
@@ -7,6 +7,51 @@ export interface ProfileIdentity {
   professional_role: string;
   current_goal: string;
   core_boundary: string;
+  [key: string]: string; // allow future custom fields
+}
+
+/**
+ * Metadata for each profile_identity field — drives the dynamic seed card UI.
+ * Adding a new field here + to the DB schema is all you need to get a new card.
+ */
+export interface SeedCardMeta {
+  field: string;          // DB column name
+  label: string;          // Chinese card title
+  labelEn: string;        // English subtitle
+  eyebrow: string;        // small caps eyebrow label
+  profileKey: string;     // key passed to updateProfile / DocumentEditor
+  previewType: 'memory' | 'goals';
+}
+
+export const SEED_CARD_DEFS: SeedCardMeta[] = [
+  {
+    field: 'professional_role',
+    label: '职业身份',
+    labelEn: 'Professional Role',
+    eyebrow: 'Role',
+    profileKey: 'whoami',
+    previewType: 'memory',
+  },
+  {
+    field: 'current_goal',
+    label: '当前目标',
+    labelEn: 'Current Goal',
+    eyebrow: 'Goal',
+    profileKey: 'goal',
+    previewType: 'goals',
+  },
+  {
+    field: 'core_boundary',
+    label: '底线约束',
+    labelEn: 'Core Boundary',
+    eyebrow: 'Boundary',
+    profileKey: 'boundary',
+    previewType: 'memory',
+  },
+];
+
+export interface SeedCard extends SeedCardMeta {
+  value: string;
 }
 
 const EMPTY_PROFILE: ProfileIdentity = {
@@ -26,7 +71,6 @@ export function useProfile(workspaceId: string) {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data: ProfileIdentity = await res.json();
       setProfile(data);
-      // Sync to localStorage for extraction engine / DocumentEditor compatibility
       localStorage.setItem('mindx_raw_whoami_doc', data.professional_role || '');
       localStorage.setItem('mindx_raw_goal_doc', data.current_goal || '');
     } catch (e: any) {
@@ -47,8 +91,7 @@ export function useProfile(workspaceId: string) {
   }, [fetchProfile]);
 
   const updateProfile = useCallback(async (key: string, value: string) => {
-    // Map old keys to new fields for backward-compat callers
-    const fieldMap: Record<string, keyof ProfileIdentity> = {
+    const fieldMap: Record<string, string> = {
       whoami: 'professional_role',
       goal: 'current_goal',
       boundary: 'core_boundary',
@@ -58,9 +101,7 @@ export function useProfile(workspaceId: string) {
     };
     const field = fieldMap[key] || key;
 
-    // Optimistic update
     setProfile(prev => ({ ...prev, [field]: value }));
-    // Sync to localStorage
     if (field === 'professional_role') localStorage.setItem('mindx_raw_whoami_doc', value);
     if (field === 'current_goal') localStorage.setItem('mindx_raw_goal_doc', value);
 
@@ -80,12 +121,21 @@ export function useProfile(workspaceId: string) {
     }
   }, [workspaceId, profile]);
 
-  // Backward-compat: expose .whoami / .goal getters so old code continues to work
+  // Derive seed cards dynamically from SEED_CARD_DEFS + live profile data
+  const seedCards: SeedCard[] = useMemo(() =>
+    SEED_CARD_DEFS.map(def => ({
+      ...def,
+      value: profile[def.field] || '',
+    })),
+    [profile]
+  );
+
+  // Backward-compat getters
   const compat = {
     ...profile,
     whoami: profile.professional_role,
     goal: profile.current_goal,
   };
 
-  return { profile: compat, loading, updateProfile };
+  return { profile: compat, seedCards, loading, updateProfile };
 }

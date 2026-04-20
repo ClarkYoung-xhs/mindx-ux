@@ -14,6 +14,7 @@ import {
   Wand2,
 } from 'lucide-react';
 import { useMemo, useState, type ReactNode, type RefObject } from 'react';
+import type { SeedCard } from '../../hooks/useProfile';
 import { useMindXDemo } from '../../data/mindxDemoContext';
 import {
   V2KnowledgeCard,
@@ -74,6 +75,7 @@ type MemoryTabViewProps = {
   fileInputRef: RefObject<HTMLInputElement | null>;
   whoAmIDocContent: string;
   goalDocContent: string;
+  seedCards?: SeedCard[];
   onEditProfile: (key: 'whoami' | 'goal') => void;
   memoryNodes: MemoryNode[];
   memoryNodeInput: string;
@@ -266,6 +268,7 @@ export default function MemoryTabView({
   fileInputRef,
   whoAmIDocContent,
   goalDocContent,
+  seedCards = [],
   onEditProfile,
   memoryNodes,
   memoryNodeInput,
@@ -473,34 +476,33 @@ export default function MemoryTabView({
             <div className="h-1 w-1 rounded-full bg-stone-400" />
             <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-stone-400">Seed Identity · 种子档案</span>
           </div>
+          {/* Dynamic: one card per field in profile_identity */}
           <div className="grid gap-4 md:grid-cols-3">
-            <BaseMemoryCard
-              icon={<User className="h-5 w-5" />}
-              eyebrow="Role"
-              title="职业身份"
-              meta="Professional Role"
-              previewType="memory"
-              previewItems={[{ title: '身份档案', body: baseWhoAmI }]}
-              onClick={() => onEditProfile('whoami')}
-            />
-            <BaseMemoryCard
-              icon={<Target className="h-5 w-5" />}
-              eyebrow="Goal"
-              title="当前目标"
-              meta="Current Goal"
-              previewType="goals"
-              previewItems={baseGoals.map((goal, index) => ({ label: String(index + 1), title: goal }))}
-              onClick={() => onEditProfile('goal')}
-            />
+            {seedCards.map(card => {
+              const previewItems = card.previewType === 'goals'
+                ? (card.value.trim()
+                    ? card.value.split('\n').filter(Boolean).map((line, i) => ({ label: String(i + 1), title: line }))
+                    : [{ label: '1', title: '当前还未明确目标' }])
+                : [{ title: card.value.trim() ? compactPreview(card.value, '') : `暂未设定${card.label}` }];
+              return (
+                <BaseMemoryCard
+                  key={card.field}
+                  icon={<User className="h-5 w-5" />}
+                  eyebrow={card.eyebrow}
+                  title={card.label}
+                  meta={card.labelEn}
+                  previewType={card.previewType === 'goals' ? 'goals' : 'memory'}
+                  previewItems={previewItems}
+                  onClick={() => onEditProfile(card.profileKey as 'whoami' | 'goal')}
+                />
+              );
+            })}
+            {/* Signal Engine card — always last */}
             <BaseMemoryCard
               icon={<Sparkles className="h-5 w-5" />}
               eyebrow="Engine"
               title="行为信号库"
-              meta={
-                extractedKeyPoints.length > 0
-                  ? `${extractedKeyPoints.length} 条信号`
-                  : '等待首批信号'
-              }
+              meta={extractedKeyPoints.length > 0 ? `${extractedKeyPoints.length} 条信号` : '等待首批信号'}
               previewType="knowledge"
               previewItems={knowledgeSummary.map(item => ({ title: item }))}
               onClick={onOpenKeyPointsDocument}
