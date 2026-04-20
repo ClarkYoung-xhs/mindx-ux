@@ -25,6 +25,8 @@ type ExtractedKeyPoint = {
   type: string;
   text: string;
   source: string;
+  context?: string;
+  original_quote?: string;
   createdAt: string;
 };
 
@@ -51,6 +53,7 @@ export interface MemoryTabProps {
   handleOpenMemoryNodeEditor: (node: MemoryNode) => void;
   extractedKeyPoints: ExtractedKeyPoint[];
   handleOpenKeyPointsDocument: () => void;
+  handleOpenSignal: (point: ExtractedKeyPoint) => void;
   rawDataItems: RawDataItem[];
   rawDataLoading: boolean;
   extractionRunning: boolean;
@@ -81,6 +84,7 @@ export default function MemoryTab({
   handleOpenMemoryNodeEditor,
   extractedKeyPoints,
   handleOpenKeyPointsDocument,
+  handleOpenSignal,
   rawDataItems,
   rawDataLoading,
   extractionRunning,
@@ -116,6 +120,7 @@ export default function MemoryTab({
         onEditNode={handleOpenMemoryNodeEditor}
         extractedKeyPoints={extractedKeyPoints}
         onOpenKeyPointsDocument={handleOpenKeyPointsDocument}
+        onOpenSignal={handleOpenSignal}
         rawDataItems={rawDataItems}
         rawDataLoading={rawDataLoading}
         extractionRunning={extractionRunning}

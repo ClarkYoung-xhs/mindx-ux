@@ -85,6 +85,7 @@ type MemoryTabViewProps = {
   onEditNode: (node: MemoryNode) => void;
   extractedKeyPoints: ExtractedKeyPoint[];
   onOpenKeyPointsDocument: () => void;
+  onOpenSignal?: (point: ExtractedKeyPoint) => void;
   rawDataItems: RawDataItem[];
   rawDataLoading?: boolean;
   extractionRunning: boolean;
@@ -276,6 +277,7 @@ export default function MemoryTabView({
   onEditNode,
   extractedKeyPoints,
   onOpenKeyPointsDocument,
+  onOpenSignal,
   rawDataItems,
   rawDataLoading,
   extractionRunning,
@@ -529,7 +531,7 @@ export default function MemoryTabView({
                   <div
                     key={point.id}
                     className="relative flex flex-col justify-between overflow-hidden rounded-xl border border-stone-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg cursor-pointer"
-                    onClick={() => onOpenKeyPointsDocument()}
+                    onClick={() => onOpenSignal ? onOpenSignal(point) : onOpenKeyPointsDocument()}
                   >
                     <div className="space-y-3">
                       <div className="flex items-start justify-between gap-2">

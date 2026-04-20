@@ -864,6 +864,20 @@ export default function Dashboard() {
     navigate("/document?type=text&backTab=profile&source=keypoints_doc");
   };
 
+  const handleOpenSignal = (point: any) => {
+    const params = new URLSearchParams({
+      source: "signal",
+      backTab: "profile",
+      signalId: point.id,
+      signalType: point.type || "signal",
+      signalText: point.text || point.title || "",
+      signalContext: point.context || "",
+      signalQuote: point.original_quote || "",
+      signalSource: point.source || "",
+    });
+    navigate(`/document?${params.toString()}`);
+  };
+
   const handleOpenExtractionPicker = () => {
     setSelectedExtractionFileIds(new Set(rawDataItems.map((item) => item.id)));
     setShowExtractionFilePicker(true);
@@ -1608,6 +1622,7 @@ Command: Download the zip package from https://cdn.addon.tencentsuite.com/static
                 handleOpenMemoryNodeEditor={handleOpenMemoryNodeEditor}
                 extractedKeyPoints={extractedKeyPoints}
                 handleOpenKeyPointsDocument={handleOpenKeyPointsDocument}
+                handleOpenSignal={handleOpenSignal}
                 rawDataItems={rawDataItems}
                 rawDataLoading={rawDataLoading}
                 extractionRunning={extractionRunning}

@@ -340,13 +340,20 @@ export default function DocumentEditor() {
   const assetId = queryParams.get("assetId");
   const dataSourceId = queryParams.get("dataSourceId");
   const from = queryParams.get("from");
+  const signalId = queryParams.get("signalId");
+  const signalType = queryParams.get("signalType");
+  const signalText = queryParams.get("signalText");
+  const signalContext = queryParams.get("signalContext");
+  const signalQuote = queryParams.get("signalQuote");
+  const signalSource = queryParams.get("signalSource");
   const isMemoryScopedDocument =
     source === "memory_asset" ||
     source === "data_source" ||
     source === "whoami_doc" ||
     source === "goal_doc" ||
     source === "rawdata" ||
-    source === "keypoints_doc";
+    source === "keypoints_doc" ||
+    source === "signal";
   const allDocs = documents.map((doc) => ({
     id: doc.id,
     name: doc.name,
@@ -840,6 +847,53 @@ export default function DocumentEditor() {
           authorType: "agent",
         }
       ];
+    }
+
+    if (source === "signal") {
+      const typeLabel: Record<string, string> = {
+        preference: '偏好',
+        judgment: '判断',
+        choice: '选择',
+        decision: '决策',
+      };
+      const label = typeLabel[(signalType || '').toLowerCase()] || signalType || 'Signal';
+      const parts: any[] = [
+        {
+          id: "s1",
+          text: `# ${signalText || '行为信号'}`,
+          author: "Agent",
+          authorType: "agent" as const,
+        },
+        {
+          id: "s-meta",
+          text: `**类型**：${label}　　**来源**：${signalSource || '未知'}`,
+          author: "Agent",
+          authorType: "agent" as const,
+        },
+      ];
+      if (signalContext) {
+        parts.push({
+          id: "s-ctx",
+          text: `## 场景\n${signalContext}`,
+          author: "Agent",
+          authorType: "agent" as const,
+        });
+      }
+      if (signalQuote) {
+        parts.push({
+          id: "s-q",
+          text: `## 原文依据\n> ${signalQuote}`,
+          author: "Agent",
+          authorType: "agent" as const,
+        });
+      }
+      parts.push({
+        id: "s-notes",
+        text: `## 备注\n`,
+        author: "Agent",
+        authorType: "agent" as const,
+      });
+      return parts;
     }
 
     if (source === "rawdata") {
@@ -1822,6 +1876,8 @@ export default function DocumentEditor() {
                       return "已提炼洞察列表 (Key Points)";
                     if (source === "rawdata")
                       return params.get("title") || "原始资料";
+                    if (source === "signal")
+                      return params.get("signalText") || "行为信号";
                     return "Project Alpha Architecture";
                   })()}
             </h1>
